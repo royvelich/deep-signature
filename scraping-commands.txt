@@ -1,0 +1,9 @@
+python bing_scraper.py --url 'https://www.bing.com/images/search?q=silhouette' --limit 200 --download --chromedriver "C:\Users\Roy\Downloads\chromedriver_win32\chromedriver.exe"
+python bing_scraper.py --url 'https://www.bing.com/images/search?q=shape+silhouette' --limit 200 --download --chromedriver "C:\Users\Roy\Downloads\chromedriver_win32\chromedriver.exe"
+
+googleimagesdownload --keywords "silhouettes" --limit 200 --chromedriver "C:\Users\Roy\Documents\chromedriver_win32\chromedriver.exe"
+googleimagesdownload --keywords "shape silhouette" --limit 200 --chromedriver "C:\Users\Roy\Documents\chromedriver_win32\chromedriver.exe"
+googleimagesdownload --keywords "country silhouettes high resolution" --limit 200 --chromedriver "C:\Users\Roy\Documents\chromedriver_win32\chromedriver.exe"
+googleimagesdownload --keywords "shape silhouettes high resolution" --limit 200 --chromedriver "C:\Users\Roy\Documents\chromedriver_win32\chromedriver.exe"
+
+https://stackoverflow.com/questions/50731785/create-random-shape-contour-using-matplotlib
