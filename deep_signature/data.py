@@ -12,11 +12,6 @@ class CurveSample:
     def __init__(self, curve_sample_id, curve, sample_points):
         self._curve_sample_id = curve_sample_id
         self._bins = curve.shape[0]
-        # while True:
-        #     self._dist = deep_signature.dist.DistGenerator.generate_random_dist(self._bins)
-        #     if numpy.count_nonzero(self._dist) > sample_points:
-        #         break
-
         self._dist = deep_signature.dist.DistGenerator.generate_random_dist(self._bins)
 
         density_threshold = 1.0 / sample_points
@@ -28,9 +23,9 @@ class CurveSample:
                 accumulated_density = accumulated_density - density_threshold
                 self._indices.append(i)
 
-        # self._indices = numpy.random.choice(self._bins, size=sample_points, p=self._dist, replace=False)
         self._sorted_indices = numpy.sort(self._indices)
         self._sampled_curve = curve[self._sorted_indices]
+        self._sampled_curve = self._sampled_curve[:sample_points]
 
     @property
     def indices(self):
@@ -51,10 +46,6 @@ class CurveSample:
     @property
     def bins(self):
         return self._bins
-
-    # def sample_dist(self, size):
-    #     x = numpy.arange(self._bins)
-    #     return numpy.random.choice(x, size=size, p=self._dist)
 
     def save(self, dir_path):
         curve_sample_dir_path = os.path.normpath(os.path.join(dir_path, str(self._curve_sample_id)))
@@ -186,7 +177,7 @@ class DatasetGenerator:
 
     def save(self, dir_path, pairs_per_curve, rotation_factor, sampling_factor, sample_points, chunk_size=5):
 
-        print('Saving dataset...')
+        print('Saving dataset curves:')
 
         def save_curve(curve):
             curve.save(dir_path=dir_path)
@@ -200,6 +191,8 @@ class DatasetGenerator:
             limit=None,
             chunk_size=chunk_size)
 
+        print('Saving dataset metadata:')
+
         DatasetGenerator._save_dataset_metadata(
             dir_path=dir_path,
             curves_count=len(self._raw_curves),
@@ -210,7 +203,7 @@ class DatasetGenerator:
 
     def generate_curves(self, rotation_factor, sampling_factor, sample_points, limit=5, chunk_size=5):
 
-        print('Generating curves...')
+        print('Generating dataset curves:')
 
         curves = []
 
@@ -230,10 +223,11 @@ class DatasetGenerator:
 
     def load_raw_curves(self, dir_path):
 
-        print('Loading raw curves...')
+        print('Loading raw curves:')
 
         base_dir = os.path.normpath(dir_path)
         datasets = []
+        print(f'    - Reading curve files...\r', end="")
         for sub_dir, dirs, files in os.walk(base_dir):
 
             if sub_dir == base_dir:
@@ -267,6 +261,9 @@ class DatasetGenerator:
 
             datasets.append(current_dataset)
 
+        print(f'    - Reading curve files... Done.\r', end="")
+        print('\r')
+        print(f'    - Merging datasets...\r', end="")
         curves = []
         for dataset in datasets:
             dataset_curves = dataset['curves']
@@ -274,13 +271,19 @@ class DatasetGenerator:
             selected_curves = [dataset_curves[i - 1] for i in dataset_indices]
             curves.extend(selected_curves)
 
+        print(f'    - Merging datasets... Done.\r', end="")
+
+        print('\r')
+        print(f'    - Shuffling curves...\r', end="")
         random.shuffle(curves)
+        print(f'    - Shuffling curves... Done.\r', end="")
+        print('\r')
 
         self._raw_curves = curves
 
         raw_curves_count = len(self._raw_curves)
 
-        print(f'{raw_curves_count} raw curves loaded.')
+        print(f'    - {raw_curves_count} raw curves loaded.')
 
     @staticmethod
     def _save_dataset_metadata(dir_path, curves_count, pairs_per_curve, rotation_factor, sampling_factor, sample_points):
@@ -291,17 +294,15 @@ class DatasetGenerator:
         metadata['rotation_factor'] = rotation_factor
         metadata['sampling_factor'] = sampling_factor
         metadata['sample_points'] = sample_points
-        metadata['pairs'] = numpy.empty(shape=[2*curves_count*pairs_per_curve, 7])
+        metadata['pairs'] = numpy.empty(shape=[2*curves_count*pairs_per_curve, 7]).astype(int)
 
-        pairing_dict = {}
-        pairing_dict['positive'] = []
-        pairing_dict['negative'] = []
-
+        pairing_dict = {'positive': [], 'negative': []}
         pair_index = 0
 
-        factors = numpy.array(rotation_factor, sampling_factor)
+        factors = numpy.array([rotation_factor, sampling_factor])
         for curve_index in range(curves_count):
             for _ in range(pairs_per_curve):
+                print(f'    - Creating positive pair #{pair_index}\r', end="")
                 while True:
                     curve1_indices = numpy.concatenate((numpy.array([curve_index]), numpy.round(numpy.random.rand(2) * factors))).astype(int)
                     curve2_indices = numpy.concatenate((numpy.array([curve_index]), numpy.round(numpy.random.rand(2) * factors))).astype(int)
@@ -319,14 +320,16 @@ class DatasetGenerator:
                     if pair_key in pairing_dict['positive']:
                         continue
 
-                    metadata['pairs'][pair_index] = numpy.concatenate((1, curve1_indices, curve2_indices))
+                    metadata['pairs'][pair_index] = numpy.concatenate((numpy.array([1]), curve1_indices, curve2_indices)).astype(int)
                     pair_index = pair_index + 1
                     break
 
+        print('\r')
 
-        factors = numpy.array(curves_count, rotation_factor, sampling_factor)
+        factors = numpy.array([curves_count, rotation_factor, sampling_factor])
         for curve_index in range(curves_count):
             for _ in range(pairs_per_curve):
+                print(f'    - Creating negative pair #{pair_index}\r', end="")
                 while True:
                     curve1_indices = numpy.round(numpy.random.rand(3) * factors).astype(int)
                     curve2_indices = numpy.round(numpy.random.rand(3) * factors).astype(int)
@@ -345,11 +348,15 @@ class DatasetGenerator:
                     if pair_key in pairing_dict['negative']:
                         continue
 
-                    metadata['pairs'][pair_index] = numpy.concatenate((0, curve1_indices, curve2_indices))
+                    metadata['pairs'][pair_index] = numpy.concatenate((numpy.array([0]), curve1_indices, curve2_indices)).astype(int)
                     pair_index = pair_index + 1
                     break
 
+        print('\r')
+        print(f'    - Saving metadata...\r', end="")
         numpy.save(os.path.normpath(os.path.join(dir_path, 'metadata.npy')), metadata)
+        print(f'    - Saving metadata... Done.\r', end="")
+        print('\r')
 
     @staticmethod
     def _process_curves(raw_curves, predicate, rotation_factor, sampling_factor, sample_points, limit=None, chunk_size=5):
@@ -368,16 +375,17 @@ class DatasetGenerator:
 
         extended_raw_curves_chunks = DatasetGenerator._chunks(extended_raw_curves, chunk_size)
 
-        print('Creating pool...')
-
+        print(f'    - Creating pool...\r', end="")
         pool = Pool()
+        print(f'    - Creating pool... Done.\r', end="")
 
-        print('Processing curves...')
-
+        print('\r')
+        print('     - Processing curves...')
         for i, processed_curves_chunk in enumerate(pool.imap_unordered(DatasetGenerator._process_curves_chunk, extended_raw_curves_chunks, 1)):
-            print('done {0:.1%}\r'.format((i+1) / len(extended_raw_curves_chunks)), end="")
+            print('     - Processing curves... {0:.1%} Done.\r'.format((i+1) / len(extended_raw_curves_chunks)), end="")
             for curve in processed_curves_chunk:
                 predicate(curve)
+        print('\r')
 
     @staticmethod
     def _process_curves_chunk(extended_raw_curves_chunk):
