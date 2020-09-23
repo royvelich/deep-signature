@@ -23,9 +23,8 @@ class CurveSample:
                 accumulated_density = accumulated_density - density_threshold
                 self._indices.append(i)
 
-        self._sorted_indices = numpy.sort(self._indices)
+        self._sorted_indices = numpy.sort(self._indices)[:sample_points]
         self._sampled_curve = curve[self._sorted_indices]
-        self._sampled_curve = self._sampled_curve[:sample_points]
 
     @property
     def indices(self):
@@ -353,9 +352,9 @@ class DatasetGenerator:
                     break
 
         print('\r')
-        print(f'    - Saving metadata...\r', end="")
+        print('    - Saving metadata...\r', end="")
         numpy.save(os.path.normpath(os.path.join(dir_path, 'metadata.npy')), metadata)
-        print(f'    - Saving metadata... Done.\r', end="")
+        print('    - Saving metadata... Done.\r', end="")
         print('\r')
 
     @staticmethod
@@ -375,14 +374,14 @@ class DatasetGenerator:
 
         extended_raw_curves_chunks = DatasetGenerator._chunks(extended_raw_curves, chunk_size)
 
-        print(f'    - Creating pool...\r', end="")
+        print('    - Creating pool...\r', end="")
         pool = Pool()
-        print(f'    - Creating pool... Done.\r', end="")
+        print('    - Creating pool... Done.\r', end="")
 
         print('\r')
-        print(f'    - Processing curves...\r', end="")
+        print('    - Processing curves...\r', end="")
         for i, processed_curves_chunk in enumerate(pool.imap_unordered(DatasetGenerator._process_curves_chunk, extended_raw_curves_chunks, 1)):
-            print(f'    - Processing curves... {0:.1%} Done.\r'.format((i+1) / len(extended_raw_curves_chunks)), end="")
+            print('    - Processing curves... {0:.1%} Done.\r'.format((i+1) / len(extended_raw_curves_chunks)), end="")
             for curve in processed_curves_chunk:
                 predicate(curve)
         print('\r')
