@@ -380,9 +380,9 @@ class DatasetGenerator:
         print(f'    - Creating pool... Done.\r', end="")
 
         print('\r')
-        print('     - Processing curves...')
+        print(f'    - Processing curves...\r', end="")
         for i, processed_curves_chunk in enumerate(pool.imap_unordered(DatasetGenerator._process_curves_chunk, extended_raw_curves_chunks, 1)):
-            print('     - Processing curves... {0:.1%} Done.\r'.format((i+1) / len(extended_raw_curves_chunks)), end="")
+            print(f'    - Processing curves... {0:.1%} Done.\r'.format((i+1) / len(extended_raw_curves_chunks)), end="")
             for curve in processed_curves_chunk:
                 predicate(curve)
         print('\r')
