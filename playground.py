@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     arr1 = numpy.array([[1,2],[4,6],[7,5]])
 
-    arr1_da = numpy.concatenate((arr1[:2],arr1,arr1[:-2]), axis=1)
+    arr1_da = numpy.concatenate((arr1[-2:],arr1,arr1[:2]), axis=0)
 
     arr2 = numpy.array([[7,3],[9,6],[0,3]])
     #

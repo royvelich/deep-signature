@@ -12,6 +12,13 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Playground",
+            "type": "python",
+            "request": "launch",
+            "program": "playground.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",

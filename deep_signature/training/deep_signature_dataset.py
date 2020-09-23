@@ -5,8 +5,9 @@ import numpy
 
 
 class DeepSignatureDataset(Dataset):
-    def __init__(self, dir_path):
+    def __init__(self, dir_path, padding):
         self._dir_path = dir_path
+        self._padding = padding
         self._metadata = numpy.load(file=os.path.normpath(os.path.join(dir_path, 'metadata.npy')), allow_pickle=True)
         self._metadata = self._metadata.item()
         self._pairs = self._metadata['pairs']
@@ -16,26 +17,24 @@ class DeepSignatureDataset(Dataset):
 
     def __getitem__(self, idx):
         pair = self._pairs[idx]
+
         label = pair[0]
         curve1_descriptor = pair[1:4]
         curve2_descriptor = pair[4:8]
 
-        curve1 = numpy.load(file=DeepSignatureDataset.build_curve_path(self._dir_path, curve1_descriptor),
-                            allow_pickle=True)
-
-        curve2 = numpy.load(file=DeepSignatureDataset.build_curve_path(self._dir_path, curve2_descriptor),
-                            allow_pickle=True)
+        curve1_sample = DeepSignatureDataset._load_curve_sample(dir_path=self._dir_path, curve_descriptor=curve1_descriptor, padding=self._padding)
+        curve2_sample = DeepSignatureDataset._load_curve_sample(dir_path=self._dir_path, curve_descriptor=curve2_descriptor, padding=self._padding)
 
         return {
-            'pair': torch.from_numpy(numpy.vstack((numpy.transpose(curve1), numpy.transpose(curve2)))),
+            'pair': torch.from_numpy(numpy.vstack((numpy.transpose(curve1_sample), numpy.transpose(curve2_sample)))),
             'label': label
         }
 
     @staticmethod
-    def build_curve_path(dir_path, curve_descriptor):
-        return numpy.load(
-            file=os.path.normpath(os.path.join(
-                dir_path,
-                f'{curve_descriptor[0]}/{curve_descriptor[1]}/{curve_descriptor[2]}',
-                'sample.npy')),
-            allow_pickle=True)
+    def _build_curve_path(dir_path, curve_descriptor):
+        return os.path.normpath(os.path.join(dir_path, f'{curve_descriptor[0]}/{curve_descriptor[1]}/{curve_descriptor[2]}', 'sample.npy'))
+
+    @staticmethod
+    def _load_curve_sample(dir_path, curve_descriptor, padding):
+        curve_sample = numpy.load(file=DeepSignatureDataset._build_curve_path(dir_path, curve_descriptor), allow_pickle=True)
+        return numpy.concatenate((curve_sample[-padding:], curve_sample, curve_sample[:padding]), axis=0)
