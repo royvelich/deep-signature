@@ -1,12 +1,5 @@
-import os
-import scipy.io
 import numpy
-import re
-import scipy.stats as ss
-import matplotlib.pyplot as plt
-import deep_signature.dist
-import deep_signature.data
-import gzip
+import torch
 
 
 if __name__ == '__main__':
@@ -21,7 +14,11 @@ if __name__ == '__main__':
 
     arr1 = numpy.array([[1,2],[4,6],[7,5]])
 
-    arr1_da = numpy.concatenate((arr1[-2:],arr1,arr1[:2]), axis=0)
+    curve_torch = torch.from_numpy(curve)
+
+    print(curve_torch[:, 0])
+
+    # arr1_da = numpy.concatenate((arr1[-2:],arr1,arr1[:2]), axis=0)
 
     arr2 = numpy.array([[7,3],[9,6],[0,3]])
     #

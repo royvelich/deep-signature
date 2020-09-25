@@ -178,17 +178,17 @@ class DatasetGenerator:
 
         print('Saving dataset curves:')
 
-        def save_curve(curve):
-            curve.save(dir_path=dir_path)
-
-        DatasetGenerator._process_curves(
-            raw_curves=self._raw_curves,
-            predicate=save_curve,
-            rotation_factor=rotation_factor,
-            sampling_factor=sampling_factor,
-            sample_points=sample_points,
-            limit=None,
-            chunk_size=chunk_size)
+        # def save_curve(curve):
+        #     curve.save(dir_path=dir_path)
+        #
+        # DatasetGenerator._process_curves(
+        #     raw_curves=self._raw_curves,
+        #     predicate=save_curve,
+        #     rotation_factor=rotation_factor,
+        #     sampling_factor=sampling_factor,
+        #     sample_points=sample_points,
+        #     limit=None,
+        #     chunk_size=chunk_size)
 
         print('Saving dataset metadata:')
 
@@ -285,26 +285,23 @@ class DatasetGenerator:
         print(f'    - {raw_curves_count} raw curves loaded.')
 
     @staticmethod
-    def _save_dataset_metadata(dir_path, curves_count, pairs_per_curve, rotation_factor, sampling_factor, sample_points):
-
-        metadata = {}
-
-        metadata['curves_count'] = curves_count
-        metadata['rotation_factor'] = rotation_factor
-        metadata['sampling_factor'] = sampling_factor
-        metadata['sample_points'] = sample_points
-        metadata['pairs'] = numpy.empty(shape=[2*curves_count*pairs_per_curve, 7]).astype(int)
-
-        pairing_dict = {'positive': [], 'negative': []}
-        pair_index = 0
-
-        factors = numpy.array([rotation_factor, sampling_factor])
+    def _generate_pairs(curves_count, pairs_per_curve, rotation_factor, sampling_factor, positive):
+        pairs = numpy.empty(shape=[curves_count * pairs_per_curve, 7]).astype(int)
+        pairs_keys = {}
         for curve_index in range(curves_count):
-            for _ in range(pairs_per_curve):
-                print(f'    - Creating positive pair #{pair_index}\r', end="")
+            for curve_pair_index in range(pairs_per_curve):
+                pair_index = pairs_per_curve * curve_index + curve_pair_index
+                print(f'        - Creating pair #{pair_index}\r', end="")
                 while True:
-                    curve1_indices = numpy.concatenate((numpy.array([curve_index]), numpy.round(numpy.random.rand(2) * factors))).astype(int)
-                    curve2_indices = numpy.concatenate((numpy.array([curve_index]), numpy.round(numpy.random.rand(2) * factors))).astype(int)
+                    if positive is True:
+                        factors = numpy.array([rotation_factor - 1, sampling_factor - 1])
+                        curve1_indices = numpy.concatenate((numpy.array([curve_index]), numpy.round(numpy.random.rand(2) * factors))).astype(int)
+                        curve2_indices = numpy.concatenate((numpy.array([curve_index]), numpy.round(numpy.random.rand(2) * factors))).astype(int)
+                    else:
+                        factors = numpy.array([curves_count - 1, rotation_factor - 1, sampling_factor - 1])
+                        curve1_indices = numpy.round(numpy.random.rand(3) * factors).astype(int)
+                        curve2_indices = numpy.round(numpy.random.rand(3) * factors).astype(int)
+
                     if numpy.all(curve1_indices == curve2_indices):
                         continue
 
@@ -316,42 +313,57 @@ class DatasetGenerator:
                     else:
                         pair_key = f'{curve2_indices_str}_{curve1_indices_str}'
 
-                    if pair_key in pairing_dict['positive']:
+                    if pair_key in pairs_keys:
                         continue
 
-                    metadata['pairs'][pair_index] = numpy.concatenate((numpy.array([1]), curve1_indices, curve2_indices)).astype(int)
-                    pair_index = pair_index + 1
+                    pairs_keys[pair_key] = {}
+                    pairs[pair_index] = numpy.concatenate((numpy.array([int(positive)]), curve1_indices, curve2_indices)).astype(int)
                     break
 
+        return pairs
+
+    @staticmethod
+    def _generate_positive_pairs(curves_count, pairs_per_curve, rotation_factor, sampling_factor):
+        return DatasetGenerator._generate_pairs(curves_count, pairs_per_curve, rotation_factor, sampling_factor, True)
+
+    @staticmethod
+    def _generate_negative_pairs(curves_count, pairs_per_curve, rotation_factor, sampling_factor):
+        return DatasetGenerator._generate_pairs(curves_count, pairs_per_curve, rotation_factor, sampling_factor, False)
+
+    @staticmethod
+    def _save_dataset_metadata(dir_path, curves_count, pairs_per_curve, rotation_factor, sampling_factor, sample_points):
+
+        metadata = {
+            'curves_count': curves_count,
+            'rotation_factor': rotation_factor,
+            'sampling_factor': sampling_factor,
+            'sample_points': sample_points,
+            'pairs': None
+        }
+
+        print('    - Generating positive pairs:')
+        positive_pairs = DatasetGenerator._generate_positive_pairs(
+            curves_count=curves_count,
+            pairs_per_curve=pairs_per_curve,
+            rotation_factor=rotation_factor,
+            sampling_factor=sampling_factor)
+
+        print('\r')
+        print('    - Generating negative pairs:')
+        negative_pairs = DatasetGenerator._generate_negative_pairs(
+            curves_count=curves_count,
+            pairs_per_curve=pairs_per_curve,
+            rotation_factor=rotation_factor,
+            sampling_factor=sampling_factor)
         print('\r')
 
-        factors = numpy.array([curves_count, rotation_factor, sampling_factor])
-        for curve_index in range(curves_count):
-            for _ in range(pairs_per_curve):
-                print(f'    - Creating negative pair #{pair_index}\r', end="")
-                while True:
-                    curve1_indices = numpy.round(numpy.random.rand(3) * factors).astype(int)
-                    curve2_indices = numpy.round(numpy.random.rand(3) * factors).astype(int)
-
-                    if numpy.all(curve1_indices[0] == curve2_indices[0]):
-                        continue
-
-                    curve1_indices_str = numpy.array2string(curve1_indices, precision=0, separator=',')
-                    curve2_indices_str = numpy.array2string(curve2_indices, precision=0, separator=',')
-
-                    if curve1_indices_str > curve2_indices_str:
-                        pair_key = f'{curve1_indices_str}_{curve2_indices_str}'
-                    else:
-                        pair_key = f'{curve2_indices_str}_{curve1_indices_str}'
-
-                    if pair_key in pairing_dict['negative']:
-                        continue
-
-                    metadata['pairs'][pair_index] = numpy.concatenate((numpy.array([0]), curve1_indices, curve2_indices)).astype(int)
-                    pair_index = pair_index + 1
-                    break
-
+        print('    - Interweaving positive and negative pairs...\r', end="")
+        metadata['pairs'] = numpy.empty(shape=[positive_pairs.shape[0] + negative_pairs.shape[0], 7]).astype(int)
+        metadata['pairs'][0::2] = positive_pairs
+        metadata['pairs'][1::2] = negative_pairs
+        print('    - Interweaving positive and negative pairs... Done.\r', end="")
         print('\r')
+
         print('    - Saving metadata...\r', end="")
         numpy.save(os.path.normpath(os.path.join(dir_path, 'metadata.npy')), metadata)
         print('    - Saving metadata... Done.\r', end="")
