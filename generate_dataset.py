@@ -1,15 +1,12 @@
-import os
-import scipy.io
-import numpy
-import re
-import scipy.stats as ss
-import matplotlib.pyplot as plt
-import deep_signature.dist
-import deep_signature.data
-import gzip
-
+from deep_signature.data_generation import DatasetGenerator
 
 if __name__ == '__main__':
-    dataset_generator = deep_signature.data.DatasetGenerator()
+    dataset_generator = DatasetGenerator()
     dataset_generator.load_raw_curves(dir_path='C:\\Users\\Roy\\OneDrive - Technion\\deep-signature-raw-data\\raw-data-new')
-    dataset_generator.save(dir_path='./dataset', pairs_per_curve=300, rotation_factor=10, sampling_factor=10, sample_points=500)
+    dataset_generator.save(
+        dir_path='./dataset2',
+        pairs_per_curve=3000,
+        rotation_factor=12,
+        sampling_factor=15,
+        sample_points=600,
+        metadata_only=False)

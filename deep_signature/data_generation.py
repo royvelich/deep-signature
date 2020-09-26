@@ -1,30 +1,44 @@
 from multiprocessing import Pool
+import scipy.io
+import random
 import os
 import scipy.io
 import numpy
 import re
+import scipy.stats as ss
+from scipy.stats import truncnorm
 import math
-import random
-import deep_signature.dist
 
 
 class CurveSample:
     def __init__(self, curve_sample_id, curve, sample_points):
         self._curve_sample_id = curve_sample_id
         self._bins = curve.shape[0]
-        self._dist = deep_signature.dist.DistGenerator.generate_random_dist(self._bins)
 
         density_threshold = 1.0 / sample_points
+
+        while True:
+            self._dist = DistGenerator.generate_random_dist(self._bins)
+
+            valid = True
+            for i in range(self._bins):
+                if self._dist[i] > density_threshold:
+                    valid = False
+                    break
+
+            if valid is True:
+                break
+
         accumulated_density = 0
-        self._indices = [0]
+        self._indices = []
         for i in range(self._bins):
             accumulated_density = accumulated_density + self._dist[i]
-            if accumulated_density > density_threshold:
-                accumulated_density = accumulated_density - density_threshold
+            if accumulated_density >= (density_threshold * len(self._indices)):
                 self._indices.append(i)
 
         self._sorted_indices = numpy.sort(self._indices)[:sample_points]
         self._sampled_curve = curve[self._sorted_indices]
+        assert (self._sampled_curve.shape[0] == sample_points)
 
     @property
     def indices(self):
@@ -174,21 +188,22 @@ class DatasetGenerator:
     def __init__(self):
         self._raw_curves = []
 
-    def save(self, dir_path, pairs_per_curve, rotation_factor, sampling_factor, sample_points, chunk_size=5):
+    def save(self, dir_path, pairs_per_curve, rotation_factor, sampling_factor, sample_points, metadata_only=False, chunk_size=5):
 
-        print('Saving dataset curves:')
+        if metadata_only is False:
+            print('Saving dataset curves:')
 
-        # def save_curve(curve):
-        #     curve.save(dir_path=dir_path)
-        #
-        # DatasetGenerator._process_curves(
-        #     raw_curves=self._raw_curves,
-        #     predicate=save_curve,
-        #     rotation_factor=rotation_factor,
-        #     sampling_factor=sampling_factor,
-        #     sample_points=sample_points,
-        #     limit=None,
-        #     chunk_size=chunk_size)
+            def save_curve(curve):
+                curve.save(dir_path=dir_path)
+
+            DatasetGenerator._process_curves(
+                raw_curves=self._raw_curves,
+                predicate=save_curve,
+                rotation_factor=rotation_factor,
+                sampling_factor=sampling_factor,
+                sample_points=sample_points,
+                limit=None,
+                chunk_size=chunk_size)
 
         print('Saving dataset metadata:')
 
@@ -415,3 +430,60 @@ class DatasetGenerator:
     @staticmethod
     def _chunks(lst, n):
         return [lst[i:i + n] for i in range(0, len(lst), n)]
+
+
+class DistGenerator:
+
+    # https://stackoverflow.com/questions/37411633/how-to-generate-a-random-normal-distribution-of-integers
+    @staticmethod
+    def generate_normal_dist(bins, loc, scale):
+        is_even = bins % 2 == 0
+        half_bins = math.floor(bins / 2)
+
+        start, stop = -half_bins, half_bins
+        if not is_even:
+            stop = stop + 1
+
+        x = numpy.arange(start, stop) + half_bins
+        x_lower, x_upper = x - 0.5, x + 0.5
+
+        cfd_lower = ss.norm.cdf(x_lower, loc=loc, scale=scale)
+        cfd_upper = ss.norm.cdf(x_upper, loc=loc, scale=scale)
+        dist = cfd_upper - cfd_lower
+
+        # normalize the distribution bins so their sum is 1
+        dist = dist / dist.sum()
+
+        return dist
+
+    @staticmethod
+    def generate_random_normal_dist(bins):
+        mean = bins / 2
+
+        truncated_normal = DistGenerator.generate_truncated_normal(mean=0.5, sd=0.25, low=0, upp=1)
+        var = truncated_normal.rvs(1) * 10*numpy.sqrt(bins)
+        dist = DistGenerator.generate_normal_dist(bins, mean, var)
+
+        return numpy.roll(dist, int(numpy.round(numpy.random.rand(1) * bins)))
+
+    @staticmethod
+    def generate_random_dist(bins):
+        truncated_normal = DistGenerator.generate_truncated_normal(mean=17, sd=4, low=2, upp=30)
+        count = 15
+
+        dist = None
+        for _ in range(count):
+            current_dist = DistGenerator.generate_random_normal_dist(bins)
+            if dist is None:
+                dist = current_dist
+            else:
+                dist = dist + current_dist
+
+        dist = dist / dist.sum()
+        return dist
+
+    # https://stackoverflow.com/questions/36894191/how-to-get-a-normal-distribution-within-a-range-in-numpy
+    @staticmethod
+    def generate_truncated_normal(mean=0, sd=1, low=0, upp=10):
+        return truncnorm(
+            (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)

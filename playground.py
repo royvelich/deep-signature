@@ -8,7 +8,7 @@ if __name__ == '__main__':
 
     bla = metadata.item()
 
-    curve = numpy.load(file='C:\\Users\\Roy\\Documents\\GitHub\\deep-signature\\dataset\\1245\\4\\2\\sample.npy', allow_pickle=True)
+    curve = numpy.load(file='C:\\Users\\Roy\\Documents\\GitHub\\deep-signature\\dataset\\1268\\0\\8\\sample.npy', allow_pickle=True)
 
     g = 5
 
