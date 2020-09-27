@@ -4,6 +4,25 @@ import torch
 
 if __name__ == '__main__':
 
+    print(torch.__version__)
+
+    t = torch.tensor([[2,1,2],[2,5,2],[1,1,4]], dtype=torch.float32)
+    norms = torch.norm(t)
+
+
+    t1 = torch.tensor([1,0,1,1,1,0,1,0,0,1], dtype=torch.float32)
+    t2 = torch.tensor([2,2,2,2,2,2,2,2,2,2], dtype=torch.float32)
+    t3 = 1 - t1
+    t4 = torch.tensor([2,-5,5,1,2,-1,-0.1,8,-7,6], dtype=torch.float32)
+
+    bla = t1 * t2
+    bla2 = torch.sum(bla)
+
+    bla3 = torch.max(torch.zeros_like(t1), t4)
+
+
+
+
     metadata = numpy.load(file='./dataset/metadata.npy', allow_pickle=True)
 
     bla = metadata.item()

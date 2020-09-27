@@ -8,11 +8,11 @@ from deep_signature.training import ContrastiveLoss
 
 if __name__ == '__main__':
     epochs = 3
-    batch_size = 32
+    batch_size = 128
     validation_split = .2
     shuffle_dataset = True
     random_seed = 42
-    learning_rate = 5e-5
+    learning_rate = 1e-3
 
     dataset = DeepSignatureDataset(dir_path='./dataset2')
     dataset_size = len(dataset)
@@ -31,16 +31,15 @@ if __name__ == '__main__':
     train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, sampler=train_sampler)
     validation_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, sampler=validation_sampler)
 
-    net = DeepSignatureNet(sample_points=600, padding=2).cuda()
+    net = DeepSignatureNet(sample_points=dataset.sample_points).cuda()
     optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
-    loss_fn = ContrastiveLoss(3)
+    loss_fn = ContrastiveLoss(1)
 
     best_accumulated_avg_loss = 0
     for epoch in range(epochs):
         print(f' - Training Epoch #{epoch}:')
         running_loss = 0
         for batch, data in enumerate(train_loader, 0):
-            # print(f'    - Batch #{batch}:')
 
             x1 = data['curves'][0]
             x2 = data['curves'][1]
