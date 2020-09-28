@@ -4,11 +4,13 @@ import numpy
 from deep_signature.training import DeepSignatureDataset
 from deep_signature.training import DeepSignatureNet
 from deep_signature.training import ContrastiveLoss
-
+from datetime import datetime
+import os
+from pathlib import Path
 
 if __name__ == '__main__':
     epochs = 3
-    batch_size = 128
+    batch_size = 256
     validation_split = .2
     shuffle_dataset = True
     random_seed = 42
@@ -35,11 +37,37 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
     loss_fn = ContrastiveLoss(1)
 
-    best_accumulated_avg_loss = 0
+    fill = ' '
+    align = '>'
+    width = 7
+    loss_width = 25
+
+    print(f'Epochs                                    {epochs:{fill}{align}{width}}')
+    print(f'Batch size                                {batch_size:{fill}{align}{width}}')
+    print(f'Training dataset length                   {len(train_indices):{fill}{align}{width}}')
+    print(f'Training dataset batches per epoch        {int(numpy.ceil(len(train_indices) / batch_size)):{fill}{align}{width}}')
+    print(f'Validation dataset length                 {len(validation_indices):{fill}{align}{width}}')
+    print(f'Validation dataset batches per epoch      {int(numpy.ceil(len(validation_indices) / batch_size)):{fill}{align}{width}}')
+
+    stats = {
+        'epoch': epochs,
+        'batch_size': batch_size,
+        'training_loss_list': [],
+        'validation_loss_list': []
+    }
+
+    dir_name = f"./train_results/{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+    Path(dir_name).mkdir(parents=True, exist_ok=True)
+
+    best_average_validation_batch_loss = 0
     for epoch in range(epochs):
         print(f' - Training Epoch #{epoch}:')
-        running_loss = 0
+        accumulated_training_epoch_loss = 0
+        average_training_batch_loss = 0
         for batch, data in enumerate(train_loader, 0):
+
+            # if batch == 5:
+            #     break
 
             x1 = data['curves'][0]
             x2 = data['curves'][1]
@@ -56,18 +84,21 @@ if __name__ == '__main__':
             optimizer.step()
 
             # print statistics
-            running_loss += loss.item()
-            # if batch % 10 == 0:
-            fill = ' '
-            align = '<'
-            width = 7
-            print(f'    - [Epoch {epoch:{fill}{align}{width}} | Batch {batch:{fill}{align}{width}}] - Running Loss = {running_loss}')
-            running_loss = 0
+            batch_loss = loss.item()
+            accumulated_training_epoch_loss = accumulated_training_epoch_loss + batch_loss
+            average_training_batch_loss = accumulated_training_epoch_loss / (batch + 1)
+            print(f'    - [Epoch {epoch:{fill}{align}{width}} | Batch {batch:{fill}{align}{width}}]: Batch Loss = {batch_loss:{fill}{align}{loss_width}}, Avg. Batch Loss = {average_training_batch_loss:{fill}{align}{loss_width}}')
 
-        print('\n')
+        stats['training_loss_list'].append(average_training_batch_loss)
+
         print(f' - Validating Epoch #{epoch}:')
-        accumulated_avg_loss = 0
+        accumulated_validation_epoch_loss = 0
+        average_validation_batch_loss = 0
         for batch, data in enumerate(validation_loader, 0):
+
+            # if batch == 5:
+            #     break
+
             x1 = data['curves'][0]
             x2 = data['curves'][1]
             labels = data['labels']
@@ -77,17 +108,21 @@ if __name__ == '__main__':
             loss = loss_fn(out1, out2, labels)
 
             # print statistics
-            accumulated_avg_loss += (loss.item() / batch_size)
-            if batch % 10 == 0:
-                fill = ' '
-                align = '<'
-                width = 7
-                print(f'    - [Batch {batch:{fill}{align}{width}}] - Accumulated Avg. Loss = {accumulated_avg_loss}')
+            batch_loss = loss.item()
+            accumulated_validation_epoch_loss = accumulated_validation_epoch_loss + batch_loss
+            average_validation_batch_loss = accumulated_validation_epoch_loss / (batch + 1)
+            print(f'    - [Epoch {epoch:{fill}{align}{width}} | Batch {batch:{fill}{align}{width}}]: Batch Loss = {batch_loss:{fill}{align}{loss_width}}, Avg. Batch Loss = {average_validation_batch_loss:{fill}{align}{loss_width}}')
 
+        stats['validation_loss_list'].append(average_validation_batch_loss)
+
+        model_file_name = os.path.join(dir_name, 'best_model.pt')
         if epoch == 0:
-            torch.save(net.state_dict(), './models/best_model.pt')
-            best_accumulated_avg_loss = accumulated_avg_loss
+            torch.save(net.state_dict(), model_file_name)
+            best_average_validation_batch_loss = average_validation_batch_loss
         else:
-            if accumulated_avg_loss < best_accumulated_avg_loss:
-                torch.save(net.state_dict(), './models/best_model.pt')
-                best_accumulated_avg_loss = accumulated_avg_loss
+            if average_validation_batch_loss < best_average_validation_batch_loss:
+                torch.save(net.state_dict(), model_file_name)
+                best_average_validation_batch_loss = average_validation_batch_loss
+
+    loss_file_name = os.path.join(dir_name, 'loss.npy')
+    numpy.save(loss_file_name, stats, allow_pickle=True)
