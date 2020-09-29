@@ -9,12 +9,12 @@ import os
 from pathlib import Path
 
 if __name__ == '__main__':
-    epochs = 3
+    epochs = 100
     batch_size = 256
     validation_split = .2
     shuffle_dataset = True
     random_seed = 42
-    learning_rate = 1e-3
+    learning_rate = 5e-4
 
     dataset = DeepSignatureDataset(dir_path='./dataset2')
     dataset_size = len(dataset)
