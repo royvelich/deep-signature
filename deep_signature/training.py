@@ -188,8 +188,8 @@ class ModelTrainer:
         train_sampler = SubsetRandomSampler(train_indices)
         validation_sampler = SubsetRandomSampler(validation_indices)
 
-        train_data_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, sampler=train_sampler)
-        validation_data_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, sampler=validation_sampler)
+        train_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler)
+        validation_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=validation_sampler)
 
         ModelTrainer._print_training_configuration('Epochs', epochs)
         ModelTrainer._print_training_configuration('Batch size', batch_size)

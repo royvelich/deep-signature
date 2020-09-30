@@ -236,12 +236,10 @@ class DatasetGenerator:
         return curves
 
     def load_raw_curves(self, dir_path):
-
         print('Loading raw curves:')
-
         base_dir = os.path.normpath(dir_path)
         datasets = []
-        print(f'    - Reading curve files...\r', end="")
+        print('    - Reading curve files...', end="")
         for sub_dir, dirs, files in os.walk(base_dir):
 
             if sub_dir == base_dir:
@@ -264,7 +262,6 @@ class DatasetGenerator:
                         x = current_curve_obj[1]
                         y = current_curve_obj[2]
                         current_curve = numpy.concatenate((x, y), axis=1)
-                        # if (current_curve.shape[0] >= 2000) and (current_curve.shape[0] <= 3000):
                         current_curves.append(current_curve)
                 elif file_ext == '.png':
                     digits_re = re.compile('[0-9]+')
@@ -274,27 +271,22 @@ class DatasetGenerator:
                         indices.append(index)
 
             datasets.append(current_dataset)
+        print('\r    - Reading curve files... Done.')
 
-        print(f'    - Reading curve files... Done.\r', end="")
-        print('\r')
-        print(f'    - Merging datasets...\r', end="")
+        print('    - Merging datasets...', end="")
         curves = []
         for dataset in datasets:
             dataset_curves = dataset['curves']
             dataset_indices = dataset['indices']
             selected_curves = [dataset_curves[i - 1] for i in dataset_indices]
             curves.extend(selected_curves)
+        print('\r    - Merging datasets... Done.')
 
-        print(f'    - Merging datasets... Done.\r', end="")
-
-        print('\r')
-        print(f'    - Shuffling curves...\r', end="")
+        print('    - Shuffling curves...', end="")
         random.shuffle(curves)
-        print(f'    - Shuffling curves... Done.\r', end="")
-        print('\r')
+        print('\r    - Shuffling curves... Done.')
 
         self._raw_curves = curves
-
         raw_curves_count = len(self._raw_curves)
 
         print(f'    - {raw_curves_count} raw curves loaded.')
@@ -306,7 +298,7 @@ class DatasetGenerator:
         for curve_index in range(curves_count):
             for curve_pair_index in range(pairs_per_curve):
                 pair_index = pairs_per_curve * curve_index + curve_pair_index
-                print(f'        - Creating pair #{pair_index}\r', end="")
+                print(f'\r        - Creating pair #{pair_index}', end="")
                 while True:
                     if positive is True:
                         factors = numpy.array([rotation_factor - 1, sampling_factor - 1])
@@ -363,26 +355,22 @@ class DatasetGenerator:
             rotation_factor=rotation_factor,
             sampling_factor=sampling_factor)
 
-        print('\r')
         print('    - Generating negative pairs:')
         negative_pairs = DatasetGenerator._generate_negative_pairs(
             curves_count=curves_count,
             pairs_per_curve=pairs_per_curve,
             rotation_factor=rotation_factor,
             sampling_factor=sampling_factor)
-        print('\r')
 
-        print('    - Interweaving positive and negative pairs...\r', end="")
+        print('    - Interweaving positive and negative pairs...', end="")
         metadata['pairs'] = numpy.empty(shape=[positive_pairs.shape[0] + negative_pairs.shape[0], 7]).astype(int)
         metadata['pairs'][0::2] = positive_pairs
         metadata['pairs'][1::2] = negative_pairs
-        print('    - Interweaving positive and negative pairs... Done.\r', end="")
-        print('\r')
+        print('\r    - Interweaving positive and negative pairs... Done.')
 
-        print('    - Saving metadata...\r', end="")
+        print('    - Saving metadata...', end="")
         numpy.save(os.path.normpath(os.path.join(dir_path, 'metadata.npy')), metadata)
-        print('    - Saving metadata... Done.\r', end="")
-        print('\r')
+        print('\r    - Saving metadata... Done.')
 
     @staticmethod
     def _process_curves(raw_curves, predicate, rotation_factor, sampling_factor, sample_points, limit=None, chunk_size=5):
@@ -401,17 +389,15 @@ class DatasetGenerator:
 
         extended_raw_curves_chunks = DatasetGenerator._chunks(extended_raw_curves, chunk_size)
 
-        print('    - Creating pool...\r', end="")
+        print('    - Creating pool...', end="")
         pool = Pool()
-        print('    - Creating pool... Done.\r', end="")
+        print('\r    - Creating pool... Done.')
 
-        print('\r')
-        print('    - Processing curves...\r', end="")
+        print('    - Processing curves...', end="")
         for i, processed_curves_chunk in enumerate(pool.imap_unordered(DatasetGenerator._process_curves_chunk, extended_raw_curves_chunks, 1)):
-            print('    - Processing curves... {0:.1%} Done.\r'.format((i+1) / len(extended_raw_curves_chunks)), end="")
+            print('\r    - Processing curves... {0:.1%} Done.'.format((i+1) / len(extended_raw_curves_chunks)), end="")
             for curve in processed_curves_chunk:
                 predicate(curve)
-        print('\r')
 
     @staticmethod
     def _process_curves_chunk(extended_raw_curves_chunk):
