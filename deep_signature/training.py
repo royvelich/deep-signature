@@ -237,11 +237,6 @@ class ModelTrainer:
 
         return results
 
-    def evaluate(self, batch_data):
-        self._model.eval()
-        with torch.no_grad():
-            return self._model(batch_data)
-
     def _train_epoch(self, epoch_index, data_loader):
         self._model.train()
         return ModelTrainer._epoch(epoch_index=epoch_index, data_loader=data_loader, process_batch_fn=self._train_batch)

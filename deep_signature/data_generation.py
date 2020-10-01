@@ -139,6 +139,7 @@ class Curve:
         self._sampling_factor = sampling_factor
         self._sample_points = sample_points
         self._curve = Curve._normalize_curve(curve)
+        self._curvature = Curve._calculate_curvature(curve)
         self._curve_configurations = Curve._generate_curve_configurations(
             curve=self._curve,
             rotation_factor=rotation_factor,
@@ -154,6 +155,10 @@ class Curve:
     @property
     def curve(self):
         return self._curve
+
+    @property
+    def curvature(self):
+        return self._curvature
 
     @property
     def curve_configurations(self):
@@ -182,6 +187,15 @@ class Curve:
         curve_center = numpy.mean(curve, axis=0)
         normalized_curve = curve - curve_center
         return normalized_curve
+
+    @staticmethod
+    def _calculate_curvature(curve):
+        dx_dt = numpy.gradient(curve[:, 0])
+        dy_dt = numpy.gradient(curve[:, 1])
+        d2x_dt2 = numpy.gradient(dx_dt)
+        d2y_dt2 = numpy.gradient(dy_dt)
+        k = numpy.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt) ** 1.5
+        return k
 
 
 class DatasetGenerator:

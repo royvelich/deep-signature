@@ -132,7 +132,10 @@ dmypy.json
 .idea/
 
 # MY STUFF
+*.npy
+*.pt
 dataset/
 dataset2/
 dataset3/
+results/
 train_results/
