@@ -194,7 +194,7 @@ class Curve:
         dy_dt = numpy.gradient(curve[:, 1])
         d2x_dt2 = numpy.gradient(dx_dt)
         d2y_dt2 = numpy.gradient(dy_dt)
-        k = numpy.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt) ** 1.5
+        k = (d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt) ** 1.5
         return k
 
 
@@ -249,7 +249,9 @@ class DatasetGenerator:
 
         return curves
 
-    def load_raw_curves(self, dir_path):
+    def load_raw_curves(self, dir_path, shuffle_curves=True):
+        random_seed = 42
+
         print('Loading raw curves:')
         base_dir = os.path.normpath(dir_path)
         datasets = []
@@ -290,15 +292,18 @@ class DatasetGenerator:
         print('    - Merging datasets...', end="")
         curves = []
         for dataset in datasets:
-            dataset_curves = dataset['curves']
-            dataset_indices = dataset['indices']
-            selected_curves = [dataset_curves[i - 1] for i in dataset_indices]
-            curves.extend(selected_curves)
+            if len(dataset['indices']) > 0:
+                dataset_curves = dataset['curves']
+                dataset_indices = dataset['indices']
+                selected_curves = [dataset_curves[i - 1] for i in dataset_indices]
+                curves.extend(selected_curves)
         print('\r    - Merging datasets... Done.')
 
-        print('    - Shuffling curves...', end="")
-        random.shuffle(curves)
-        print('\r    - Shuffling curves... Done.')
+        if shuffle_curves is True:
+            print('    - Shuffling curves...', end="")
+            numpy.random.seed(random_seed)
+            random.shuffle(curves)
+            print('\r    - Shuffling curves... Done.')
 
         self._raw_curves = curves
         raw_curves_count = len(self._raw_curves)
@@ -341,6 +346,7 @@ class DatasetGenerator:
                     pairs[pair_index] = numpy.concatenate((numpy.array([int(positive)]), curve1_indices, curve2_indices)).astype(int)
                     break
 
+        print(f'\r        - Creating pair #{pair_index}')
         return pairs
 
     @staticmethod
@@ -412,6 +418,8 @@ class DatasetGenerator:
             print('\r    - Processing curves... {0:.1%} Done.'.format((i+1) / len(extended_raw_curves_chunks)), end="")
             for curve in processed_curves_chunk:
                 predicate(curve)
+
+        print('\r    - Processing curves... {0:.1%} Done.'.format((i + 1) / len(extended_raw_curves_chunks)))
 
     @staticmethod
     def _process_curves_chunk(extended_raw_curves_chunk):

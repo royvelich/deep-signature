@@ -15,5 +15,3 @@ if __name__ == '__main__':
     loss_fn = ContrastiveLoss(1)
     model_trainer = ModelTrainer(model=model, loss_fn=loss_fn, optimizer=optimizer)
     model_trainer.fit(dataset=dataset, epochs=epochs, batch_size=batch_size, results_base_dir_path='./results')
-
-

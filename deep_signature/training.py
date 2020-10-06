@@ -6,6 +6,7 @@ import os
 import numpy
 from datetime import datetime
 from pathlib import Path
+from timeit import default_timer as timer
 
 class DeepSignatureDataset(Dataset):
     def __init__(self, dir_path):
@@ -31,9 +32,9 @@ class DeepSignatureDataset(Dataset):
         curve1_sample = DeepSignatureDataset._load_curve_sample(dir_path=self._dir_path, curve_descriptor=curve1_descriptor)
         curve2_sample = DeepSignatureDataset._load_curve_sample(dir_path=self._dir_path, curve_descriptor=curve2_descriptor)
 
-        curve1_tensor = torch.unsqueeze(torch.from_numpy(curve1_sample), 0).cuda().float()
-        curve2_tensor = torch.unsqueeze(torch.from_numpy(curve2_sample), 0).cuda().float()
-        labels_tensor = torch.squeeze(torch.from_numpy(numpy.array([label])).cuda().float(), 0)
+        curve1_tensor = torch.unsqueeze(torch.from_numpy(curve1_sample), 0).cuda().double()
+        curve2_tensor = torch.unsqueeze(torch.from_numpy(curve2_sample), 0).cuda().double()
+        labels_tensor = torch.squeeze(torch.from_numpy(numpy.array([label])).cuda().double(), 0)
 
         return {
             'curves': [curve1_tensor, curve2_tensor],
@@ -77,19 +78,22 @@ class DeepSignatureNet(torch.nn.Module):
         return torch.nn.Sequential(
             DeepSignatureNet._create_cnn_block(
                 in_channels=1,
-                out_channels=64,
+                out_channels=16,
                 kernel_size=kernel_size,
-                first_block=True),
+                first_block=True,
+                last_block=False),
             DeepSignatureNet._create_cnn_block(
-                in_channels=64,
-                out_channels=128,
+                in_channels=16,
+                out_channels=16,
                 kernel_size=kernel_size,
-                first_block=False),
+                first_block=False,
+                last_block=False),
             DeepSignatureNet._create_cnn_block(
-                in_channels=128,
-                out_channels=256,
+                in_channels=16,
+                out_channels=16,
                 kernel_size=kernel_size,
-                first_block=False)
+                first_block=False,
+                last_block=True)
         )
 
     @staticmethod
@@ -98,6 +102,8 @@ class DeepSignatureNet(torch.nn.Module):
         for _ in range(layers):
             out_features = int(in_features / 2)
             linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=out_features))
+            linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
+            # linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
             linear_modules.append(torch.nn.ReLU())
             in_features = out_features
 
@@ -106,15 +112,17 @@ class DeepSignatureNet(torch.nn.Module):
         return torch.nn.Sequential(*linear_modules)
 
     @staticmethod
-    def _create_cnn_block(in_channels, out_channels, kernel_size, first_block):
+    def _create_cnn_block(in_channels, out_channels, kernel_size, first_block, last_block):
         padding = int(kernel_size / 2)
-        return torch.nn.Sequential(
+
+        layers = [
             torch.nn.Conv2d(
                 in_channels=in_channels,
                 out_channels=out_channels,
                 kernel_size=(kernel_size, 2) if first_block is True else (kernel_size, 1),
                 padding=(padding, 0),
                 padding_mode='circular'),
+            # torch.nn.Dropout2d(),
             torch.nn.ReLU(),
             torch.nn.Conv2d(
                 in_channels=out_channels,
@@ -122,7 +130,7 @@ class DeepSignatureNet(torch.nn.Module):
                 kernel_size=(kernel_size, 1),
                 padding=(padding, 0),
                 padding_mode='circular'),
-            torch.nn.BatchNorm2d(out_channels),
+            # torch.nn.Dropout2d(),
             torch.nn.ReLU(),
             torch.nn.Conv2d(
                 in_channels=out_channels,
@@ -130,20 +138,16 @@ class DeepSignatureNet(torch.nn.Module):
                 kernel_size=(kernel_size, 1),
                 padding=(padding, 0),
                 padding_mode='circular'),
-            torch.nn.BatchNorm2d(out_channels),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(
-                in_channels=out_channels,
-                out_channels=out_channels,
-                kernel_size=(kernel_size, 1),
-                padding=(padding, 0),
-                padding_mode='circular'),
-            torch.nn.BatchNorm2d(out_channels),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(
-                kernel_size=(3, 1),
-                padding=(1, 0))
-        )
+            # torch.nn.Dropout2d(),
+            torch.nn.ReLU()
+        ]
+
+        if not last_block:
+            layers.append(torch.nn.MaxPool2d(
+                kernel_size=(5, 1),
+                padding=(1, 0)))
+
+        return torch.nn.Sequential(*layers)
 
 
 class ContrastiveLoss(torch.nn.Module):
@@ -172,7 +176,7 @@ class ModelTrainer:
         self._device = device
         self._model.to(device)
 
-    def fit(self, dataset, epochs, batch_size, results_base_dir_path, validation_split=0.2, shuffle_dataset=True):
+    def fit(self, dataset, epochs, batch_size, results_base_dir_path, epoch_handler=None, validation_split=0.2, shuffle_dataset=True):
         random_seed = 42
 
         dataset_size = len(dataset)
@@ -210,10 +214,10 @@ class ModelTrainer:
         for epoch_index in range(epochs):
             print(f'    - Training Epoch #{epoch_index}:')
             train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
-            train_loss_array = numpy.append(train_loss_array, [train_loss])
+            train_loss_array = numpy.append(train_loss_array, [numpy.mean(train_loss)])
             print(f'    - Validation Epoch #{epoch_index}:')
             validation_loss = self._validation_epoch(epoch_index=epoch_index, data_loader=validation_data_loader)
-            validation_loss_array = numpy.append(validation_loss_array, [validation_loss])
+            validation_loss_array = numpy.append(validation_loss_array, [numpy.mean(validation_loss)])
 
             if best_validation_average_loss is None:
                 torch.save(self._model.state_dict(), model_file_path)
@@ -223,6 +227,12 @@ class ModelTrainer:
                 if validation_average_loss < best_validation_average_loss:
                     torch.save(self._model.state_dict(), model_file_path)
                     best_validation_average_loss = validation_average_loss
+
+            lastest_model_path = os.path.normpath(os.path.join(results_dir_path, f'model_{epoch_index}.pt'))
+            torch.save(self._model.state_dict(), lastest_model_path)
+
+            if epoch_handler is not None:
+                epoch_handler(epoch_index)
 
         results = {
             'train_loss_array': train_loss_array,
@@ -267,8 +277,10 @@ class ModelTrainer:
     def _epoch(epoch_index, data_loader, process_batch_fn):
         loss_array = numpy.array([])
         for batch_index, batch_data in enumerate(data_loader, 0):
+            start = timer()
             batch_loss = process_batch_fn(batch_data)
             loss_array = numpy.append(loss_array, [batch_loss])
+            end = timer()
             ModelTrainer._print_batch_loss(
                 epoch_index=epoch_index,
                 batch_index=batch_index,
@@ -277,7 +289,9 @@ class ModelTrainer:
                 fill=' ',
                 align='<',
                 index_width=8,
-                loss_width=25)
+                loss_width=25,
+                batch_count=len(data_loader),
+                batch_duration=end-start)
 
         return loss_array
 
@@ -286,8 +300,8 @@ class ModelTrainer:
         print(f' - {title:{" "}{"<"}{30}} {value:{" "}{">"}{10}}')
 
     @staticmethod
-    def _print_batch_loss(epoch_index, batch_index, batch_loss, average_batch_loss, fill, align, index_width, loss_width):
-        print(f'        - [Epoch {epoch_index:{fill}{align}{index_width}} | Batch {batch_index:{fill}{align}{index_width}}]: Batch Loss = {batch_loss:{fill}{align}{loss_width}}, Avg. Batch Loss = {average_batch_loss:{fill}{align}{loss_width}}')
+    def _print_batch_loss(epoch_index, batch_index, batch_loss, average_batch_loss, fill, align, index_width, loss_width, batch_count, batch_duration):
+        print(f'        - [Epoch {epoch_index:{fill}{align}{index_width}} | Batch {batch_index:{fill}{align}{index_width}} / {batch_count}]: Batch Loss = {batch_loss:{fill}{align}{loss_width}}, Avg. Batch Loss = {average_batch_loss:{fill}{align}{loss_width}}, Batch Duration: {batch_duration} sec.')
 
     @staticmethod
     def _extract_batch_data(batch_data):
