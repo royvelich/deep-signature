@@ -63,7 +63,7 @@ class DeepSignatureNet(torch.nn.Module):
         in_features = numpy.prod(features.shape)
 
         self._regressor = DeepSignatureNet._create_regressor(
-            layers=3,
+            layers=1,
             in_features=in_features,
             sample_points=sample_points)
 
@@ -93,16 +93,16 @@ class DeepSignatureNet(torch.nn.Module):
                 out_channels=16,
                 kernel_size=kernel_size,
                 first_block=False,
-                last_block=True)
+                last_block=True),
         )
 
     @staticmethod
     def _create_regressor(layers, in_features, sample_points):
         linear_modules = []
         for _ in range(layers):
-            out_features = int(in_features / 2)
+            out_features = int(in_features / 1.5)
             linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=out_features))
-            linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
+            # linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
             # linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
             linear_modules.append(torch.nn.ReLU())
             in_features = out_features
@@ -122,7 +122,8 @@ class DeepSignatureNet(torch.nn.Module):
                 kernel_size=(kernel_size, 2) if first_block is True else (kernel_size, 1),
                 padding=(padding, 0),
                 padding_mode='circular'),
-            # torch.nn.Dropout2d(),
+            # torch.nn.BatchNorm2d(out_channels),
+            # torch.nn.Dropout2d(0.2),
             torch.nn.ReLU(),
             torch.nn.Conv2d(
                 in_channels=out_channels,
@@ -131,6 +132,7 @@ class DeepSignatureNet(torch.nn.Module):
                 padding=(padding, 0),
                 padding_mode='circular'),
             # torch.nn.Dropout2d(),
+            # torch.nn.BatchNorm2d(out_channels),
             torch.nn.ReLU(),
             torch.nn.Conv2d(
                 in_channels=out_channels,
@@ -138,13 +140,14 @@ class DeepSignatureNet(torch.nn.Module):
                 kernel_size=(kernel_size, 1),
                 padding=(padding, 0),
                 padding_mode='circular'),
-            # torch.nn.Dropout2d(),
+            # torch.nn.Dropout2d(0.2),
+            # torch.nn.BatchNorm2d(out_channels),
             torch.nn.ReLU()
         ]
 
         if not last_block:
             layers.append(torch.nn.MaxPool2d(
-                kernel_size=(5, 1),
+                kernel_size=(3, 1),
                 padding=(1, 0)))
 
         return torch.nn.Sequential(*layers)
@@ -276,8 +279,8 @@ class ModelTrainer:
     @staticmethod
     def _epoch(epoch_index, data_loader, process_batch_fn):
         loss_array = numpy.array([])
+        start = timer()
         for batch_index, batch_data in enumerate(data_loader, 0):
-            start = timer()
             batch_loss = process_batch_fn(batch_data)
             loss_array = numpy.append(loss_array, [batch_loss])
             end = timer()
@@ -292,6 +295,7 @@ class ModelTrainer:
                 loss_width=25,
                 batch_count=len(data_loader),
                 batch_duration=end-start)
+            start = timer()
 
         return loss_array
 
