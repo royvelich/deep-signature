@@ -441,6 +441,10 @@ class CurveDatasetGenerator:
         self._positive_pairs = positive_pairs
         return negative_pairs, positive_pairs
 
+    def save_dataset(self, dir_path):
+        numpy.save(file=os.path.join(dir_path, 'negative_pairs.npy'), arr=self._negative_pairs)
+        numpy.save(file=os.path.join(dir_path, 'positive_pairs.npy'), arr=self._positive_pairs)
+
     @staticmethod
     def _process_curve_data_generator(curve_data_generators, predicate, limit=None, chunk_size=5):
         if limit is not None:
