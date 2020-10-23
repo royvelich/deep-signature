@@ -87,20 +87,33 @@ def strided_indexing_roll(a, r):
 
 if __name__ == '__main__':
 
-    bla = numpy.array([[1,2,3],[4,5,6],[7,8,9]])
+    # arr1 = numpy.array([1,2,3])
+    # arr2 = numpy.array([4,5,6])
+    # arr3 = numpy.vstack((arr1, arr2))
+    # arr4 = numpy.vstack((arr2, arr3))
+    #
+    # h = 5
 
-    shift = numpy.round(numpy.random.rand(3) * 3).astype(int)
-    # bla2 = numpy.roll(a=bla, axis=(1,1,1), shift=(2,0,1))
-
-    bla2 = strided_indexing_roll(bla, shift)
+    # # momo = numpy.mod(-1, 300)
+    #
+    # arr1 = numpy.array([1,2,3])
+    # arr2 = numpy.array([4,5,6])
+    # arr = numpy.concatenate((arr1, arr2))
+    #
+    # bla = numpy.array([[1,2,3],[4,5,6],[7,8,9]])
+    #
+    # shift = numpy.round(numpy.random.rand(3) * 3).astype(int)
+    # # bla2 = numpy.roll(a=bla, axis=(1,1,1), shift=(2,0,1))
+    #
+    # bla2 = strided_indexing_roll(bla, shift)
 
 
     rotation_factor = 10
     sectioning_factor = 20
     sampling_factor = 4
     multimodality_factor = 20
-    sampling_points_count = 50
-    supporting_points_count = 300
+    sampling_points_count = 400
+    supporting_points_count = 10
 
     curve_dataset_generator = CurveDatasetGenerator()
     curves = curve_dataset_generator.load_curves(file_path="C:/deep-signature-data/curves/curves.npy")

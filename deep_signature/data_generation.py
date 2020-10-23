@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 
 # deep_signature
 from deep_signature import curve_processing
+from deep_signature import curve_sampling
 from deep_signature import discrete_distribution
 
 class CurveSectionConfiguration:
@@ -39,17 +40,39 @@ class CurveSectionConfiguration:
     def reflection(self):
         return self._reflection
 
-    def sample(self, curve, sampling_indices, supporting_points_count):
-        start = self._center_point_index - supporting_points_count
-        stop = self._center_point_index + supporting_points_count + 1
-
-        point_indices = numpy.arange(start, stop)
-        point_indices = numpy.mod(point_indices, curve.shape[0])
-        sampled_point_indices = point_indices[sampling_indices]
-
-        transformed_curve = curve_processing.translate_curve(curve=curve, offset=-curve[self._center_point_index])
-        transformed_curve = curve_processing.transform_curve(curve=transformed_curve, radians=self._radians, reflection=self._reflection)
-        return transformed_curve[sampled_point_indices], transformed_curve
+    # def sample(self, curve, indices_pool, supporting_points_count):
+    #     # start = self._center_point_index - supporting_points_count
+    #     # stop = self._center_point_index + supporting_points_count + 1
+    #
+    #     right_supporting_points_indices = []
+    #     i = self._center_point_index
+    #     while True:
+    #         if len(right_supporting_points_indices) == supporting_points_count + 1:
+    #             break
+    #         i_mod = numpy.mod(i, curve.shape[0])
+    #         if i_mod in sampling_indices:
+    #             right_supporting_points_indices.append(i_mod)
+    #         i += 1
+    #
+    #     left_supporting_points_indices = []
+    #     i = self._center_point_index - 1
+    #     while True:
+    #         if len(left_supporting_points_indices) == supporting_points_count:
+    #             break
+    #         i_mod = numpy.mod(i, curve.shape[0])
+    #         if i_mod in sampling_indices:
+    #             left_supporting_points_indices.append(i_mod)
+    #         i -= 1
+    #
+    #     supporting_points_indices = numpy.sort(numpy.concatenate((left_supporting_points_indices, right_supporting_points_indices)))
+    #
+    #     # point_indices = numpy.arange(start, stop)
+    #     # point_indices = numpy.mod(point_indices, curve.shape[0])
+    #     # sampled_point_indices = point_indices[sampling_indices]
+    #
+    #     transformed_curve = curve_processing.translate_curve(curve=curve, offset=-curve[self._center_point_index])
+    #     transformed_curve = curve_processing.transform_curve(curve=transformed_curve, radians=self._radians, reflection=self._reflection)
+    #     return transformed_curve[supporting_points_indices], transformed_curve, supporting_points_indices
 
 
 class CurveSection:
@@ -76,7 +99,6 @@ class CurveSection:
         for i, pair in enumerate(itertools.combinations(configurations, 2)):
             if i == pairs_count:
                 break
-
             pairs.append(pair)
 
         return pairs
@@ -102,25 +124,34 @@ class CurveSection:
 
 
 class CurveDataGenerator:
-    def __init__(self, curve, rotation_factor, sectioning_factor, sampling_factor, multimodality_factor, sampling_points_count, supporting_points_count):
+    def __init__(self, curve, rotation_factor, sectioning_factor, sampling_factor, multimodality_factor, supporting_points_count, sampling_points_count, sampling_points_ratio=None):
         self._rotation_factor = rotation_factor
         self._sectioning_factor = sectioning_factor
         self._sampling_factor = sampling_factor
         self._multimodality_factor = multimodality_factor
-        self._sampling_points_count = sampling_points_count
         self._supporting_points_count = supporting_points_count
+        self._sampling_points_ratio = sampling_points_ratio
+        self._sampling_points_count = sampling_points_count
+        if sampling_points_ratio is not None:
+            self._sampling_points_count = int(curve.shape[0] * sampling_points_ratio)
+
         self._curve = curve
         self._evolved_curve = curve_processing.evolve_curve(
             curve=curve,
-            evolution_iterations=3,
-            evolution_dt=1e-4,
+            evolution_iterations=2,
+            evolution_dt=1e-12,
             smoothing_window_length=99,
             smoothing_poly_order=2,
             smoothing_iterations=6)
 
         self._curvature = curve_processing.calculate_curvature(curve)
+        # self._curve_sections = CurveDataGenerator._generate_curve_sections(
+        #     curve_points_count=self._sampling_points_count,
+        #     rotation_factor=rotation_factor,
+        #     sectioning_factor=sectioning_factor)
+
         self._curve_sections = CurveDataGenerator._generate_curve_sections(
-            curve_points_count=curve.shape[0],
+            curve_points_count=self._curve.shape[0],
             rotation_factor=rotation_factor,
             sectioning_factor=sectioning_factor)
 
@@ -148,35 +179,119 @@ class CurveDataGenerator:
 
     def generate_negative_pairs(self):
         negative_pairs = []
-        bins = 2*self._supporting_points_count + 1
-        count = self._rotation_factor * self._sectioning_factor * self._sampling_factor
-        dists = discrete_distribution.random_discrete_dist(bins=bins, multimodality=self._multimodality_factor, count=count)
+        # bins = 2*self._supporting_points_count + 1
+        bins = self._curve.shape[0]
+        # count = self._rotation_factor * self._sectioning_factor * self._sampling_factor
+        count = self._sectioning_factor * self._sampling_factor
+        max_density = 1 / self._sampling_points_count
+        dists = discrete_distribution.random_discrete_dist(bins=bins, multimodality=self._multimodality_factor, max_density=max_density, count=count)
         dist_index = 0
         for curve_section in self._curve_sections:
-            for curve_section_configuration in curve_section.curve_section_configurations:
-                for _ in range(self._sampling_factor):
-                    dist = dists[dist_index, :]
-                    sampling_indices = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=self._sampling_points_count)
+            for _ in range(self._sampling_factor):
+                dist = dists[dist_index, :]
+                for curve_section_configuration in curve_section.curve_section_configurations:
+                    indices_pool = discrete_distribution.sample_discrete_dist(
+                        dist=dist,
+                        sampling_points_count=self._sampling_points_count)
 
-                    curve_section_sample, transformed_curve = \
-                        curve_section_configuration.sample(curve=self._curve, sampling_indices=sampling_indices, supporting_points_count=self._supporting_points_count)
+                    # center_point_index = indices_pool[curve_section_configuration.center_point_index]
+                    center_point_index = curve_section_configuration.center_point_index
 
-                    evolved_curve_section_sample, transformed_evolved_curve = \
-                        curve_section_configuration.sample(curve=self._evolved_curve, sampling_indices=sampling_indices, supporting_points_count=self._supporting_points_count)
+                    supporting_points_indices = curve_sampling.sample_supporting_points_indices(
+                        curve=self._curve,
+                        center_point_index=center_point_index,
+                        indices_pool=indices_pool,
+                        supporting_points_count=self._supporting_points_count)
+
+                    transformed_curve = curve_processing.translate_curve(
+                        curve=self._curve,
+                        offset=-self._curve[center_point_index])
+
+                    transformed_curve = curve_processing.transform_curve(
+                        curve=transformed_curve,
+                        radians=curve_section_configuration.radians,
+                        reflection=curve_section_configuration.reflection)
+
+                    transformed_evolved_curve = curve_processing.translate_curve(
+                        curve=self._evolved_curve,
+                        offset=-self._evolved_curve[center_point_index])
+
+                    transformed_evolved_curve = curve_processing.transform_curve(
+                        curve=transformed_evolved_curve,
+                        radians=curve_section_configuration.radians,
+                        reflection=curve_section_configuration.reflection)
 
                     negative_pair = {
-                        "transformed_curve": transformed_curve,
-                        "transformed_evolved_curve": transformed_evolved_curve,
-                        "curve_section_sample": curve_section_sample,
-                        "evolved_curve_section_sample": evolved_curve_section_sample,
+                        "curve": transformed_curve,
+                        "evolved_curve": transformed_evolved_curve,
+                        "supporting_points_indices": supporting_points_indices,
+                        "indices_pool": indices_pool,
                         "dist": dist,
-                        "sampling_indices": sampling_indices
+                        "center_point_index": center_point_index
                     }
 
                     negative_pairs.append(negative_pair)
-                    dist_index = dist_index + 1
-
+                dist_index += 1
         return negative_pairs
+
+    def generate_positive_pairs(self):
+        positive_pairs = []
+        bins = self._curve.shape[0]
+        count = 2 * self._sectioning_factor * self._sampling_factor
+        max_density = 1 / self._sampling_points_count
+        dists = discrete_distribution.random_discrete_dist(bins=bins, multimodality=self._multimodality_factor, max_density=max_density, count=count)
+        dist_index = 0
+        for curve_section in self._curve_sections:
+            for _ in range(self._sampling_factor):
+                dist1 = dists[dist_index, :]
+                dist2 = dists[dist_index+1, :]
+                for curve_section_configuration in curve_section.curve_section_configurations:
+                    indices_pool1 = discrete_distribution.sample_discrete_dist(
+                        dist=dist1,
+                        sampling_points_count=self._sampling_points_count)
+
+                    indices_pool2 = discrete_distribution.sample_discrete_dist(
+                        dist=dist2,
+                        sampling_points_count=self._sampling_points_count)
+
+                    # center_point_index = indices_pool[curve_section_configuration.center_point_index]
+                    center_point_index = curve_section_configuration.center_point_index
+
+                    supporting_points_indices1 = curve_sampling.sample_supporting_points_indices(
+                        curve=self._curve,
+                        center_point_index=center_point_index,
+                        indices_pool=indices_pool1,
+                        supporting_points_count=self._supporting_points_count)
+
+                    supporting_points_indices2 = curve_sampling.sample_supporting_points_indices(
+                        curve=self._curve,
+                        center_point_index=center_point_index,
+                        indices_pool=indices_pool2,
+                        supporting_points_count=self._supporting_points_count)
+
+                    transformed_curve = curve_processing.translate_curve(
+                        curve=self._curve,
+                        offset=-self._curve[center_point_index])
+
+                    transformed_curve = curve_processing.transform_curve(
+                        curve=transformed_curve,
+                        radians=curve_section_configuration.radians,
+                        reflection=curve_section_configuration.reflection)
+
+                    positive_pair = {
+                        "curve": transformed_curve,
+                        "supporting_points_indices1": supporting_points_indices1,
+                        "supporting_points_indices2": supporting_points_indices2,
+                        "indices_pool1": indices_pool1,
+                        "indices_pool2": indices_pool2,
+                        "dist1": dist1,
+                        "dist2": dist2,
+                        "center_point_index": center_point_index
+                    }
+
+                    positive_pairs.append(positive_pair)
+                dist_index += 2
+        return positive_pairs
 
 
     @staticmethod
@@ -197,6 +312,16 @@ class CurveDataGenerator:
 class CurveDatasetGenerator:
     def __init__(self):
         self._curves = []
+        self._negative_pairs = []
+        self._positive_pairs = []
+
+    @property
+    def negative_pairs(self):
+        return self._negative_pairs
+
+    @property
+    def positive_pairs(self):
+        return self._positive_pairs
 
     # def save(self, dir_path, pairs_per_curve, rotation_factor, sampling_factor, sample_points, metadata_only=False, chunk_size=5):
     #
@@ -277,155 +402,93 @@ class CurveDatasetGenerator:
     def save_curves(self, dir_path):
         numpy.save(file=os.path.join(dir_path, 'curves.npy'), arr=self._curves)
 
-    def load_curves(self, file_path):
+    def load_curves(self, file_path, shuffle=True):
         self._curves = numpy.load(file=file_path, allow_pickle=True)
+        if shuffle is True:
+            random.shuffle(self._curves)
         return self._curves
 
-    # def generate_curve_dataset(self, rotation_factor, sectioning_factor, sampling_factor, multimodal_factor, sampling_points_count, supporting_points_count, limit=5, chunk_size=5):
-    #     print('Generating dataset curves:')
-    #
-    #     curves = []
-    #
-    #     def add_curve(curve):
-    #         curves.append(curve)
-    #
-    #     DatasetGenerator._process_curves(
-    #         curves=self._curves,
-    #         predicate=add_curve,
-    #         rotation_factor=rotation_factor,
-    #         sectioning_factor=sectioning_factor,
-    #         sampling_factor=sampling_factor,
-    #         multimodal_factor=multimodal_factor,
-    #         sampling_points_count=sampling_points_count,
-    #         supporting_points_count=supporting_points_count,
-    #         limit=limit,
-    #         chunk_size=chunk_size)
-    #
-    #     return curves
+    def generate_dataset(self, rotation_factor, sectioning_factor, sampling_factor, multimodality_factor, supporting_points_count, sampling_points_count, sampling_points_ratio=None, limit=5, chunk_size=5):
+        print('Generating dataset curves:')
 
-    # @staticmethod
-    # def _generate_pairs(curves_count, pairs_per_curve, rotation_factor, sampling_factor, positive):
-    #     pairs = numpy.empty(shape=[curves_count * pairs_per_curve, 7]).astype(int)
-    #     pairs_keys = {}
-    #     for curve_index in range(curves_count):
-    #         for curve_pair_index in range(pairs_per_curve):
-    #             pair_index = pairs_per_curve * curve_index + curve_pair_index
-    #             print(f'\r        - Creating pair #{pair_index}', end="")
-    #             while True:
-    #                 if positive is True:
-    #                     factors = numpy.array([rotation_factor - 1, sampling_factor - 1])
-    #                     curve1_indices = numpy.concatenate((numpy.array([curve_index]), numpy.round(numpy.random.rand(2) * factors))).astype(int)
-    #                     curve2_indices = numpy.concatenate((numpy.array([curve_index]), numpy.round(numpy.random.rand(2) * factors))).astype(int)
-    #                 else:
-    #                     factors = numpy.array([curves_count - 1, rotation_factor - 1, sampling_factor - 1])
-    #                     curve1_indices = numpy.round(numpy.random.rand(3) * factors).astype(int)
-    #                     curve2_indices = numpy.round(numpy.random.rand(3) * factors).astype(int)
-    #
-    #                 if numpy.all(curve1_indices == curve2_indices):
-    #                     continue
-    #
-    #                 curve1_indices_str = numpy.array2string(curve1_indices, precision=0, separator=',')
-    #                 curve2_indices_str = numpy.array2string(curve2_indices, precision=0, separator=',')
-    #
-    #                 if curve1_indices_str > curve2_indices_str:
-    #                     pair_key = f'{curve1_indices_str}_{curve2_indices_str}'
-    #                 else:
-    #                     pair_key = f'{curve2_indices_str}_{curve1_indices_str}'
-    #
-    #                 if pair_key in pairs_keys:
-    #                     continue
-    #
-    #                 pairs_keys[pair_key] = {}
-    #                 pairs[pair_index] = numpy.concatenate((numpy.array([int(positive)]), curve1_indices, curve2_indices)).astype(int)
-    #                 break
-    #
-    #     print(f'\r        - Creating pair #{pair_index}')
-    #     return pairs
+        positive_pairs = []
+        negative_pairs = []
 
-    # @staticmethod
-    # def _generate_positive_pairs(curves_count, pairs_per_curve, rotation_factor, sampling_factor):
-    #     return DatasetGenerator._generate_pairs(curves_count, pairs_per_curve, rotation_factor, sampling_factor, True)
-    #
-    # @staticmethod
-    # def _generate_negative_pairs(curves_count, pairs_per_curve, rotation_factor, sampling_factor):
-    #     return DatasetGenerator._generate_pairs(curves_count, pairs_per_curve, rotation_factor, sampling_factor, False)
+        def add_curve_pairs(negative_sample_pairs, positive_sample_pairs):
+            negative_pairs.extend(negative_sample_pairs)
+            positive_pairs.extend(positive_sample_pairs)
 
-    # @staticmethod
-    # def _save_dataset_metadata(dir_path, curves_count, pairs_per_curve, rotation_factor, sampling_factor, sample_points):
-    #
-    #     metadata = {
-    #         'curves_count': curves_count,
-    #         'rotation_factor': rotation_factor,
-    #         'sampling_factor': sampling_factor,
-    #         'sample_points': sample_points,
-    #         'pairs': None
-    #     }
-    #
-    #     print('    - Generating positive pairs:')
-    #     positive_pairs = DatasetGenerator._generate_positive_pairs(
-    #         curves_count=curves_count,
-    #         pairs_per_curve=pairs_per_curve,
-    #         rotation_factor=rotation_factor,
-    #         sampling_factor=sampling_factor)
-    #
-    #     print('    - Generating negative pairs:')
-    #     negative_pairs = DatasetGenerator._generate_negative_pairs(
-    #         curves_count=curves_count,
-    #         pairs_per_curve=pairs_per_curve,
-    #         rotation_factor=rotation_factor,
-    #         sampling_factor=sampling_factor)
-    #
-    #     print('    - Interweaving positive and negative pairs...', end="")
-    #     metadata['pairs'] = numpy.empty(shape=[positive_pairs.shape[0] + negative_pairs.shape[0], 7]).astype(int)
-    #     metadata['pairs'][0::2] = positive_pairs
-    #     metadata['pairs'][1::2] = negative_pairs
-    #     print('\r    - Interweaving positive and negative pairs... Done.')
-    #
-    #     print('    - Saving metadata...', end="")
-    #     numpy.save(os.path.normpath(os.path.join(dir_path, 'metadata.npy')), metadata)
-    #     print('\r    - Saving metadata... Done.')
+        curve_data_generators = []
+        for curve in self._curves:
+            curve_data_generator = CurveDataGenerator(
+                curve=curve,
+                rotation_factor=rotation_factor,
+                sectioning_factor=sectioning_factor,
+                sampling_factor=sampling_factor,
+                multimodality_factor=multimodality_factor,
+                supporting_points_count=supporting_points_count,
+                sampling_points_count=sampling_points_count,
+                sampling_points_ratio=sampling_points_ratio)
+            curve_data_generators.append(curve_data_generator)
 
-    # @staticmethod
-    # def _process_curves(raw_curves, predicate, rotation_factor, sampling_factor, sample_points, limit=None, chunk_size=5):
-    #     if limit is not None:
-    #         raw_curves = raw_curves[:limit]
-    #
-    #     extended_raw_curves = []
-    #     for i, curve in enumerate(raw_curves):
-    #         extended_raw_curves.append({
-    #             'curve': curve,
-    #             'curve_id': i,
-    #             'rotation_factor': rotation_factor,
-    #             'sampling_factor': sampling_factor,
-    #             'sample_points': sample_points
-    #         })
-    #
-    #     extended_raw_curves_chunks = DatasetGenerator._chunks(extended_raw_curves, chunk_size)
-    #
-    #     print('    - Creating pool...', end="")
-    #     pool = multiprocessing.Pool()
-    #     print('\r    - Creating pool... Done.')
-    #
-    #     print('    - Processing curves...', end="")
-    #     for i, processed_curves_chunk in enumerate(pool.imap_unordered(DatasetGenerator._process_curves_chunk, extended_raw_curves_chunks, 1)):
-    #         print('\r    - Processing curves... {0:.1%} Done.'.format((i+1) / len(extended_raw_curves_chunks)), end="")
-    #         for curve in processed_curves_chunk:
-    #             predicate(curve)
-    #
-    #     print('\r    - Processing curves... {0:.1%} Done.'.format((i + 1) / len(extended_raw_curves_chunks)))
-    #
-    # @staticmethod
-    # def _process_curves_chunk(extended_raw_curves_chunk):
-    #     generated_curves = []
-    #     for curve in extended_raw_curves_chunk:
-    #         generated_curves.append(CurveDataGenerator(
-    #             curve=curve['curve'],
-    #             curve_id=curve['curve_id'],
-    #             rotation_factor=curve['rotation_factor'],
-    #             sampling_factor=curve['sampling_factor'],
-    #             sample_points=curve['sample_points']))
-    #
-    #     return generated_curves
+        CurveDatasetGenerator._process_curve_data_generator(
+            curve_data_generators=curve_data_generators,
+            predicate=add_curve_pairs,
+            limit=limit,
+            chunk_size=chunk_size)
+
+        self._negative_pairs = negative_pairs
+        self._positive_pairs = positive_pairs
+        return negative_pairs, positive_pairs
+
+    @staticmethod
+    def _process_curve_data_generator(curve_data_generators, predicate, limit=None, chunk_size=5):
+        if limit is not None:
+            curve_data_generators = curve_data_generators[:limit]
+
+        curve_data_generator_chunks = CurveDatasetGenerator._chunks(curve_data_generators, chunk_size)
+
+        print('    - Creating pool...', end="")
+        pool = multiprocessing.Pool()
+        print('\r    - Creating pool... Done.')
+
+        print('    - Processing curve data generators...', end="")
+        for i, processed_curve_data_generator_chunk in enumerate(pool.imap_unordered(CurveDatasetGenerator._process_curve_data_generator_chunk, curve_data_generator_chunks, 1)):
+            negative_sample_pairs = processed_curve_data_generator_chunk["negative_sample_pairs"]
+            positive_sample_pairs = processed_curve_data_generator_chunk["positive_sample_pairs"]
+            predicate(negative_sample_pairs, positive_sample_pairs)
+            print('\r    - Processing curve data generators... {0:.1%} Done.'.format((i+1) / len(curve_data_generator_chunks)), end="")
+
+        print('\r    - Processing curve data generators... {0:.1%} Done.'.format((i+1) / len(curve_data_generator_chunks)))
+
+    @staticmethod
+    def _process_curve_data_generator_chunk(curve_data_generator_chunk):
+        negative_sample_pairs = []
+        positive_sample_pairs = []
+        for curve_data_generator in curve_data_generator_chunk:
+            negative_pairs = curve_data_generator.generate_negative_pairs()
+            positive_pairs = curve_data_generator.generate_positive_pairs()
+
+            for negative_pair in negative_pairs:
+                curve = negative_pair['curve']
+                evolved_curve = negative_pair['evolved_curve']
+                supporting_points_indices = negative_pair['supporting_points_indices']
+                curve_section_sample = curve[supporting_points_indices]
+                evolved_curve_section_sample = evolved_curve[supporting_points_indices]
+                negative_sample_pairs.append([curve_section_sample, evolved_curve_section_sample])
+
+            for positive_pair in positive_pairs:
+                curve = positive_pair['curve']
+                supporting_points_indices1 = positive_pair['supporting_points_indices1']
+                supporting_points_indices2 = positive_pair['supporting_points_indices2']
+                curve_section_sample1 = curve[supporting_points_indices1]
+                curve_section_sample2 = curve[supporting_points_indices2]
+                positive_sample_pairs.append([curve_section_sample1, curve_section_sample2])
+
+        return {
+            "negative_sample_pairs": negative_sample_pairs,
+            "positive_sample_pairs": positive_sample_pairs
+        }
 
     # https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
     @staticmethod

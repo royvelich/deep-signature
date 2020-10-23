@@ -42,7 +42,7 @@ def random_normal_discrete_dist(bins, count=1):
         return view_as_windows(a_ext, (1, n))[numpy.arange(len(r)), (n - r) % n, 0]
 
     truncnorm_loc = 0.5
-    truncnorm_scale = 0.1
+    truncnorm_scale = 0.25
     truncnorm_a = 0
     truncnorm_b = 1
 
@@ -53,7 +53,7 @@ def random_normal_discrete_dist(bins, count=1):
         loc=truncnorm_loc,
         scale=truncnorm_scale)
 
-    scale = truncated_normal.rvs(count) * numpy.sqrt(bins)
+    scale = truncated_normal.rvs(count) * 10 * numpy.sqrt(bins)
     loc = [0] * count
     dist = normal_discrete_dist(bins, loc, scale)
 
@@ -63,22 +63,37 @@ def random_normal_discrete_dist(bins, count=1):
     return strided_indexing_roll(a=dist, r=numpy.round(numpy.random.rand(count) * bins).astype(int))
 
 
-def random_discrete_dist(bins, multimodality, count=1):
-    # Generate "count * multimodality" single modal normal distribution with k bins (when k = "bins")
-    dist = random_normal_discrete_dist(bins=bins, count=count * multimodality)
+def random_discrete_dist(bins, multimodality, max_density, count=1):
+    valid_dists = None
+    while True:
+        # Generate "count * multimodality" single modal normal distribution with k bins (when k = "bins")
+        dists = random_normal_discrete_dist(bins=bins, count=count * multimodality)
 
-    # Reshape the tensor so every k single modal distributions will be packed together (when k = "multimodality")
-    dist = dist.reshape(count, multimodality, bins)
+        # Reshape the tensor so every k single modal distributions will be packed together (when k = "multimodality")
+        dists = dists.reshape(count, multimodality, bins)
 
-    # Sum each pack of k distributions into a single multimodal distribution (when k = "multimodality")
-    dist = dist.sum(axis=1)
+        # Sum each pack of k distributions into a single multimodal distribution (when k = "multimodality")
+        dists = dists.sum(axis=1)
 
-    # Normalize each multimodal distribution by dividing its entries by its sum
-    dist_sum = dist.sum(axis=1)
-    dist = dist / dist_sum[:, None]
+        # Normalize each multimodal distribution by dividing its entries by its sum
+        dist_sum = dists.sum(axis=1)
+        dists = dists / dist_sum[:, None]
+
+        dists_max_density = numpy.max(dists, axis=1)
+        dists_validity_flags = dists_max_density <= max_density
+        current_valid_dists = dists[numpy.where(dists_validity_flags == True)]
+        if valid_dists is None:
+            valid_dists = current_valid_dists
+        else:
+            valid_dists = numpy.vstack((valid_dists, current_valid_dists))
+
+        if valid_dists.shape[0] >= count:
+            break
+
+    valid_dists = valid_dists[range(count)]
 
     # Return result
-    return dist
+    return valid_dists
 
 
 def sample_discrete_dist(dist, sampling_points_count):
@@ -86,12 +101,16 @@ def sample_discrete_dist(dist, sampling_points_count):
     accumulated_density = 0
     sampled_indices = []
     for i in range(len(dist)):
-        accumulated_density = accumulated_density + dist[i]
-        if accumulated_density >= density_threshold:
+        if accumulated_density >= (density_threshold * len(sampled_indices)):
             sampled_indices.append(i)
-            accumulated_density = accumulated_density - density_threshold
 
-    if numpy.abs(density_threshold - accumulated_density) < 1e-10:
-        sampled_indices.append(i)
+        accumulated_density = accumulated_density + dist[i]
+
+        # if accumulated_density >= density_threshold:
+        #     sampled_indices.append(i)
+        #     accumulated_density = accumulated_density - density_threshold
+
+    # if numpy.abs(density_threshold - accumulated_density) < 1e-10:
+    #     sampled_indices.append(i)
 
     return sampled_indices
