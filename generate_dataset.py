@@ -11,7 +11,7 @@ if __name__ == '__main__':
         sampling_points_ratio=0.15,
         sampling_points_count=None,
         supporting_points_count=10,
-        limit=1000,
+        limit=3500,
         chunk_size=2)
 
     curve_dataset_generator.save_dataset(dir_path="C:/deep-signature-data/datasets/dataset1/")

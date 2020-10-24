@@ -297,7 +297,8 @@ class CurveDataGenerator:
     @staticmethod
     def _generate_curve_sections(curve_points_count, rotation_factor, sectioning_factor):
         curve_sections = []
-        indices = numpy.random.randint(low=curve_points_count, size=sectioning_factor)
+        indices = numpy.linspace(start=0, stop=curve_points_count, num=sectioning_factor, endpoint=False, dtype=int)
+        # indices = numpy.random.randint(low=curve_points_count, size=sectioning_factor)
         for center_point_index in indices:
             curve_section = CurveSection(
                 center_point_index=center_point_index,

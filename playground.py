@@ -87,6 +87,9 @@ def strided_indexing_roll(a, r):
 
 if __name__ == '__main__':
 
+    # bla = numpy.linspace(start=0, stop=40, num=30, endpoint=False, dtype=int)
+    # h = 5
+
     # arr1 = numpy.array([1,2,3])
     # arr2 = numpy.array([4,5,6])
     # arr3 = numpy.vstack((arr1, arr2))
