@@ -40,40 +40,6 @@ class CurveSectionConfiguration:
     def reflection(self):
         return self._reflection
 
-    # def sample(self, curve, indices_pool, supporting_points_count):
-    #     # start = self._center_point_index - supporting_points_count
-    #     # stop = self._center_point_index + supporting_points_count + 1
-    #
-    #     right_supporting_points_indices = []
-    #     i = self._center_point_index
-    #     while True:
-    #         if len(right_supporting_points_indices) == supporting_points_count + 1:
-    #             break
-    #         i_mod = numpy.mod(i, curve.shape[0])
-    #         if i_mod in sampling_indices:
-    #             right_supporting_points_indices.append(i_mod)
-    #         i += 1
-    #
-    #     left_supporting_points_indices = []
-    #     i = self._center_point_index - 1
-    #     while True:
-    #         if len(left_supporting_points_indices) == supporting_points_count:
-    #             break
-    #         i_mod = numpy.mod(i, curve.shape[0])
-    #         if i_mod in sampling_indices:
-    #             left_supporting_points_indices.append(i_mod)
-    #         i -= 1
-    #
-    #     supporting_points_indices = numpy.sort(numpy.concatenate((left_supporting_points_indices, right_supporting_points_indices)))
-    #
-    #     # point_indices = numpy.arange(start, stop)
-    #     # point_indices = numpy.mod(point_indices, curve.shape[0])
-    #     # sampled_point_indices = point_indices[sampling_indices]
-    #
-    #     transformed_curve = curve_processing.translate_curve(curve=curve, offset=-curve[self._center_point_index])
-    #     transformed_curve = curve_processing.transform_curve(curve=transformed_curve, radians=self._radians, reflection=self._reflection)
-    #     return transformed_curve[supporting_points_indices], transformed_curve, supporting_points_indices
-
 
 class CurveSection:
     def __init__(self, center_point_index, rotation_factor, apply_reflections=False):
@@ -124,16 +90,21 @@ class CurveSection:
 
 
 class CurveDataGenerator:
-    def __init__(self, curve, rotation_factor, sectioning_factor, sampling_factor, multimodality_factor, supporting_points_count, sampling_points_count, sampling_points_ratio=None):
+    def __init__(self, curve, rotation_factor, sampling_factor, multimodality_factor, supporting_points_count, sampling_points_count, sectioning_points_count, sampling_points_ratio=None, sectioning_points_ratio=None):
         self._rotation_factor = rotation_factor
-        self._sectioning_factor = sectioning_factor
         self._sampling_factor = sampling_factor
         self._multimodality_factor = multimodality_factor
         self._supporting_points_count = supporting_points_count
         self._sampling_points_ratio = sampling_points_ratio
         self._sampling_points_count = sampling_points_count
+        self._sectioning_points_ratio = sectioning_points_ratio
+        self._sectioning_points_count = sectioning_points_count
+
         if sampling_points_ratio is not None:
             self._sampling_points_count = int(curve.shape[0] * sampling_points_ratio)
+
+        if sectioning_points_ratio is not None:
+            self._sectioning_points_count = int(self._sampling_points_count * sectioning_points_ratio)
 
         self._curve = curve
         self._evolved_curve = curve_processing.evolve_curve(
@@ -153,13 +124,7 @@ class CurveDataGenerator:
         self._curve_sections = CurveDataGenerator._generate_curve_sections(
             curve_points_count=self._curve.shape[0],
             rotation_factor=rotation_factor,
-            sectioning_factor=sectioning_factor)
-
-    # def save(self, dir_path):
-    #     curve_dir_path = os.path.normpath(os.path.join(dir_path, str(self._curve_id)))
-    #     os.mkdir(curve_dir_path)
-    #     for curve_configuration in self._curve_configurations:
-    #         curve_configuration.save(curve_dir_path)
+            sectioning_points_count=self._sectioning_points_count)
 
     @property
     def curve(self):
@@ -182,7 +147,7 @@ class CurveDataGenerator:
         # bins = 2*self._supporting_points_count + 1
         bins = self._curve.shape[0]
         # count = self._rotation_factor * self._sectioning_factor * self._sampling_factor
-        count = self._sectioning_factor * self._sampling_factor
+        count = self._sectioning_points_count * self._sampling_factor
         max_density = 1 / self._sampling_points_count
         dists = discrete_distribution.random_discrete_dist(bins=bins, multimodality=self._multimodality_factor, max_density=max_density, count=count)
         dist_index = 0
@@ -237,7 +202,7 @@ class CurveDataGenerator:
     def generate_positive_pairs(self):
         positive_pairs = []
         bins = self._curve.shape[0]
-        count = 2 * self._sectioning_factor * self._sampling_factor
+        count = 2 * self._sectioning_points_count * self._sampling_factor
         max_density = 1 / self._sampling_points_count
         dists = discrete_distribution.random_discrete_dist(bins=bins, multimodality=self._multimodality_factor, max_density=max_density, count=count)
         dist_index = 0
@@ -295,9 +260,9 @@ class CurveDataGenerator:
 
 
     @staticmethod
-    def _generate_curve_sections(curve_points_count, rotation_factor, sectioning_factor):
+    def _generate_curve_sections(curve_points_count, rotation_factor, sectioning_points_count):
         curve_sections = []
-        indices = numpy.linspace(start=0, stop=curve_points_count, num=sectioning_factor, endpoint=False, dtype=int)
+        indices = numpy.linspace(start=0, stop=curve_points_count, num=sectioning_points_count, endpoint=False, dtype=int)
         # indices = numpy.random.randint(low=curve_points_count, size=sectioning_factor)
         for center_point_index in indices:
             curve_section = CurveSection(
@@ -323,33 +288,6 @@ class CurveDatasetGenerator:
     @property
     def positive_pairs(self):
         return self._positive_pairs
-
-    # def save(self, dir_path, pairs_per_curve, rotation_factor, sampling_factor, sample_points, metadata_only=False, chunk_size=5):
-    #
-    #     if metadata_only is False:
-    #         print('Saving dataset curves:')
-    #
-    #         def save_curve(curve):
-    #             curve.save(dir_path=dir_path)
-    #
-    #         DatasetGenerator._process_curves(
-    #             raw_curves=self._raw_curves,
-    #             predicate=save_curve,
-    #             rotation_factor=rotation_factor,
-    #             sampling_factor=sampling_factor,
-    #             sample_points=sample_points,
-    #             limit=None,
-    #             chunk_size=chunk_size)
-    #
-    #     print('Saving dataset metadata:')
-    #
-    #     DatasetGenerator._save_dataset_metadata(
-    #         dir_path=dir_path,
-    #         curves_count=len(self._raw_curves),
-    #         pairs_per_curve=pairs_per_curve,
-    #         rotation_factor=rotation_factor,
-    #         sampling_factor=sampling_factor,
-    #         sample_points=sample_points)
 
     def generate_curves(self, dir_path, plot_curves=False):
         print('Generating curves:')
@@ -409,7 +347,7 @@ class CurveDatasetGenerator:
             random.shuffle(self._curves)
         return self._curves
 
-    def generate_dataset(self, rotation_factor, sectioning_factor, sampling_factor, multimodality_factor, supporting_points_count, sampling_points_count, sampling_points_ratio=None, limit=5, chunk_size=5):
+    def generate_dataset(self, rotation_factor, sampling_factor, multimodality_factor, supporting_points_count, sampling_points_count, sectioning_points_count, sampling_points_ratio=None, sectioning_points_ratio=None, limit=5, chunk_size=5):
         print('Generating dataset curves:')
 
         positive_pairs = []
@@ -424,12 +362,13 @@ class CurveDatasetGenerator:
             curve_data_generator = CurveDataGenerator(
                 curve=curve,
                 rotation_factor=rotation_factor,
-                sectioning_factor=sectioning_factor,
                 sampling_factor=sampling_factor,
                 multimodality_factor=multimodality_factor,
                 supporting_points_count=supporting_points_count,
                 sampling_points_count=sampling_points_count,
-                sampling_points_ratio=sampling_points_ratio)
+                sampling_points_ratio=sampling_points_ratio,
+                sectioning_points_count=sectioning_points_count,
+                sectioning_points_ratio=sectioning_points_ratio)
             curve_data_generators.append(curve_data_generator)
 
         CurveDatasetGenerator._process_curve_data_generator(
