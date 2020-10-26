@@ -7,47 +7,49 @@ import numpy
 from datetime import datetime
 from pathlib import Path
 from timeit import default_timer as timer
+import random
+
 
 class DeepSignatureDataset(Dataset):
-    def __init__(self, dir_path):
-        self._dir_path = dir_path
-        self._metadata = numpy.load(file=os.path.normpath(os.path.join(dir_path, 'metadata.npy')), allow_pickle=True)
-        self._metadata = self._metadata.item()
-        self._pairs = self._metadata['pairs']
+    def __init__(self):
+        self._pairs = None
+        self._labels = None
 
-    @property
-    def sample_points(self):
-        return self._metadata['sample_points']
+    def load_dataset(self, dir_path):
+        negative_pairs = numpy.load(file=os.path.normpath(os.path.join(dir_path, 'negative_pairs.npy')), allow_pickle=True)
+        positive_pairs = numpy.load(file=os.path.normpath(os.path.join(dir_path, 'positive_pairs.npy')), allow_pickle=True)
+        pairs_count = negative_pairs.shape[0]
+        full_pairs_count = 2 * pairs_count
+
+        random.shuffle(negative_pairs)
+        random.shuffle(positive_pairs)
+        self._pairs = numpy.empty((full_pairs_count, negative_pairs.shape[1], negative_pairs.shape[2], negative_pairs.shape[3]))
+        self._pairs[::2, :] = negative_pairs
+        self._pairs[1::2, :] = positive_pairs
+        del negative_pairs
+        del positive_pairs
+
+        negaitve_labels = numpy.zeros(pairs_count)
+        positive_labels = numpy.ones(pairs_count)
+        self._labels = numpy.empty(full_pairs_count)
+        self._labels[::2] = negaitve_labels
+        self._labels[1::2] = positive_labels
 
     def __len__(self):
-        return self._pairs.shape[0]
+        return self._labels.shape[0]
 
     def __getitem__(self, idx):
-        pair = self._pairs[idx]
+        curves = torch.from_numpy(self._pairs[idx, :]).cuda().double()
+        label = torch.from_numpy(numpy.array([self._labels[idx]])).cuda().double()
 
-        label = pair[0]
-        curve1_descriptor = pair[1:4]
-        curve2_descriptor = pair[4:8]
-
-        curve1_sample = DeepSignatureDataset._load_curve_sample(dir_path=self._dir_path, curve_descriptor=curve1_descriptor)
-        curve2_sample = DeepSignatureDataset._load_curve_sample(dir_path=self._dir_path, curve_descriptor=curve2_descriptor)
-
-        curve1_tensor = torch.unsqueeze(torch.from_numpy(curve1_sample), 0).cuda().double()
-        curve2_tensor = torch.unsqueeze(torch.from_numpy(curve2_sample), 0).cuda().double()
-        labels_tensor = torch.squeeze(torch.from_numpy(numpy.array([label])).cuda().double(), 0)
+        first_curve = torch.unsqueeze(curves[0, :, :], dim=0).cuda().double()
+        second_curve = torch.unsqueeze(curves[1, :, :], dim=0).cuda().double()
 
         return {
-            'curves': [curve1_tensor, curve2_tensor],
-            'labels': labels_tensor
+            'curves_channel1': first_curve,
+            'curves_channel2': second_curve,
+            'labels': label
         }
-
-    @staticmethod
-    def _build_curve_path(dir_path, curve_descriptor):
-        return os.path.normpath(os.path.join(dir_path, f'{curve_descriptor[0]}/{curve_descriptor[1]}/{curve_descriptor[2]}', 'sample.npy'))
-
-    @staticmethod
-    def _load_curve_sample(dir_path, curve_descriptor):
-        return numpy.load(file=DeepSignatureDataset._build_curve_path(dir_path, curve_descriptor), allow_pickle=True)
 
 
 class DeepSignatureNet(torch.nn.Module):
@@ -62,10 +64,7 @@ class DeepSignatureNet(torch.nn.Module):
         features = self._feature_extractor(dim_test)
         in_features = numpy.prod(features.shape)
 
-        self._regressor = DeepSignatureNet._create_regressor(
-            layers=1,
-            in_features=in_features,
-            sample_points=sample_points)
+        self._regressor = DeepSignatureNet._create_regressor(layers=8, in_features=in_features)
 
     def forward(self, x):
         features = self._feature_extractor(x)
@@ -78,37 +77,32 @@ class DeepSignatureNet(torch.nn.Module):
         return torch.nn.Sequential(
             DeepSignatureNet._create_cnn_block(
                 in_channels=1,
-                out_channels=16,
+                out_channels=8,
                 kernel_size=kernel_size,
                 first_block=True,
                 last_block=False),
             DeepSignatureNet._create_cnn_block(
-                in_channels=16,
-                out_channels=16,
+                in_channels=8,
+                out_channels=8,
                 kernel_size=kernel_size,
                 first_block=False,
-                last_block=False),
-            DeepSignatureNet._create_cnn_block(
-                in_channels=16,
-                out_channels=16,
-                kernel_size=kernel_size,
-                first_block=False,
-                last_block=True),
+                last_block=True)
+            # DeepSignatureNet._create_cnn_block(
+            #     in_channels=8,
+            #     out_channels=8,
+            #     kernel_size=kernel_size,
+            #     first_block=False,
+            #     last_block=True),
         )
 
     @staticmethod
-    def _create_regressor(layers, in_features, sample_points):
+    def _create_regressor(layers, in_features):
         linear_modules = []
         for _ in range(layers):
-            out_features = int(in_features / 1.5)
-            linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=out_features))
-            # linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
-            # linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
+            linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=in_features))
             linear_modules.append(torch.nn.ReLU())
-            in_features = out_features
 
-        linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=sample_points))
-
+        linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
         return torch.nn.Sequential(*linear_modules)
 
     @staticmethod
@@ -121,7 +115,7 @@ class DeepSignatureNet(torch.nn.Module):
                 out_channels=out_channels,
                 kernel_size=(kernel_size, 2) if first_block is True else (kernel_size, 1),
                 padding=(padding, 0),
-                padding_mode='circular'),
+                padding_mode='zeros'),
             # torch.nn.BatchNorm2d(out_channels),
             # torch.nn.Dropout2d(0.2),
             torch.nn.ReLU(),
@@ -130,7 +124,7 @@ class DeepSignatureNet(torch.nn.Module):
                 out_channels=out_channels,
                 kernel_size=(kernel_size, 1),
                 padding=(padding, 0),
-                padding_mode='circular'),
+                padding_mode='zeros'),
             # torch.nn.Dropout2d(),
             # torch.nn.BatchNorm2d(out_channels),
             torch.nn.ReLU(),
@@ -139,7 +133,7 @@ class DeepSignatureNet(torch.nn.Module):
                 out_channels=out_channels,
                 kernel_size=(kernel_size, 1),
                 padding=(padding, 0),
-                padding_mode='circular'),
+                padding_mode='zeros'),
             # torch.nn.Dropout2d(0.2),
             # torch.nn.BatchNorm2d(out_channels),
             torch.nn.ReLU()
@@ -309,4 +303,4 @@ class ModelTrainer:
 
     @staticmethod
     def _extract_batch_data(batch_data):
-        return batch_data['curves'][0], batch_data['curves'][1], batch_data['labels']
+        return batch_data['curves_channel1'], batch_data['curves_channel1'], batch_data['labels']

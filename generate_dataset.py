@@ -5,15 +5,15 @@ if __name__ == '__main__':
     curves = curve_dataset_generator.load_curves(file_path="C:/deep-signature-data/curves/curves.npy")
     negative_pairs, positive_pairs = curve_dataset_generator.generate_dataset(
         rotation_factor=10,
-        sampling_factor=10,
+        sampling_factor=12,
         multimodality_factor=15,
         sampling_points_ratio=0.15,
         sampling_points_count=None,
-        supporting_points_count=10,
+        supporting_points_count=6,
         sectioning_points_count=None,
-        sectioning_points_ratio=0.2,
-        limit=3500,
+        sectioning_points_ratio=0.1,
+        limit=2000,
         chunk_size=2)
 
-    curve_dataset_generator.save_dataset(dir_path="C:/deep-signature-data/datasets/dataset1/")
+    # curve_dataset_generator.save_dataset(dir_path="C:/deep-signature-data/datasets/dataset2/")
 

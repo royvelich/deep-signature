@@ -10,6 +10,7 @@ import matplotlib.collections as mcoll
 from deep_signature.data_generation import CurveDatasetGenerator
 from deep_signature.data_generation import CurveDataGenerator
 from skimage.util.shape import view_as_windows
+import os
 
 
 # https://stackoverflow.com/questions/36074455/python-matplotlib-with-a-line-color-gradient-and-colorbar
@@ -86,6 +87,22 @@ def strided_indexing_roll(a, r):
 
 
 if __name__ == '__main__':
+
+    negative_pairs = numpy.load(file=os.path.normpath(os.path.join("C:/deep-signature-data/datasets/dataset2/", "negative_pairs.npy")), allow_pickle=True)
+    positive_pairs = numpy.load(file=os.path.normpath(os.path.join("C:/deep-signature-data/datasets/dataset2/", "positive_pairs.npy")), allow_pickle=True)
+
+    bla = numpy.empty((negative_pairs.shape[0] + positive_pairs.shape[0], negative_pairs.shape[1], negative_pairs.shape[2], negative_pairs.shape[3]))
+
+    bla[::2, :] = negative_pairs
+
+    bla[1::2, :] = positive_pairs
+
+    del negative_pairs
+    del positive_pairs
+
+    numpy.random.shuffle(bla)
+
+    h = 5
 
     # bla = numpy.linspace(start=0, stop=40, num=30, endpoint=False, dtype=int)
     # h = 5

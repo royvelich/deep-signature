@@ -9,8 +9,10 @@ if __name__ == '__main__':
     batch_size = 256
     learning_rate = 5e-4
 
-    dataset = DeepSignatureDataset(dir_path='./dataset2')
-    model = DeepSignatureNet(sample_points=dataset.sample_points).cuda()
+    torch.set_default_dtype(torch.float64)
+    dataset = DeepSignatureDataset()
+    dataset.load_dataset(dir_path='C:/deep-signature-data/datasets/dataset2')
+    model = DeepSignatureNet(sample_points=13).cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     loss_fn = ContrastiveLoss(1)
     model_trainer = ModelTrainer(model=model, loss_fn=loss_fn, optimizer=optimizer)
