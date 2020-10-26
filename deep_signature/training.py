@@ -303,4 +303,4 @@ class ModelTrainer:
 
     @staticmethod
     def _extract_batch_data(batch_data):
-        return batch_data['curves_channel1'], batch_data['curves_channel1'], batch_data['labels']
+        return batch_data['curves_channel1'], batch_data['curves_channel2'], batch_data['labels']
