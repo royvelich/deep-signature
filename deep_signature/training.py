@@ -57,14 +57,14 @@ class DeepSignatureNet(torch.nn.Module):
         super(DeepSignatureNet, self).__init__()
 
         self._feature_extractor = DeepSignatureNet._create_feature_extractor(
-            kernel_size=5)
+            kernel_size=3)
 
         dim_test = torch.unsqueeze(torch.unsqueeze(torch.rand(sample_points, 2), 0), 0)
 
         features = self._feature_extractor(dim_test)
         in_features = numpy.prod(features.shape)
 
-        self._regressor = DeepSignatureNet._create_regressor(layers=8, in_features=in_features)
+        self._regressor = DeepSignatureNet._create_regressor(layers=4, in_features=in_features)
 
     def forward(self, x):
         features = self._feature_extractor(x)
@@ -80,27 +80,36 @@ class DeepSignatureNet(torch.nn.Module):
                 out_channels=8,
                 kernel_size=kernel_size,
                 first_block=True,
-                last_block=False),
-            DeepSignatureNet._create_cnn_block(
-                in_channels=8,
-                out_channels=8,
-                kernel_size=kernel_size,
-                first_block=False,
-                last_block=True)
+                last_block=True),
             # DeepSignatureNet._create_cnn_block(
             #     in_channels=8,
             #     out_channels=8,
             #     kernel_size=kernel_size,
             #     first_block=False,
-            #     last_block=True),
+            #     last_block=False),
+            # DeepSignatureNet._create_cnn_block(
+            #     in_channels=8,
+            #     out_channels=8,
+            #     kernel_size=kernel_size,
+            #     first_block=False,
+            #     last_block=False),
+            # DeepSignatureNet._create_cnn_block(
+            #     in_channels=8,
+            #     out_channels=8,
+            #     kernel_size=kernel_size,
+            #     first_block=False,
+            #     last_block=True)
         )
 
     @staticmethod
     def _create_regressor(layers, in_features):
         linear_modules = []
         for _ in range(layers):
-            linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=in_features))
+            out_features = int(0.8 * in_features)
+            linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=out_features))
+            # linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
             linear_modules.append(torch.nn.ReLU())
+            in_features = out_features
 
         linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
         return torch.nn.Sequential(*linear_modules)
@@ -268,7 +277,7 @@ class ModelTrainer:
         x1, x2, labels = ModelTrainer._extract_batch_data(batch_data)
         out1 = self._model(x1)
         out2 = self._model(x2)
-        return self._loss_fn(out1, out2, labels)
+        return self._loss_fn(out1, out2, torch.squeeze(labels))
 
     @staticmethod
     def _epoch(epoch_index, data_loader, process_batch_fn):
