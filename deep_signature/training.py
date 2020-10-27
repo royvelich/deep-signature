@@ -64,7 +64,7 @@ class DeepSignatureNet(torch.nn.Module):
         features = self._feature_extractor(dim_test)
         in_features = numpy.prod(features.shape)
 
-        self._regressor = DeepSignatureNet._create_regressor(layers=4, in_features=in_features)
+        self._regressor = DeepSignatureNet._create_regressor(layers=8, in_features=in_features)
 
     def forward(self, x):
         features = self._feature_extractor(x)
@@ -77,10 +77,22 @@ class DeepSignatureNet(torch.nn.Module):
         return torch.nn.Sequential(
             DeepSignatureNet._create_cnn_block(
                 in_channels=1,
-                out_channels=8,
+                out_channels=16,
                 kernel_size=kernel_size,
                 first_block=True,
                 last_block=True),
+            # DeepSignatureNet._create_cnn_block(
+            #     in_channels=16,
+            #     out_channels=8,
+            #     kernel_size=kernel_size,
+            #     first_block=False,
+            #     last_block=False),
+            # DeepSignatureNet._create_cnn_block(
+            #     in_channels=8,
+            #     out_channels=4,
+            #     kernel_size=kernel_size,
+            #     first_block=False,
+            #     last_block=False)
             # DeepSignatureNet._create_cnn_block(
             #     in_channels=8,
             #     out_channels=8,
@@ -148,10 +160,10 @@ class DeepSignatureNet(torch.nn.Module):
             torch.nn.ReLU()
         ]
 
-        if not last_block:
-            layers.append(torch.nn.MaxPool2d(
-                kernel_size=(3, 1),
-                padding=(1, 0)))
+        # if not last_block:
+        #     layers.append(torch.nn.MaxPool2d(
+        #         kernel_size=(3, 1),
+        #         padding=(1, 0)))
 
         return torch.nn.Sequential(*layers)
 
