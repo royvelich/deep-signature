@@ -5,8 +5,8 @@ from deep_signature.training import ContrastiveLoss
 from deep_signature.training import ModelTrainer
 
 if __name__ == '__main__':
-    epochs = 30
-    batch_size = 64
+    epochs = 50
+    batch_size = 1024
     learning_rate = 1e-4
 
     torch.set_default_dtype(torch.float64)

@@ -85,6 +85,12 @@ def evolve_curve(curve, evolution_iterations, evolution_dt, smoothing_window_len
     return evolved_curve
 
 
+def normalize_curve(curve):
+    center_of_mass = numpy.mean(curve, axis=0)
+    normalized_curve = curve - center_of_mass
+    return normalized_curve
+
+
 def translate_curve(curve, offset):
     translated_curve = curve + offset
     return translated_curve

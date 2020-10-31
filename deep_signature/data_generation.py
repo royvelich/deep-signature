@@ -22,6 +22,7 @@ from deep_signature import curve_processing
 from deep_signature import curve_sampling
 from deep_signature import discrete_distribution
 
+
 class CurveSectionConfiguration:
     def __init__(self, center_point_index, radians, reflection):
         self._center_point_index = center_point_index
@@ -100,22 +101,23 @@ class CurveDataGenerator:
         self._sectioning_points_ratio = sectioning_points_ratio
         self._sectioning_points_count = sectioning_points_count
 
+        self._curve = curve_processing.normalize_curve(curve)
+
         if sampling_points_ratio is not None:
-            self._sampling_points_count = int(curve.shape[0] * sampling_points_ratio)
+            self._sampling_points_count = int(self._curve.shape[0] * sampling_points_ratio)
 
         if sectioning_points_ratio is not None:
             self._sectioning_points_count = int(self._sampling_points_count * sectioning_points_ratio)
 
-        self._curve = curve
         self._evolved_curve = curve_processing.evolve_curve(
-            curve=curve,
+            curve=self._curve,
             evolution_iterations=2,
             evolution_dt=1e-12,
             smoothing_window_length=99,
             smoothing_poly_order=2,
             smoothing_iterations=6)
 
-        self._curvature = curve_processing.calculate_curvature(curve)
+        self._curvature = curve_processing.calculate_curvature(self._curve)
         # self._curve_sections = CurveDataGenerator._generate_curve_sections(
         #     curve_points_count=self._sampling_points_count,
         #     rotation_factor=rotation_factor,

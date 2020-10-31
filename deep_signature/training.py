@@ -64,7 +64,7 @@ class DeepSignatureNet(torch.nn.Module):
         features = self._feature_extractor(dim_test)
         in_features = numpy.prod(features.shape)
 
-        self._regressor = DeepSignatureNet._create_regressor(layers=8, in_features=in_features)
+        self._regressor = DeepSignatureNet._create_regressor(layers=3, in_features=in_features)
 
     def forward(self, x):
         features = self._feature_extractor(x)
@@ -77,16 +77,22 @@ class DeepSignatureNet(torch.nn.Module):
         return torch.nn.Sequential(
             DeepSignatureNet._create_cnn_block(
                 in_channels=1,
-                out_channels=16,
+                out_channels=64,
                 kernel_size=kernel_size,
                 first_block=True,
-                last_block=True),
-            # DeepSignatureNet._create_cnn_block(
-            #     in_channels=16,
-            #     out_channels=8,
-            #     kernel_size=kernel_size,
-            #     first_block=False,
-            #     last_block=False),
+                last_block=False),
+            DeepSignatureNet._create_cnn_block(
+                in_channels=64,
+                out_channels=32,
+                kernel_size=kernel_size,
+                first_block=False,
+                last_block=False),
+            DeepSignatureNet._create_cnn_block(
+                in_channels=32,
+                out_channels=16,
+                kernel_size=kernel_size,
+                first_block=False,
+                last_block=True)
             # DeepSignatureNet._create_cnn_block(
             #     in_channels=8,
             #     out_channels=4,
@@ -117,10 +123,19 @@ class DeepSignatureNet(torch.nn.Module):
     def _create_regressor(layers, in_features):
         linear_modules = []
         for _ in range(layers):
-            out_features = int(0.8 * in_features)
+            out_features = int(0.5 * in_features)
             linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=out_features))
+            # linear_modules.append(torch.nn.BatchNorm1d(out_features))
+            linear_modules.append(torch.nn.GELU())
+
             # linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
-            linear_modules.append(torch.nn.ReLU())
+            # linear_modules.append(torch.nn.BatchNorm1d(out_features))
+            # linear_modules.append(torch.nn.GELU())
+
+            # linear_modules.append(torch.nn.Dropout2d(0.1))
+
+            # linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
+
             in_features = out_features
 
         linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
@@ -138,32 +153,32 @@ class DeepSignatureNet(torch.nn.Module):
                 padding=(padding, 0),
                 padding_mode='zeros'),
             # torch.nn.BatchNorm2d(out_channels),
-            # torch.nn.Dropout2d(0.2),
-            torch.nn.ReLU(),
+            torch.nn.GELU(),
+            # torch.nn.Dropout2d(0.05),
             torch.nn.Conv2d(
                 in_channels=out_channels,
                 out_channels=out_channels,
                 kernel_size=(kernel_size, 1),
                 padding=(padding, 0),
                 padding_mode='zeros'),
-            # torch.nn.Dropout2d(),
             # torch.nn.BatchNorm2d(out_channels),
-            torch.nn.ReLU(),
+            torch.nn.GELU(),
+            # torch.nn.Dropout2d(0.05),
             torch.nn.Conv2d(
                 in_channels=out_channels,
                 out_channels=out_channels,
                 kernel_size=(kernel_size, 1),
                 padding=(padding, 0),
                 padding_mode='zeros'),
-            # torch.nn.Dropout2d(0.2),
             # torch.nn.BatchNorm2d(out_channels),
-            torch.nn.ReLU()
+            torch.nn.GELU(),
+            # torch.nn.Dropout2d(0.05),
         ]
 
-        # if not last_block:
-        #     layers.append(torch.nn.MaxPool2d(
-        #         kernel_size=(3, 1),
-        #         padding=(1, 0)))
+        if not last_block:
+            layers.append(torch.nn.MaxPool2d(
+                kernel_size=(3, 1),
+                padding=(1, 0)))
 
         return torch.nn.Sequential(*layers)
 
