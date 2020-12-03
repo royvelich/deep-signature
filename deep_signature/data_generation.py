@@ -4,6 +4,7 @@ import os
 import math
 import multiprocessing
 import itertools
+import pathlib
 
 # numpy
 import numpy
@@ -21,6 +22,7 @@ import matplotlib.pyplot as plt
 from deep_signature import curve_processing
 from deep_signature import curve_sampling
 from deep_signature import discrete_distribution
+from deep_signature import utils
 
 
 class CurveSectionConfiguration:
@@ -91,7 +93,20 @@ class CurveSection:
 
 
 class CurveDataGenerator:
-    def __init__(self, curve, rotation_factor, sampling_factor, multimodality_factor, supporting_points_count, sampling_points_count, sectioning_points_count, sampling_points_ratio=None, sectioning_points_ratio=None):
+    def __init__(
+            self,
+            curve,
+            rotation_factor,
+            sampling_factor,
+            multimodality_factor,
+            supporting_points_count,
+            sampling_points_count,
+            sectioning_points_count,
+            evolution_iterations,
+            evolution_dt,
+            sampling_points_ratio=None,
+            sectioning_points_ratio=None):
+
         self._rotation_factor = rotation_factor
         self._sampling_factor = sampling_factor
         self._multimodality_factor = multimodality_factor
@@ -100,6 +115,8 @@ class CurveDataGenerator:
         self._sampling_points_count = sampling_points_count
         self._sectioning_points_ratio = sectioning_points_ratio
         self._sectioning_points_count = sectioning_points_count
+        self._evolution_iterations = evolution_iterations
+        self._evolution_dt = evolution_dt
 
         self._curve = curve_processing.normalize_curve(curve)
 
@@ -111,8 +128,8 @@ class CurveDataGenerator:
 
         self._evolved_curve = curve_processing.evolve_curve(
             curve=self._curve,
-            evolution_iterations=2,
-            evolution_dt=1e-12,
+            evolution_iterations=self._evolution_iterations,
+            evolution_dt=self._evolution_dt,
             smoothing_window_length=99,
             smoothing_poly_order=2,
             smoothing_iterations=6)
@@ -291,7 +308,12 @@ class CurveDatasetGenerator:
     def positive_pairs(self):
         return self._positive_pairs
 
-    def generate_curves(self, dir_path, plot_curves=False):
+    def generate_curves(self, dir_path, chunk_size, plot_curves=False):
+        curves = []
+
+        def extend_curves(curve_chunk):
+            curves.extend(curve_chunk)
+
         print('Generating curves:')
         curves = []
         image_file_paths = []
@@ -307,49 +329,50 @@ class CurveDatasetGenerator:
 
         image_files_count = len(image_file_paths)
         print(f'    - {image_files_count} images detected.')
-        for i, image_file_path in enumerate(image_file_paths):
-            print('\r    - Processing images... {0:.1%} Done.'.format(i / image_files_count), end="")
-            try:
-                image = skimage.io.imread(image_file_path)
-            except:
-                continue
 
-            sigmas = [2, 4, 8, 16, 32]
-            contour_levels = [0.2, 0.5, 0.8]
-            for sigma in sigmas:
-                for contour_level in contour_levels:
-                    curve, kappa = CurveDatasetGenerator._extract_curve_from_image(
-                        image=image,
-                        sigma=sigma,
-                        contour_level=contour_level,
-                        min_points=1000,
-                        max_points=6000,
-                        flat_point_threshold=1e-3,
-                        max_flat_points_ratio=0.04,
-                        max_abs_kappa=8)
+        # image_file_path_chunks = utils.chunks(image_file_paths, chunk_size)
 
-                    if curve is not None:
-                        curves.append(curve)
-                        if plot_curves is True:
-                            fig, ax = plt.subplots(2, 1)
-                            ax[0].plot(curve[:, 0], curve[:, 1])
-                            ax[1].plot(range(len(kappa)), kappa)
-                            plt.show()
+        print('    - Creating pool...', end="")
+        pool = multiprocessing.Pool()
+        print('\r    - Creating pool... Done.')
 
-        print('    - Processing images... {0:.1%} Done.'.format(i / image_files_count), end="")
+        print('    - Processing images...', end="")
+        for i, curve_chunk in enumerate(pool.imap_unordered(
+                func=CurveDatasetGenerator._process_image_file_path,
+                iterable=image_file_paths,
+                chunksize=chunk_size)):
+
+            extend_curves(curve_chunk)
+            print('\r    - Processing images... {0:.1%} Done.'.format((i+1) / image_files_count), end="")
+
+        print('\r    - Processing images... {0:.1%} Done.'.format((i+1) / image_files_count), end="")
         self._curves = curves
         return curves
 
-    def save_curves(self, dir_path):
-        numpy.save(file=os.path.join(dir_path, 'curves.npy'), arr=self._curves)
+    def save_curves(self, dir_path, curve_per_file):
+        pathlib.Path(dir_path).mkdir(parents=True, exist_ok=True)
+        curve_chunks = utils.chunks(input_list=self._curves, chunks_count=curve_per_file)
+        for i, curve_chunk in enumerate(curve_chunks):
+            numpy.save(file=os.path.normpath(os.path.join(dir_path, f'curves{i}.npy')), arr=numpy.array(curve_chunk, dtype=object))
 
-    def load_curves(self, file_path, shuffle=True):
-        self._curves = numpy.load(file=file_path, allow_pickle=True)
-        if shuffle is True:
-            random.shuffle(self._curves)
+    def load_curves(self, dir_path, shuffle=True):
+        self._curves = CurveDatasetGenerator.create_curve_generator(dir_path=dir_path, shuffle=shuffle)
         return self._curves
 
-    def generate_dataset(self, rotation_factor, sampling_factor, multimodality_factor, supporting_points_count, sampling_points_count, sectioning_points_count, sampling_points_ratio=None, sectioning_points_ratio=None, limit=5, chunk_size=5):
+    def generate_dataset(
+            self,
+            rotation_factor,
+            sampling_factor,
+            multimodality_factor,
+            supporting_points_count,
+            sampling_points_count,
+            sectioning_points_count,
+            evolution_iterations,
+            evolution_dt,
+            sampling_points_ratio=None,
+            sectioning_points_ratio=None,
+            limit=5,
+            chunk_size=5):
         print('Generating dataset curves:')
 
         positive_pairs = []
@@ -370,7 +393,10 @@ class CurveDatasetGenerator:
                 sampling_points_count=sampling_points_count,
                 sampling_points_ratio=sampling_points_ratio,
                 sectioning_points_count=sectioning_points_count,
-                sectioning_points_ratio=sectioning_points_ratio)
+                sectioning_points_ratio=sectioning_points_ratio,
+                evolution_iterations=evolution_iterations,
+                evolution_dt=evolution_dt)
+
             curve_data_generators.append(curve_data_generator)
 
         CurveDatasetGenerator._process_curve_data_generator(
@@ -392,7 +418,7 @@ class CurveDatasetGenerator:
         if limit is not None:
             curve_data_generators = curve_data_generators[:limit]
 
-        curve_data_generator_chunks = CurveDatasetGenerator._chunks(curve_data_generators, chunk_size)
+        curve_data_generator_chunks = utils.chunks(curve_data_generators, chunk_size)
 
         print('    - Creating pool...', end="")
         pool = multiprocessing.Pool()
@@ -436,10 +462,38 @@ class CurveDatasetGenerator:
             "positive_sample_pairs": positive_sample_pairs
         }
 
-    # https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
     @staticmethod
-    def _chunks(lst, n):
-        return [lst[i:i + n] for i in range(0, len(lst), n)]
+    def _process_image_file_path(image_file_path, plot_curves=False):
+        curves = []
+
+        try:
+            image = skimage.io.imread(image_file_path)
+        except:
+            return curves
+
+        sigmas = [2, 4, 8, 16, 32]
+        contour_levels = [0.2, 0.5, 0.8]
+        for sigma in sigmas:
+            for contour_level in contour_levels:
+                curve, kappa = CurveDatasetGenerator._extract_curve_from_image(
+                    image=image,
+                    sigma=sigma,
+                    contour_level=contour_level,
+                    min_points=1000,
+                    max_points=6000,
+                    flat_point_threshold=1e-3,
+                    max_flat_points_ratio=0.04,
+                    max_abs_kappa=8)
+
+                if curve is not None:
+                    curves.append(curve)
+                    if plot_curves is True:
+                        fig, ax = plt.subplots(2, 1)
+                        ax[0].plot(curve[:, 0], curve[:, 1])
+                        ax[1].plot(range(len(kappa)), kappa)
+                        plt.show()
+
+        return curves
 
     @staticmethod
     def _extract_curve_from_image(image, sigma, contour_level, min_points, max_points, flat_point_threshold, max_flat_points_ratio, max_abs_kappa):
@@ -489,3 +543,20 @@ class CurveDatasetGenerator:
 
             return curve, kappa
         return None, None
+
+    @staticmethod
+    def create_curve_generator(dir_path, shuffle=True):
+        npy_file_paths = []
+        base_dir_path = os.path.normpath(dir_path)
+        for sub_dir_path, _, file_names in os.walk(base_dir_path):
+            for file_name in file_names:
+                npy_file_path = os.path.normpath(os.path.join(sub_dir_path, file_name))
+                npy_file_paths.append(npy_file_path)
+
+        for npy_file_path in npy_file_paths:
+            curves = numpy.load(file=npy_file_path, allow_pickle=True)
+            if shuffle is True:
+                random.shuffle(curves)
+
+            for curve in curves:
+                yield curve
