@@ -8,7 +8,7 @@ import random
 import matplotlib.pyplot as plt
 import matplotlib.collections as mcoll
 from deep_signature.data_generation import CurveDatasetGenerator
-from deep_signature.data_generation import CurveDataGenerator
+from deep_signature.data_generation import CurveManager
 from skimage.util.shape import view_as_windows
 import os
 
@@ -87,6 +87,20 @@ def strided_indexing_roll(a, r):
 
 
 if __name__ == '__main__':
+    lst = [1,2,3,4,5,6,7]
+    mydict = [{"a": 1, "b": 2}] * 7
+    bla = list(zip(lst, mydict))
+
+    for x in bla:
+        print(x)
+
+    lst2 = lst[:4]
+
+    a = 6
+
+    b = numpy.mod(-4, 3)
+
+    c = 5
 
     negative_pairs = numpy.load(file=os.path.normpath(os.path.join("C:/deep-signature-data/datasets/dataset2/", "negative_pairs.npy")), allow_pickle=True)
     positive_pairs = numpy.load(file=os.path.normpath(os.path.join("C:/deep-signature-data/datasets/dataset2/", "positive_pairs.npy")), allow_pickle=True)
@@ -139,7 +153,7 @@ if __name__ == '__main__':
     curves = curve_dataset_generator.load_curves(file_path="C:/deep-signature-data/curves/curves.npy")
 
     for i, curve in enumerate(curves[:3]):
-        curve_data_generator = CurveDataGenerator(
+        curve_data_generator = CurveManager(
             curve=curve,
             rotation_factor=rotation_factor,
             sectioning_factor=sectioning_factor,

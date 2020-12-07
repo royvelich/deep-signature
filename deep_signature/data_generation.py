@@ -5,6 +5,7 @@ import math
 import multiprocessing
 import itertools
 import pathlib
+import inspect
 
 # numpy
 import numpy
@@ -25,74 +26,113 @@ from deep_signature import discrete_distribution
 from deep_signature import utils
 
 
-class CurveSectionConfiguration:
-    def __init__(self, center_point_index, radians, reflection):
+class CurveSectionSampleManager:
+    def __init__(self, curve_section, dist, sampling_points_count, supporting_points_count, center_point_index):
+        self._curve_section = curve_section
+        self._dist = dist
+        self._sampling_points_count = sampling_points_count
         self._center_point_index = center_point_index
-        self._radians = radians
-        self._reflection = reflection
+        self._supporting_points_count = supporting_points_count
+        self._curve_section_sample = None
+        self._supporting_curve_section_sample = None
+        self._indices_pool = None
+        self._supporting_point_indices = None
+
+    @property
+    def curve_section(self):
+        return self._curve_section
+
+    @property
+    def dist(self):
+        return self._dist
+
+    @property
+    def supporting_points_count(self):
+        return self._supporting_points_count
 
     @property
     def center_point_index(self):
         return self._center_point_index
 
     @property
-    def radians(self):
-        return self._radians
+    def curve_section_sample(self):
+        return self._curve_section[self._indices_pool]
 
     @property
-    def reflection(self):
-        return self._reflection
+    def curve_section_sample_normalized(self):
+        return curve_processing.translate_curve(
+            curve=self.curve_section_sample(),
+            offset=-self._curve_section[self._center_point_index])
+
+    @property
+    def supporting_curve_section_sample(self):
+        return self._curve_section[self._supporting_point_indices]
+
+    @property
+    def indices_pool(self):
+        return self._indices_pool
+
+    @property
+    def supporting_point_indices(self):
+        return self._supporting_point_indices
+
+    def sample_curve_section(self):
+        self._indices_pool = discrete_distribution.sample_discrete_dist(
+            dist=self._dist,
+            sampling_points_count=self._sampling_points_count)
+
+        self._supporting_point_indices = curve_sampling.sample_supporting_point_indices(
+            curve=self._curve_section,
+            center_point_index=self._center_point_index,
+            indices_pool=self._indices_pool,
+            supporting_point_count=self._supporting_points_count)
 
 
-class CurveSection:
-    def __init__(self, center_point_index, rotation_factor, apply_reflections=False):
+class CurveSectionManager:
+    def __init__(self, curve_section, sampling_points_count, supporting_points_count, center_point_index, center_point_curvature):
+        self._curve_section = curve_section
         self._center_point_index = center_point_index
-        self._rotation_factor = rotation_factor
-        self._apply_reflections = apply_reflections
-        self._curve_section_configurations = CurveSection._generate_curve_section_configurations(
-            center_point_index=center_point_index,
-            rotation_factor=rotation_factor,
-            apply_reflections=apply_reflections)
+        self._center_point_curvature = center_point_curvature
+        self._supporting_points_count = supporting_points_count
+        self._sampling_points_count = sampling_points_count
+        self._curve_section_sample_managers = []
 
     @property
-    def curve_section_configurations(self):
-        return self._curve_section_configurations
+    def curve_section(self):
+        return self._curve_section
 
-    def generate_pairs(self, pairs_count, shuffle=True):
-        pairs = []
+    @property
+    def supporting_points_count(self):
+        return self._supporting_points_count
 
-        configurations = self._curve_section_configurations
-        if shuffle:
-            random.shuffle(configurations)
+    @property
+    def center_point_index(self):
+        return self._center_point_index
 
-        for i, pair in enumerate(itertools.combinations(configurations, 2)):
-            if i == pairs_count:
-                break
-            pairs.append(pair)
+    @property
+    def center_point_curvature(self):
+        return self._center_point_curvature
 
-        return pairs
+    @property
+    def curve_section_sample_managers(self):
+        return self._curve_section_sample_managers
 
-    @staticmethod
-    def _generate_curve_section_configurations(center_point_index, rotation_factor, apply_reflections):
-        configurations = []
+    def generate_curve_section_sample_managers(self, dists):
+        for dist in dists:
+            curve_section_sample_manager = CurveSectionSampleManager(
+                curve_section=self._curve_section,
+                dist=dist,
+                sampling_points_count=self._sampling_points_count,
+                supporting_points_count=self._supporting_points_count,
+                center_point_index=self._center_point_index
+            )
 
-        reflection_types = ['none']
-        if apply_reflections is True:
-            reflection_types.extend(['horizontal', 'vertical'])
+            curve_section_sample_manager.sample_curve_section()
 
-        for reflection in reflection_types:
-            for rotation_index in range(rotation_factor):
-                radians = rotation_index * ((2 * math.pi) / rotation_factor)
-                configuration = CurveSectionConfiguration(
-                    center_point_index=center_point_index,
-                    radians=radians,
-                    reflection=reflection)
-                configurations.append(configuration)
-
-        return configurations
+            self._curve_section_sample_managers.append(curve_section_sample_manager)
 
 
-class CurveDataGenerator:
+class CurveManager:
     def __init__(
             self,
             curve,
@@ -102,6 +142,7 @@ class CurveDataGenerator:
             supporting_points_count,
             sampling_points_count,
             sectioning_points_count,
+            section_points_count,
             evolution_iterations,
             evolution_dt,
             sampling_points_ratio=None,
@@ -115,35 +156,22 @@ class CurveDataGenerator:
         self._sampling_points_count = sampling_points_count
         self._sectioning_points_ratio = sectioning_points_ratio
         self._sectioning_points_count = sectioning_points_count
+        self._section_points_count = section_points_count
         self._evolution_iterations = evolution_iterations
         self._evolution_dt = evolution_dt
 
         self._curve = curve_processing.normalize_curve(curve)
+        self._curve_points_count = self._curve.shape[0]
 
-        if sampling_points_ratio is not None:
-            self._sampling_points_count = int(self._curve.shape[0] * sampling_points_ratio)
+        # if sampling_points_ratio is not None:
+        #     self._sampling_points_count = int(self._curve.shape[0] * sampling_points_ratio)
 
         if sectioning_points_ratio is not None:
-            self._sectioning_points_count = int(self._sampling_points_count * sectioning_points_ratio)
-
-        self._evolved_curve = curve_processing.evolve_curve(
-            curve=self._curve,
-            evolution_iterations=self._evolution_iterations,
-            evolution_dt=self._evolution_dt,
-            smoothing_window_length=99,
-            smoothing_poly_order=2,
-            smoothing_iterations=6)
+            self._sectioning_points_count = int(self._curve.shape[0] * sectioning_points_ratio)
 
         self._curvature = curve_processing.calculate_curvature(self._curve)
-        # self._curve_sections = CurveDataGenerator._generate_curve_sections(
-        #     curve_points_count=self._sampling_points_count,
-        #     rotation_factor=rotation_factor,
-        #     sectioning_factor=sectioning_factor)
+        self._curve_section_managers = []
 
-        self._curve_sections = CurveDataGenerator._generate_curve_sections(
-            curve_points_count=self._curve.shape[0],
-            rotation_factor=rotation_factor,
-            sectioning_points_count=self._sectioning_points_count)
 
     @property
     def curve(self):
@@ -158,147 +186,58 @@ class CurveDataGenerator:
         return self._evolved_curve
 
     @property
-    def curve_sections(self):
-        return self._curve_sections
+    def curve_section_managers(self):
+        return self._curve_section_managers
 
-    def generate_negative_pairs(self):
-        negative_pairs = []
-        # bins = 2*self._supporting_points_count + 1
-        bins = self._curve.shape[0]
-        # count = self._rotation_factor * self._sectioning_factor * self._sampling_factor
-        count = self._sectioning_points_count * self._sampling_factor
+    def generate_curve_sections(self):
         max_density = 1 / self._sampling_points_count
-        dists = discrete_distribution.random_discrete_dist(bins=bins, multimodality=self._multimodality_factor, max_density=max_density, count=count)
-        dist_index = 0
-        for curve_section in self._curve_sections:
-            for _ in range(self._sampling_factor):
-                dist = dists[dist_index, :]
-                for curve_section_configuration in curve_section.curve_section_configurations:
-                    indices_pool = discrete_distribution.sample_discrete_dist(
-                        dist=dist,
-                        sampling_points_count=self._sampling_points_count)
+        dists_count = self._sectioning_points_count * self._sampling_factor
+        bins = 2*self._section_points_count + 1
 
-                    # center_point_index = indices_pool[curve_section_configuration.center_point_index]
-                    center_point_index = curve_section_configuration.center_point_index
+        dists = discrete_distribution.random_discrete_dist(
+            bins=bins,
+            multimodality=self._multimodality_factor,
+            max_density=max_density,
+            count=dists_count)
 
-                    supporting_points_indices = curve_sampling.sample_supporting_points_indices(
-                        curve=self._curve,
-                        center_point_index=center_point_index,
-                        indices_pool=indices_pool,
-                        supporting_points_count=self._supporting_points_count)
+        center_point_indices = numpy.linspace(
+            start=0,
+            stop=self._curve_points_count,
+            num=self._sectioning_points_count,
+            endpoint=False,
+            dtype=int)
 
-                    transformed_curve = curve_processing.translate_curve(
-                        curve=self._curve,
-                        offset=-self._curve[center_point_index])
+        for i, center_point_index in enumerate(center_point_indices):
+            start_dist_index = i * self._sampling_factor
+            end_dist_index = (i + 1) * self._sampling_factor
 
-                    transformed_curve = curve_processing.transform_curve(
-                        curve=transformed_curve,
-                        radians=curve_section_configuration.radians,
-                        reflection=curve_section_configuration.reflection)
+            start_curve_index = center_point_index - self._section_points_count
+            end_curve_index = center_point_index + self._section_points_count + 1
 
-                    transformed_evolved_curve = curve_processing.translate_curve(
-                        curve=self._evolved_curve,
-                        offset=-self._evolved_curve[center_point_index])
+            curve_indices = numpy.mod(numpy.arange(start_curve_index, end_curve_index), self._curve_points_count)
+            curve_section = self._curve[curve_indices]
+            curve_section_dists = dists[start_dist_index:end_dist_index]
 
-                    transformed_evolved_curve = curve_processing.transform_curve(
-                        curve=transformed_evolved_curve,
-                        radians=curve_section_configuration.radians,
-                        reflection=curve_section_configuration.reflection)
+            curve_section_manager = CurveSectionManager(
+                curve_section=curve_section,
+                supporting_points_count=self._supporting_points_count,
+                sampling_points_count=self._sampling_points_count,
+                center_point_index=self._section_points_count,
+                center_point_curvature=self._curvature[center_point_index]
+            )
 
-                    negative_pair = {
-                        "curve": transformed_curve,
-                        "evolved_curve": transformed_evolved_curve,
-                        "supporting_points_indices": supporting_points_indices,
-                        "indices_pool": indices_pool,
-                        "dist": dist,
-                        "center_point_index": center_point_index
-                    }
+            curve_section_manager.generate_curve_section_sample_managers(curve_section_dists)
 
-                    negative_pairs.append(negative_pair)
-                dist_index += 1
-        return negative_pairs
-
-    def generate_positive_pairs(self):
-        positive_pairs = []
-        bins = self._curve.shape[0]
-        count = 2 * self._sectioning_points_count * self._sampling_factor
-        max_density = 1 / self._sampling_points_count
-        dists = discrete_distribution.random_discrete_dist(bins=bins, multimodality=self._multimodality_factor, max_density=max_density, count=count)
-        dist_index = 0
-        for curve_section in self._curve_sections:
-            for _ in range(self._sampling_factor):
-                dist1 = dists[dist_index, :]
-                dist2 = dists[dist_index+1, :]
-                for curve_section_configuration in curve_section.curve_section_configurations:
-                    indices_pool1 = discrete_distribution.sample_discrete_dist(
-                        dist=dist1,
-                        sampling_points_count=self._sampling_points_count)
-
-                    indices_pool2 = discrete_distribution.sample_discrete_dist(
-                        dist=dist2,
-                        sampling_points_count=self._sampling_points_count)
-
-                    # center_point_index = indices_pool[curve_section_configuration.center_point_index]
-                    center_point_index = curve_section_configuration.center_point_index
-
-                    supporting_points_indices1 = curve_sampling.sample_supporting_points_indices(
-                        curve=self._curve,
-                        center_point_index=center_point_index,
-                        indices_pool=indices_pool1,
-                        supporting_points_count=self._supporting_points_count)
-
-                    supporting_points_indices2 = curve_sampling.sample_supporting_points_indices(
-                        curve=self._curve,
-                        center_point_index=center_point_index,
-                        indices_pool=indices_pool2,
-                        supporting_points_count=self._supporting_points_count)
-
-                    transformed_curve = curve_processing.translate_curve(
-                        curve=self._curve,
-                        offset=-self._curve[center_point_index])
-
-                    transformed_curve = curve_processing.transform_curve(
-                        curve=transformed_curve,
-                        radians=curve_section_configuration.radians,
-                        reflection=curve_section_configuration.reflection)
-
-                    positive_pair = {
-                        "curve": transformed_curve,
-                        "supporting_points_indices1": supporting_points_indices1,
-                        "supporting_points_indices2": supporting_points_indices2,
-                        "indices_pool1": indices_pool1,
-                        "indices_pool2": indices_pool2,
-                        "dist1": dist1,
-                        "dist2": dist2,
-                        "center_point_index": center_point_index
-                    }
-
-                    positive_pairs.append(positive_pair)
-                dist_index += 2
-        return positive_pairs
-
-
-    @staticmethod
-    def _generate_curve_sections(curve_points_count, rotation_factor, sectioning_points_count):
-        curve_sections = []
-        indices = numpy.linspace(start=0, stop=curve_points_count, num=sectioning_points_count, endpoint=False, dtype=int)
-        # indices = numpy.random.randint(low=curve_points_count, size=sectioning_factor)
-        for center_point_index in indices:
-            curve_section = CurveSection(
-                center_point_index=center_point_index,
-                rotation_factor=rotation_factor,
-                apply_reflections=False)
-
-            curve_sections.append(curve_section)
-
-        return curve_sections
+            self._curve_section_managers.append(curve_section_manager)
 
 
 class CurveDatasetGenerator:
     def __init__(self):
         self._curves = []
+        self._curves_count = 0
         self._negative_pairs = []
         self._positive_pairs = []
+        self._curve_managers = []
 
     @property
     def negative_pairs(self):
@@ -307,6 +246,10 @@ class CurveDatasetGenerator:
     @property
     def positive_pairs(self):
         return self._positive_pairs
+
+    @property
+    def curve_managers(self):
+        return self._curve_managers
 
     def generate_curves(self, dir_path, chunk_size, plot_curves=False):
         curves = []
@@ -355,11 +298,7 @@ class CurveDatasetGenerator:
         for i, curve_chunk in enumerate(curve_chunks):
             numpy.save(file=os.path.normpath(os.path.join(dir_path, f'curves{i}.npy')), arr=numpy.array(curve_chunk, dtype=object))
 
-    def load_curves(self, dir_path, shuffle=True):
-        self._curves = CurveDatasetGenerator.create_curve_generator(dir_path=dir_path, shuffle=shuffle)
-        return self._curves
-
-    def generate_dataset(
+    def generate_curve_managers(
             self,
             rotation_factor,
             sampling_factor,
@@ -367,100 +306,75 @@ class CurveDatasetGenerator:
             supporting_points_count,
             sampling_points_count,
             sectioning_points_count,
+            section_points_count,
             evolution_iterations,
             evolution_dt,
+            curves_dir_path,
+            curve_managers_dir_path,
+            curve_managers_per_file,
             sampling_points_ratio=None,
             sectioning_points_ratio=None,
-            limit=5,
+            limit=None,
             chunk_size=5):
         print('Generating dataset curves:')
 
-        positive_pairs = []
-        negative_pairs = []
+        args = inspect.getfullargspec(CurveDatasetGenerator.generate_curve_managers).args
+        args.remove('self')
+        args.remove('chunk_size')
+        args.remove('limit')
+        args.remove('curves_dir_path')
+        args.remove('curve_managers_dir_path')
+        args.remove('curve_managers_per_file')
+        args_dict = {k: v for k, v in locals().items() if k in args}
+        processed_curves_count = 0
+        curve_managers = []
 
-        def add_curve_pairs(negative_sample_pairs, positive_sample_pairs):
-            negative_pairs.extend(negative_sample_pairs)
-            positive_pairs.extend(positive_sample_pairs)
-
-        curve_data_generators = []
-        for curve in self._curves:
-            curve_data_generator = CurveDataGenerator(
-                curve=curve,
-                rotation_factor=rotation_factor,
-                sampling_factor=sampling_factor,
-                multimodality_factor=multimodality_factor,
-                supporting_points_count=supporting_points_count,
-                sampling_points_count=sampling_points_count,
-                sampling_points_ratio=sampling_points_ratio,
-                sectioning_points_count=sectioning_points_count,
-                sectioning_points_ratio=sectioning_points_ratio,
-                evolution_iterations=evolution_iterations,
-                evolution_dt=evolution_dt)
-
-            curve_data_generators.append(curve_data_generator)
-
-        CurveDatasetGenerator._process_curve_data_generator(
-            curve_data_generators=curve_data_generators,
-            predicate=add_curve_pairs,
-            limit=limit,
-            chunk_size=chunk_size)
-
-        self._negative_pairs = negative_pairs
-        self._positive_pairs = positive_pairs
-        return negative_pairs, positive_pairs
-
-    def save_dataset(self, dir_path):
-        numpy.save(file=os.path.join(dir_path, 'negative_pairs.npy'), arr=self._negative_pairs)
-        numpy.save(file=os.path.join(dir_path, 'positive_pairs.npy'), arr=self._positive_pairs)
-
-    @staticmethod
-    def _process_curve_data_generator(curve_data_generators, predicate, limit=None, chunk_size=5):
-        if limit is not None:
-            curve_data_generators = curve_data_generators[:limit]
-
-        curve_data_generator_chunks = utils.chunks(curve_data_generators, chunk_size)
+        curves_count = CurveDatasetGenerator._count_curves(dir_path=curves_dir_path, limit=limit)
+        curves = utils.create_data_generator(dir_path=curves_dir_path, limit=limit)
 
         print('    - Creating pool...', end="")
         pool = multiprocessing.Pool()
         print('\r    - Creating pool... Done.')
 
-        print('    - Processing curve data generators...', end="")
-        for i, processed_curve_data_generator_chunk in enumerate(pool.imap_unordered(CurveDatasetGenerator._process_curve_data_generator_chunk, curve_data_generator_chunks, 1)):
-            negative_sample_pairs = processed_curve_data_generator_chunk["negative_sample_pairs"]
-            positive_sample_pairs = processed_curve_data_generator_chunk["positive_sample_pairs"]
-            predicate(negative_sample_pairs, positive_sample_pairs)
-            print('\r    - Processing curve data generators... {0:.1%} Done.'.format((i+1) / len(curve_data_generator_chunks)), end="")
+        print('    - Processing curve managers...', end="")
+        for curve_chunk in curves:
+            args_dicts = [args_dict] * len(curve_chunk)
+            zipped_curves = list(zip(curve_chunk, args_dicts))
+            for i, curve_manager in enumerate(pool.imap_unordered(CurveDatasetGenerator._process_curve, zipped_curves, chunk_size)):
+                processed_curves_count += 1
+                curve_managers.append(curve_manager)
+                if len(curve_managers) == curve_managers_per_file:
+                    curve_managers_index = int(processed_curves_count / curve_managers_per_file) - 1
+                    numpy.save(file=os.path.normpath(os.path.join(curve_managers_dir_path, f'curve_managers{curve_managers_index}.npy')), arr=numpy.array(curve_managers, dtype=object))
+                    curve_managers = []
+                print('\r    - Processing curve managers... {0:.1%} Done.'.format(processed_curves_count / curves_count), end="")
 
-        print('\r    - Processing curve data generators... {0:.1%} Done.'.format((i+1) / len(curve_data_generator_chunks)))
+        print('\r    - Processing curve managers... {0:.1%} Done.'.format(processed_curves_count / curves_count))
+
+    # def save_curve_managers(self, dir_path, curve_managers_per_file):
+    #     pathlib.Path(dir_path).mkdir(parents=True, exist_ok=True)
+    #     curve_manager_chunks = utils.chunks(input_list=self._curve_managers, chunks_count=curve_managers_per_file)
+    #     for i, curve_manager_chunk in enumerate(curve_manager_chunks):
+    #         numpy.save(file=os.path.normpath(os.path.join(dir_path, f'curve_managers{i}.npy')), arr=numpy.array(curve_manager_chunk, dtype=object))
+    #
+    # def load_curve_managers(self, dir_path):
+    #     self._curve_managers = numpy.load(file=os.path.join(dir_path, 'curve_managers.npy'), allow_pickle=True)
 
     @staticmethod
-    def _process_curve_data_generator_chunk(curve_data_generator_chunk):
-        negative_sample_pairs = []
-        positive_sample_pairs = []
-        for curve_data_generator in curve_data_generator_chunk:
-            negative_pairs = curve_data_generator.generate_negative_pairs()
-            positive_pairs = curve_data_generator.generate_positive_pairs()
+    def _save_curve_managers(self, dir_path, curve_managers_per_file):
+        pathlib.Path(dir_path).mkdir(parents=True, exist_ok=True)
+        curve_manager_chunks = utils.chunks(input_list=self._curve_managers, chunks_count=curve_managers_per_file)
+        for i, curve_manager_chunk in enumerate(curve_manager_chunks):
+            numpy.save(file=os.path.normpath(os.path.join(dir_path, f'curve_managers{i}.npy')), arr=numpy.array(curve_manager_chunk, dtype=object))
 
-            for negative_pair in negative_pairs:
-                curve = negative_pair['curve']
-                evolved_curve = negative_pair['evolved_curve']
-                supporting_points_indices = negative_pair['supporting_points_indices']
-                curve_section_sample = curve[supporting_points_indices]
-                evolved_curve_section_sample = evolved_curve[supporting_points_indices]
-                negative_sample_pairs.append([curve_section_sample, evolved_curve_section_sample])
-
-            for positive_pair in positive_pairs:
-                curve = positive_pair['curve']
-                supporting_points_indices1 = positive_pair['supporting_points_indices1']
-                supporting_points_indices2 = positive_pair['supporting_points_indices2']
-                curve_section_sample1 = curve[supporting_points_indices1]
-                curve_section_sample2 = curve[supporting_points_indices2]
-                positive_sample_pairs.append([curve_section_sample1, curve_section_sample2])
-
-        return {
-            "negative_sample_pairs": negative_sample_pairs,
-            "positive_sample_pairs": positive_sample_pairs
-        }
+    @staticmethod
+    def _process_curve(zipped_curve):
+        curve = zipped_curve[0]
+        args = zipped_curve[1]
+        args["curve"] = curve
+        curve_manager = CurveManager(**args)
+        curve_manager.generate_curve_sections()
+        return curve_manager
 
     @staticmethod
     def _process_image_file_path(image_file_path, plot_curves=False):
@@ -545,18 +459,11 @@ class CurveDatasetGenerator:
         return None, None
 
     @staticmethod
-    def create_curve_generator(dir_path, shuffle=True):
-        npy_file_paths = []
-        base_dir_path = os.path.normpath(dir_path)
-        for sub_dir_path, _, file_names in os.walk(base_dir_path):
-            for file_name in file_names:
-                npy_file_path = os.path.normpath(os.path.join(sub_dir_path, file_name))
-                npy_file_paths.append(npy_file_path)
+    def _count_curves(dir_path, limit):
+        curves_count = 0
+        curves = utils.create_data_generator(dir_path=dir_path, limit=limit)
+        for curve_chunk in curves:
+            for _ in curve_chunk:
+                curves_count += 1
 
-        for npy_file_path in npy_file_paths:
-            curves = numpy.load(file=npy_file_path, allow_pickle=True)
-            if shuffle is True:
-                random.shuffle(curves)
-
-            for curve in curves:
-                yield curve
+        return curves_count

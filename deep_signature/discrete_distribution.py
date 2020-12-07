@@ -42,7 +42,7 @@ def random_normal_discrete_dist(bins, count=1):
         return view_as_windows(a_ext, (1, n))[numpy.arange(len(r)), (n - r) % n, 0]
 
     truncnorm_loc = 0.5
-    truncnorm_scale = 0.25
+    truncnorm_scale = 0.5
     truncnorm_a = 0
     truncnorm_b = 1
 
@@ -53,7 +53,8 @@ def random_normal_discrete_dist(bins, count=1):
         loc=truncnorm_loc,
         scale=truncnorm_scale)
 
-    scale = truncated_normal.rvs(count) * 10 * numpy.sqrt(bins)
+    scale = numpy.maximum(truncated_normal.rvs(count) * bins * 0.3, bins * 0.03)
+    # scale = truncated_normal.rvs(count) * bins * 0.3
     loc = [0] * count
     dist = normal_discrete_dist(bins, loc, scale)
 
@@ -80,6 +81,9 @@ def random_discrete_dist(bins, multimodality, max_density, count=1):
         dists = dists / dist_sum[:, None]
 
         dists_max_density = numpy.max(dists, axis=1)
+        dists_min_density = numpy.min(dists, axis=1)
+        dists_ratio_density = (dists_max_density - dists_min_density) / max_density
+        # dists_validity_flags = numpy.logical_and(dists_max_density <= max_density, dists_ratio_density > 0.1)
         dists_validity_flags = dists_max_density <= max_density
         current_valid_dists = dists[numpy.where(dists_validity_flags == True)]
         if valid_dists is None:
