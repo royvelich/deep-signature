@@ -11,8 +11,8 @@ if __name__ == '__main__':
 
     torch.set_default_dtype(torch.float64)
     dataset = DeepSignatureDataset()
-    dataset.load_dataset(dir_path='C:/deep-signature-data/datasets/dataset2')
-    model = DeepSignatureNet(sample_points=13).cuda()
+    dataset.load_dataset(negative_pairs_dir_path='C:/deep-signature-data/negative-pairs/version1', positive_pairs_dir_path='C:/deep-signature-data/positive-pairs/version1')
+    model = DeepSignatureNet(sample_points=6).cuda()
     print(model)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     loss_fn = ContrastiveLoss(1)

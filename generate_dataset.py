@@ -2,15 +2,33 @@ from deep_signature.data_generation import CurveDatasetGenerator
 
 if __name__ == '__main__':
     curve_dataset_generator = CurveDatasetGenerator()
-    curve_dataset_generator.generate_curve_managers(
-        rotation_factor=1,
-        sampling_factor=15,
+    # curve_dataset_generator.generate_curve_managers(
+    #     rotation_factor=1,
+    #     sampling_factor=15,
+    #     multimodality_factor=15,
+    #     sampling_points_ratio=0.15,
+    #     sampling_points_count=30,
+    #     supporting_points_count=3,
+    #     sectioning_points_count=None,
+    #     sectioning_points_ratio=0.1,
+    #     section_points_count=100,
+    #     evolution_iterations=3,
+    #     evolution_dt=1e-12,
+    #     chunk_size=10,
+    #     curves_dir_path="C:/deep-signature-data/curves/version1",
+    #     curve_managers_dir_path="C:/deep-signature-data/curve-managers/version1/",
+    #     curve_managers_per_file=20,
+    #     limit=1)
+
+    curve_dataset_generator.generate_positive_pairs(
+        rotation_factor=5,
+        sampling_factor=10,
         multimodality_factor=15,
         sampling_points_ratio=0.15,
         sampling_points_count=30,
         supporting_points_count=3,
         sectioning_points_count=None,
-        sectioning_points_ratio=0.1,
+        sectioning_points_ratio=0.02,
         section_points_count=100,
         evolution_iterations=3,
         evolution_dt=1e-12,
@@ -18,4 +36,11 @@ if __name__ == '__main__':
         curves_dir_path="C:/deep-signature-data/curves/version1",
         curve_managers_dir_path="C:/deep-signature-data/curve-managers/version1/",
         curve_managers_per_file=20,
-        limit=1)
+        min_curvature=0.08,
+        max_curvature_diff=0.3,
+        min_curvature_diff=0.1,
+        min_norm_diff=3,
+        limit=40)
+
+    # curve_dataset_generator.save_negative_pairs(dir_path="C:/deep-signature-data/negative-pairs/version1/")
+    curve_dataset_generator.save_positive_pairs(dir_path="C:/deep-signature-data/positive-pairs/version1/")

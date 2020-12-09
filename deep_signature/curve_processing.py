@@ -108,3 +108,32 @@ def transform_curve(curve, radians, reflection):
     transformed_curve = curve.dot(transform)
 
     return transformed_curve
+
+
+def rotate_curve(curve, radians):
+    rotation_transform = euclidean_transform.rotation_2d(radians)
+    transformed_curve = curve.dot(rotation_transform)
+    return transformed_curve
+
+
+def match_curve_sample_tangents(curve_sample1, curve_sample2, index1, index2):
+    tangent1 = curve_sample1[index1] - curve_sample1[index2]
+    tangent2 = curve_sample2[index1] - curve_sample2[index2]
+
+    tangent1 = tangent1 / numpy.linalg.norm(tangent1)
+    tangent2 = tangent2 / numpy.linalg.norm(tangent2)
+    normal2 = numpy.array([-tangent2[1], tangent2[0]])
+
+    distance = numpy.dot(tangent1, normal2)
+    cosine = numpy.dot(tangent1, tangent2)
+    radians = numpy.arccos(cosine)
+    rotation_transform = euclidean_transform.rotation_2d(-numpy.sign(distance) * numpy.abs(radians))
+
+    # curve_sample1_rotated = curve_sample1.dot(rotation_transform)
+    # tangent1 = curve_sample1_rotated[index1] - curve_sample1_rotated[index2]
+    # tangent2 = curve_sample2[index1] - curve_sample2[index2]
+    # tangent1 = tangent1 / numpy.linalg.norm(tangent1)
+    # tangent2 = tangent2 / numpy.linalg.norm(tangent2)
+    # radians2 = numpy.arccos(numpy.dot(tangent1, tangent2))
+
+    return curve_sample1.dot(rotation_transform), curve_sample2

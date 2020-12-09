@@ -15,14 +15,17 @@ class DeepSignatureDataset(Dataset):
         self._pairs = None
         self._labels = None
 
-    def load_dataset(self, dir_path):
-        negative_pairs = numpy.load(file=os.path.normpath(os.path.join(dir_path, 'negative_pairs.npy')), allow_pickle=True)
-        positive_pairs = numpy.load(file=os.path.normpath(os.path.join(dir_path, 'positive_pairs.npy')), allow_pickle=True)
-        pairs_count = negative_pairs.shape[0]
+    def load_dataset(self, negative_pairs_dir_path, positive_pairs_dir_path):
+        negative_pairs = numpy.load(file=os.path.normpath(os.path.join(negative_pairs_dir_path, 'negative_pairs.npy')), allow_pickle=True)
+        positive_pairs = numpy.load(file=os.path.normpath(os.path.join(positive_pairs_dir_path, 'positive_pairs.npy')), allow_pickle=True)
+        pairs_count = numpy.minimum(negative_pairs.shape[0], positive_pairs.shape[0])
         full_pairs_count = 2 * pairs_count
 
         random.shuffle(negative_pairs)
         random.shuffle(positive_pairs)
+        negative_pairs = negative_pairs[:pairs_count]
+        positive_pairs = positive_pairs[:pairs_count]
+
         self._pairs = numpy.empty((full_pairs_count, negative_pairs.shape[1], negative_pairs.shape[2], negative_pairs.shape[3]))
         self._pairs[::2, :] = negative_pairs
         self._pairs[1::2, :] = positive_pairs
@@ -39,7 +42,17 @@ class DeepSignatureDataset(Dataset):
         return self._labels.shape[0]
 
     def __getitem__(self, idx):
-        curves = torch.from_numpy(self._pairs[idx, :]).cuda().double()
+        pairs = self._pairs[idx, :]
+        flips = numpy.random.randint(0, 2, 2)
+
+        if flips[0] == 1:
+            pairs[0] = numpy.flip(pairs[0], axis=0)
+            pairs[1] = numpy.flip(pairs[1], axis=0)
+
+        # if flips[1] == 1:
+        #     pairs[1] = numpy.flip(pairs[1], axis=0)
+
+        curves = torch.from_numpy(pairs).cuda().double()
         label = torch.from_numpy(numpy.array([self._labels[idx]])).cuda().double()
 
         first_curve = torch.unsqueeze(curves[0, :, :], dim=0).cuda().double()

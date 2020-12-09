@@ -87,6 +87,22 @@ def strided_indexing_roll(a, r):
 
 
 if __name__ == '__main__':
+    bla = numpy.array([1,2,3])
+    bla2 = numpy.flip(bla)
+    bla3 = numpy.random.randint(0, 2, 15)
+
+    count = 10
+    center_point_index=4
+    indices = numpy.arange(count)
+    indices = numpy.roll(indices, -(center_point_index + 1))
+    indices = numpy.delete(indices, count - 1)
+
+
+
+
+
+
+
     lst = [1,2,3,4,5,6,7]
     mydict = [{"a": 1, "b": 2}] * 7
     bla = list(zip(lst, mydict))
