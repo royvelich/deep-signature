@@ -1,13 +1,20 @@
+# python peripherals
+import os
+import numpy
+import random
+from datetime import datetime
+from pathlib import Path
+from timeit import default_timer as timer
+
+# torch
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-import os
-import numpy
-from datetime import datetime
-from pathlib import Path
-from timeit import default_timer as timer
-import random
+from torch.utils.data.sampler import SequentialSampler
+
+# deep_signature
+from deep_signature import curve_processing
 
 
 class DeepSignatureDataset(Dataset):
@@ -238,6 +245,9 @@ class ModelTrainer:
         train_sampler = SubsetRandomSampler(train_indices)
         validation_sampler = SubsetRandomSampler(validation_indices)
 
+        # train_sampler = SequentialSampler(train_indices)
+        # validation_sampler = SequentialSampler(validation_indices)
+
         train_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler)
         validation_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=validation_sampler)
 
@@ -353,3 +363,145 @@ class ModelTrainer:
     @staticmethod
     def _extract_batch_data(batch_data):
         return batch_data['curves_channel1'], batch_data['curves_channel2'], batch_data['labels']
+
+
+class SimpleDeepSignatureDataset(Dataset):
+    def __init__(self):
+        self._pairs = None
+        self._labels = None
+
+    def load_dataset(self, negative_pairs_dir_path, positive_pairs_dir_path):
+        negative_pairs = numpy.load(file=os.path.normpath(os.path.join(negative_pairs_dir_path, 'negative_pairs.npy')), allow_pickle=True)
+        positive_pairs = numpy.load(file=os.path.normpath(os.path.join(positive_pairs_dir_path, 'positive_pairs.npy')), allow_pickle=True)
+        pairs_count = numpy.minimum(negative_pairs.shape[0], positive_pairs.shape[0])
+        full_pairs_count = 2 * pairs_count
+
+        # random.shuffle(negative_pairs)
+        # random.shuffle(positive_pairs)
+        negative_pairs = negative_pairs[:pairs_count]
+        positive_pairs = positive_pairs[:pairs_count]
+
+        self._pairs = numpy.empty((full_pairs_count, negative_pairs.shape[1], negative_pairs.shape[2], negative_pairs.shape[3]))
+        self._pairs[::2, :] = negative_pairs
+        self._pairs[1::2, :] = positive_pairs
+        del negative_pairs
+        del positive_pairs
+
+        negaitve_labels = numpy.zeros(pairs_count)
+        positive_labels = numpy.ones(pairs_count)
+        self._labels = numpy.empty(full_pairs_count)
+        self._labels[::2] = negaitve_labels
+        self._labels[1::2] = positive_labels
+
+    def __len__(self):
+        return self._labels.shape[0]
+
+    def __getitem__(self, idx):
+        pairs = self._pairs[idx, :]
+
+        for i in range(2):
+            if curve_processing.is_ccw(curve_sample=pairs[i]) is False:
+                pairs[i] = numpy.flip(pairs[i], axis=0)
+
+        for i in range(2):
+            radians = curve_processing.calculate_tangent_angle(curve_sample=pairs[i])
+            pairs[i] = curve_processing.rotate_curve(curve=pairs[i], radians=radians)
+
+        curves = torch.from_numpy(pairs).cuda().double()
+        label = torch.from_numpy(numpy.array([self._labels[idx]])).cuda().double()
+
+        first_curve = torch.unsqueeze(curves[0, :, :], dim=0).cuda().double()
+        second_curve = torch.unsqueeze(curves[1, :, :], dim=0).cuda().double()
+
+        return {
+            'curves_channel1': first_curve,
+            'curves_channel2': second_curve,
+            'labels': label
+        }
+
+
+class SimpleDeepSignatureNet(torch.nn.Module):
+    def __init__(self, sample_points, layers):
+        super(SimpleDeepSignatureNet, self).__init__()
+        self._regressor = SimpleDeepSignatureNet._create_regressor(layers=layers, in_features=2 * sample_points)
+
+    def forward(self, x):
+        features = x.reshape([x.shape[0], x.shape[1], x.shape[2] * x.shape[3]])
+        output = self._regressor(features)
+        return output
+
+    @staticmethod
+    def _create_feature_extractor(kernel_size):
+        return torch.nn.Sequential(
+            SimpleDeepSignatureNet._create_cnn_block(
+                in_channels=1,
+                out_channels=64,
+                kernel_size=kernel_size,
+                first_block=True,
+                last_block=False),
+            SimpleDeepSignatureNet._create_cnn_block(
+                in_channels=64,
+                out_channels=32,
+                kernel_size=kernel_size,
+                first_block=False,
+                last_block=False),
+            SimpleDeepSignatureNet._create_cnn_block(
+                in_channels=32,
+                out_channels=16,
+                kernel_size=kernel_size,
+                first_block=False,
+                last_block=True)
+        )
+
+    @staticmethod
+    def _create_regressor(layers, in_features):
+        linear_modules = []
+        for _ in range(layers):
+            # out_features = in_features
+            linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=in_features))
+            linear_modules.append(torch.nn.GELU())
+            # in_features = out_features
+
+        linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
+        return torch.nn.Sequential(*linear_modules)
+
+    @staticmethod
+    def _create_cnn_block(in_channels, out_channels, kernel_size, first_block, last_block):
+        padding = int(kernel_size / 2)
+
+        layers = [
+            torch.nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=(kernel_size, 2) if first_block is True else (kernel_size, 1),
+                padding=(padding, 0),
+                padding_mode='zeros'),
+            # torch.nn.BatchNorm2d(out_channels),
+            torch.nn.GELU(),
+            # torch.nn.Dropout2d(0.05),
+            torch.nn.Conv2d(
+                in_channels=out_channels,
+                out_channels=out_channels,
+                kernel_size=(kernel_size, 1),
+                padding=(padding, 0),
+                padding_mode='zeros'),
+            # torch.nn.BatchNorm2d(out_channels),
+            torch.nn.GELU(),
+            # torch.nn.Dropout2d(0.05),
+            torch.nn.Conv2d(
+                in_channels=out_channels,
+                out_channels=out_channels,
+                kernel_size=(kernel_size, 1),
+                padding=(padding, 0),
+                padding_mode='zeros'),
+            # torch.nn.BatchNorm2d(out_channels),
+            torch.nn.GELU(),
+            # torch.nn.Dropout2d(0.05),
+        ]
+
+        if not last_block:
+            layers.append(torch.nn.MaxPool2d(
+                kernel_size=(3, 1),
+                padding=(1, 0)))
+
+        return torch.nn.Sequential(*layers)

@@ -87,6 +87,11 @@ def strided_indexing_roll(a, r):
 
 
 if __name__ == '__main__':
+    bla = random.randrange(10)
+    bla = numpy.random.randint(0, 10, size=[20,2]).tolist()
+    # lst = [[random.randrange(r1) for _ in range(random.randrange(r2))] for __ in range(random.randrange(r3))]
+
+
     bla = numpy.array([1,2,3])
     bla2 = numpy.flip(bla)
     bla3 = numpy.random.randint(0, 2, 15)
