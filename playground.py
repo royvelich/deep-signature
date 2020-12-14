@@ -87,6 +87,30 @@ def strided_indexing_roll(a, r):
 
 
 if __name__ == '__main__':
+    bla = [1,2,3,4]
+    bla.remove(3)
+
+    bla = numpy.random.choice([1,2,3,6,7], 10)
+
+    bla = numpy.random.randint(7)
+    bla = numpy.random.randint(7)
+    bla = numpy.random.randint(7)
+    bla = numpy.random.randint(7)
+
+    bla = itertools.combinations([1,2,3,4,5,6,7,8,9,10], 2)
+    for combi in bla:
+        bubu = list(combi)
+        h = 5
+
+    from numpy.random import default_rng
+
+    rng = numpy.random.default_rng()
+    numbers1 = rng.choice(20, size=10, replace=False)
+    numbers2 = rng.choice(20, size=10, replace=False)
+
+
+
+
     bla = random.randrange(10)
     bla = numpy.random.randint(0, 10, size=[20,2]).tolist()
     # lst = [[random.randrange(r1) for _ in range(random.randrange(r2))] for __ in range(random.randrange(r3))]

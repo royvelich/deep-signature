@@ -133,16 +133,20 @@ def match_curve_sample_tangents(curve_sample1, curve_sample2, index1, index2):
 
 
 def is_ccw(curve_sample):
-    tangent = curve_sample[0] - curve_sample[1]
-    normal = numpy.array([-tangent[1], tangent[0]])
-    tangent = tangent / numpy.linalg.norm(tangent)
-    normal = normal / numpy.linalg.norm(normal)
-    return numpy.dot(tangent, normal) < 0
+    eps = 1e-9
+    pointer01 = curve_sample[0] - curve_sample[1]
+    pointer12 = curve_sample[2] - curve_sample[1]
+    normal01 = numpy.array([-pointer01[1], pointer01[0]])
+    pointer01 = pointer01 / (numpy.linalg.norm(pointer01) + eps)
+    normal01 = normal01 / (numpy.linalg.norm(normal01) + eps)
+    pointer12 = pointer12 / (numpy.linalg.norm(pointer12) + eps)
+    return numpy.dot(pointer12, normal01) < 0
 
 
 def calculate_tangent_angle(curve_sample):
+    eps = 1e-9
     tangent = curve_sample[0] - curve_sample[1]
-    tangent = tangent / numpy.linalg.norm(tangent)
+    tangent = tangent / (numpy.linalg.norm(tangent) + eps)
     axis = numpy.array([1, 0])
     axis = axis / numpy.linalg.norm(axis)
     normal = numpy.array([-axis[1], axis[0]])

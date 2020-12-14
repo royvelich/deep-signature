@@ -230,14 +230,11 @@ class ModelTrainer:
         self._model.to(device)
 
     def fit(self, dataset, epochs, batch_size, results_base_dir_path, epoch_handler=None, validation_split=0.2, shuffle_dataset=True):
-        random_seed = 42
-
         dataset_size = len(dataset)
         indices = list(range(dataset_size))
         split = int(numpy.floor(validation_split * dataset_size))
 
         if shuffle_dataset is True:
-            numpy.random.seed(random_seed)
             numpy.random.shuffle(indices)
 
         train_indices, validation_indices = indices[split:], indices[:split]
@@ -248,8 +245,8 @@ class ModelTrainer:
         # train_sampler = SequentialSampler(train_indices)
         # validation_sampler = SequentialSampler(validation_indices)
 
-        train_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler)
-        validation_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=validation_sampler)
+        train_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler, drop_last=True)
+        validation_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=validation_sampler, drop_last=True)
 
         ModelTrainer._print_training_configuration('Epochs', epochs)
         ModelTrainer._print_training_configuration('Batch size', batch_size)
@@ -290,16 +287,16 @@ class ModelTrainer:
             if epoch_handler is not None:
                 epoch_handler(epoch_index)
 
-        results = {
-            'train_loss_array': train_loss_array,
-            'validation_loss_array': validation_loss_array,
-            'epochs': epochs,
-            'batch_size': batch_size,
-            'model_file_path': model_file_path,
-            'results_file_path': results_file_path
-        }
+            results = {
+                'train_loss_array': train_loss_array,
+                'validation_loss_array': validation_loss_array,
+                'epochs': epochs,
+                'batch_size': batch_size,
+                'model_file_path': model_file_path,
+                'results_file_path': results_file_path
+            }
 
-        numpy.save(file=results_file_path, arr=results, allow_pickle=True)
+            numpy.save(file=results_file_path, arr=results, allow_pickle=True)
 
         return results
 
@@ -376,8 +373,8 @@ class SimpleDeepSignatureDataset(Dataset):
         pairs_count = numpy.minimum(negative_pairs.shape[0], positive_pairs.shape[0])
         full_pairs_count = 2 * pairs_count
 
-        # random.shuffle(negative_pairs)
-        # random.shuffle(positive_pairs)
+        random.shuffle(negative_pairs)
+        random.shuffle(positive_pairs)
         negative_pairs = negative_pairs[:pairs_count]
         positive_pairs = positive_pairs[:pairs_count]
 
@@ -400,7 +397,7 @@ class SimpleDeepSignatureDataset(Dataset):
         pairs = self._pairs[idx, :]
 
         for i in range(2):
-            if curve_processing.is_ccw(curve_sample=pairs[i]) is False:
+            if not curve_processing.is_ccw(curve_sample=pairs[i]):
                 pairs[i] = numpy.flip(pairs[i], axis=0)
 
         for i in range(2):
@@ -456,13 +453,39 @@ class SimpleDeepSignatureNet(torch.nn.Module):
     @staticmethod
     def _create_regressor(layers, in_features):
         linear_modules = []
-        for _ in range(layers):
-            # out_features = in_features
-            linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=in_features))
-            linear_modules.append(torch.nn.GELU())
-            # in_features = out_features
 
-        linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
+        linear_modules.append(torch.nn.Linear(in_features=6, out_features=40))
+        linear_modules.append(torch.nn.BatchNorm1d(40))
+        linear_modules.append(torch.nn.GELU())
+        linear_modules.append(torch.nn.Dropout(0.3))
+        linear_modules.append(torch.nn.Linear(in_features=40, out_features=30))
+        linear_modules.append(torch.nn.BatchNorm1d(30))
+        linear_modules.append(torch.nn.GELU())
+        linear_modules.append(torch.nn.Dropout(0.3))
+        linear_modules.append(torch.nn.Linear(in_features=30, out_features=20))
+        linear_modules.append(torch.nn.BatchNorm1d(20))
+        linear_modules.append(torch.nn.GELU())
+        linear_modules.append(torch.nn.Dropout(0.3))
+        linear_modules.append(torch.nn.Linear(in_features=20, out_features=10))
+        linear_modules.append(torch.nn.BatchNorm1d(10))
+        linear_modules.append(torch.nn.GELU())
+        linear_modules.append(torch.nn.Dropout(0.3))
+        linear_modules.append(torch.nn.Linear(in_features=10, out_features=1))
+        # linear_modules.append(torch.nn.ReLU())
+        # linear_modules.append(torch.nn.Linear(in_features=10, out_features=6))
+        # linear_modules.append(torch.nn.ReLU())
+        # linear_modules.append(torch.nn.Linear(in_features=6, out_features=1))
+        # linear_modules.append(torch.nn.ReLU())
+
+        # out_features = 100
+        # linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=out_features))
+        # for _ in range(layers):
+        #     in_features = out_features
+        #     out_features = int(out_features / layers)
+        #     linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=out_features))
+        #     linear_modules.append(torch.nn.ReLU())
+        #
+        # linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
         return torch.nn.Sequential(*linear_modules)
 
     @staticmethod

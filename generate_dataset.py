@@ -2,22 +2,33 @@ from deep_signature.data_generation import CurveDatasetGenerator
 from deep_signature.data_generation import SimpleCurveDatasetGenerator
 
 if __name__ == '__main__':
-    SimpleCurveDatasetGenerator.generate_circles(
-        dir_path="C:/deep-signature-data/circles/curves",
-        min_radius=50,
-        max_radius=700,
-        circles_count=4000,
-        sampling_density=0.5)
+    count = 7000
+    pairs_per_curve = 70
+
+    # SimpleCurveDatasetGenerator.generate_circles(
+    #     dir_path="C:/deep-signature-data/circles/curves",
+    #     min_radius=100,
+    #     max_radius=150,
+    #     circles_count=7000,
+    #     sampling_density=0.3)
 
     SimpleCurveDatasetGenerator.generate_negative_pairs(
         pairs_dir_path="C:/deep-signature-data/circles/negative-pairs",
         curves_dir_path="C:/deep-signature-data/circles/curves",
-        count=20000)
+        count=count*pairs_per_curve,
+        chunk_size=1000)
 
     SimpleCurveDatasetGenerator.generate_positive_pairs(
         pairs_dir_path="C:/deep-signature-data/circles/positive-pairs",
         curves_dir_path="C:/deep-signature-data/circles/curves",
-        count=20000)
+        count=count,
+        chunk_size=1000,
+        pairs_per_curve=pairs_per_curve)
+
+    # SimpleCurveDatasetGenerator.generate_negative_pairs_from_positive_pairs(
+    #     pairs_dir_path="C:/deep-signature-data/circles/negative-pairs",
+    #     packed_positive_pairs_dir_path="C:/deep-signature-data/circles/positive-pairs",
+    #     chunk_size=1000)
 
     # curve_dataset_generator = CurveDatasetGenerator()
     # curve_dataset_generator.generate_curve_managers(
