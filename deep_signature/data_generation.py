@@ -167,7 +167,7 @@ class CurveManager:
         self._evolution_dt = evolution_dt
         self._max_density = 1 / self._sampling_points_count
 
-        self._curve = curve_processing.normalize_curve(curve)
+        self._curve = curve_processing.translate_curve(curve=curve, offset=-numpy.mean(curve, axis=0))
         self._curve_points_count = self._curve.shape[0]
 
         # if sampling_points_ratio is not None:
@@ -751,7 +751,7 @@ class CurveDatasetGenerator:
 
 class SimpleCurveManager:
     def __init__(self, curve):
-        self._curve = curve_processing.normalize_curve(curve)
+        self._curve = curve_processing.translate_curve(curve=curve, offset=-numpy.mean(curve, axis=0))
         self._curve_points_count = self._curve.shape[0]
         self._curvature = curve_processing.calculate_curvature(self._curve)
 
@@ -787,12 +787,13 @@ class SimpleCurveDatasetGenerator:
     @staticmethod
     def generate_circles(dir_path, min_radius, max_radius, circles_count, sampling_density):
         circles = []
-        radius = numpy.random.uniform(low=min_radius, high=max_radius, size=circles_count)
+        radii = numpy.random.uniform(low=min_radius, high=max_radius, size=circles_count)
+        radii = numpy.sort(radii)
         for i in range(circles_count):
-            circle = SimpleCurveDatasetGenerator._generate_circle(sampling_density=sampling_density, radius=radius[i])
+            circle = SimpleCurveDatasetGenerator._generate_circle(sampling_density=sampling_density, radius=radii[i])
             circles.append(circle)
 
-        numpy.random.shuffle(circles)
+        # numpy.random.shuffle(circles)
         pathlib.Path(dir_path).mkdir(parents=True, exist_ok=True)
         numpy.save(file=os.path.normpath(os.path.join(dir_path, f'curves.npy')), arr=numpy.array(circles, dtype=object))
 
@@ -859,6 +860,7 @@ class SimpleCurveDatasetGenerator:
         pathlib.Path(pairs_dir_path).mkdir(parents=True, exist_ok=True)
         numpy.save(file=os.path.normpath(os.path.join(pairs_dir_path, f'positive_pairs.npy')), arr=numpy.array(positive_pairs, dtype=object))
         numpy.save(file=os.path.normpath(os.path.join(pairs_dir_path, f'packed_positive_pairs.npy')), arr=numpy.array(positive_pairs_per_curve, dtype=object))
+        numpy.save(file=os.path.normpath(os.path.join(pairs_dir_path, f'positive_tuplets.npy')), arr=numpy.array(positive_pairs_per_curve, dtype=object))
 
     @staticmethod
     def generate_negative_pairs_from_positive_pairs(pairs_dir_path, packed_positive_pairs_dir_path, chunk_size=5):
@@ -883,6 +885,32 @@ class SimpleCurveDatasetGenerator:
 
         pathlib.Path(pairs_dir_path).mkdir(parents=True, exist_ok=True)
         numpy.save(file=os.path.normpath(os.path.join(pairs_dir_path, f'negative_pairs.npy')), arr=numpy.array(negative_pairs, dtype=object))
+
+    @staticmethod
+    def generate_tuplets(curves_dir_path, tuplets_dir_path, tuplets_per_curve, tuplet_length, chunk_size=5):
+        tuplets = []
+        curves = numpy.load(file=os.path.normpath(os.path.join(curves_dir_path, f'curves.npy')), allow_pickle=True)
+        count = len(curves)
+
+        print('    - Creating pool...', end="")
+        pool = multiprocessing.Pool()
+        print('\r    - Creating pool... Done.')
+
+        print('    - Generating tuplets...', end="")
+
+        curves_dup = [curves] * count
+        curve_indices = range(count)
+        tuplets_per_curve_dup = [tuplets_per_curve] * count
+        tuplet_length_dup = [tuplet_length] * count
+        zipped_data = list(zip(curves_dup, curve_indices, tuplets_per_curve_dup, tuplet_length_dup))
+        for i, curve_tuplets in enumerate(pool.imap_unordered(SimpleCurveDatasetGenerator._generate_curve_tuplets, zipped_data, chunk_size)):
+            tuplets.extend(curve_tuplets)
+            print('\r    - Generating tuplets... {0:.1%} Done.'.format((i + 1) / count), end="")
+
+        print('\r    - Generating tuplets... {0:.1%} Done.'.format((i + 1) / count))
+
+        pathlib.Path(tuplets_dir_path).mkdir(parents=True, exist_ok=True)
+        numpy.save(file=os.path.normpath(os.path.join(tuplets_dir_path, f'tuplets.npy')), arr=numpy.array(tuplets, dtype=object))
 
     @staticmethod
     def _process_negative_pair(data):
@@ -910,15 +938,41 @@ class SimpleCurveDatasetGenerator:
         curves_count = len(packed_positive_pairs)
         valid_curve_indices = list(range(curves_count))
         valid_curve_indices.remove(curve_index)
-        curve_indices = numpy.random.choice(valid_curve_indices, positive_pairs_count)
-        for i in range(positive_pairs_count):
+
+        valid_curve_indices_count = 100*positive_pairs_count
+        curve_indices = numpy.random.choice(valid_curve_indices, valid_curve_indices_count)
+        for i in range(valid_curve_indices_count):
             current_curve_index = curve_indices[i]
-            j = numpy.random.randint(positive_pairs_count)
-            curve_section_sample1 = packed_positive_pairs[curve_index][i][0]
-            curve_section_sample2 = packed_positive_pairs[current_curve_index][j][0]
+            sample_index1 = numpy.random.randint(positive_pairs_count)
+            sample_index2 = numpy.random.randint(positive_pairs_count)
+            curve_section_sample1 = packed_positive_pairs[curve_index][sample_index1][0]
+            curve_section_sample2 = packed_positive_pairs[current_curve_index][sample_index2][0]
             pairs.append([curve_section_sample1, curve_section_sample2])
 
         return pairs
+
+    @staticmethod
+    def _generate_curve_tuplets(data):
+        tuplets = []
+        curves, curve_index, tuplets_per_curve, tuplet_length = data
+        curves_count = len(curves)
+        valid_negative_curve_indices = list(range(curves_count))
+        valid_negative_curve_indices.remove(curve_index)
+        curve_manager = SimpleCurveManager(curve=curves[curve_index])
+        for i in range(tuplets_per_curve):
+            tuplet = []
+            anchor_sample = curve_processing.normalize_curve(curve=curve_manager.sample_curve_section_randomly())
+            positive_sample = curve_processing.normalize_curve(curve=curve_manager.sample_curve_section_randomly())
+            tuplet.append(anchor_sample)
+            tuplet.append(positive_sample)
+            negative_curve_indices = numpy.random.choice(valid_negative_curve_indices, tuplet_length)
+            for negative_curve_index in negative_curve_indices:
+                negative_curve_manager = SimpleCurveManager(curve=curves[negative_curve_index])
+                negative_sample = curve_processing.normalize_curve(curve=negative_curve_manager.sample_curve_section_randomly())
+                tuplet.append(negative_sample)
+
+            tuplets.append(tuplet)
+        return tuplets
 
     @staticmethod
     def _process_positive_pair(data):

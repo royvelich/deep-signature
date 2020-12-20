@@ -86,8 +86,13 @@ def evolve_curve(curve, evolution_iterations, evolution_dt, smoothing_window_len
 
 
 def normalize_curve(curve):
-    center_of_mass = numpy.mean(curve, axis=0)
-    normalized_curve = curve - center_of_mass
+    normalized_curve = translate_curve(curve=curve, offset=-curve[1])
+
+    if not is_ccw(curve_sample=normalized_curve):
+        normalized_curve = numpy.flip(normalized_curve, axis=0)
+
+    radians = calculate_tangent_angle(curve_sample=normalized_curve)
+    normalized_curve = rotate_curve(curve=normalized_curve, radians=radians)
     return normalized_curve
 
 

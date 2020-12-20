@@ -87,6 +87,49 @@ def strided_indexing_roll(a, r):
 
 
 if __name__ == '__main__':
+
+    v = torch.tensor([[[1],[2],[3],[4],[5]], [[11],[13],[14],[15],[16]], [[21],[24],[25],[26],[27]], [[31],[35],[36],[37],[38]]]).double()
+
+    v2 = v[:, 0, :]
+
+    v3 = v2.unsqueeze(dim=1)
+
+    # v4 = v3.repeat(1, 3, 1)
+
+    v5 = v - v3
+
+    v6 = v5.abs().squeeze(dim=2)
+
+    v7 = v6[:, 1:]
+
+    v8 = v7[:, 0]
+
+    v9 = v8.unsqueeze(dim=1)
+
+    v10 = v7 - v9
+
+    v11 = v10[:, 1:]
+
+    v12 = v11.exp()
+
+    v13 = v12.sum(dim=1)
+
+    v14 = v13 + 1
+
+    v15 = v14.log()
+
+    v16 = v15.mean(dim=0)
+
+    h = 5
+
+
+
+
+
+
+
+
+
     bla = [1,2,3,4]
     bla.remove(3)
 

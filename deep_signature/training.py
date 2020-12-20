@@ -17,192 +17,6 @@ from torch.utils.data.sampler import SequentialSampler
 from deep_signature import curve_processing
 
 
-class DeepSignatureDataset(Dataset):
-    def __init__(self):
-        self._pairs = None
-        self._labels = None
-
-    def load_dataset(self, negative_pairs_dir_path, positive_pairs_dir_path):
-        negative_pairs = numpy.load(file=os.path.normpath(os.path.join(negative_pairs_dir_path, 'negative_pairs.npy')), allow_pickle=True)
-        positive_pairs = numpy.load(file=os.path.normpath(os.path.join(positive_pairs_dir_path, 'positive_pairs.npy')), allow_pickle=True)
-        pairs_count = numpy.minimum(negative_pairs.shape[0], positive_pairs.shape[0])
-        full_pairs_count = 2 * pairs_count
-
-        random.shuffle(negative_pairs)
-        random.shuffle(positive_pairs)
-        negative_pairs = negative_pairs[:pairs_count]
-        positive_pairs = positive_pairs[:pairs_count]
-
-        self._pairs = numpy.empty((full_pairs_count, negative_pairs.shape[1], negative_pairs.shape[2], negative_pairs.shape[3]))
-        self._pairs[::2, :] = negative_pairs
-        self._pairs[1::2, :] = positive_pairs
-        del negative_pairs
-        del positive_pairs
-
-        negaitve_labels = numpy.zeros(pairs_count)
-        positive_labels = numpy.ones(pairs_count)
-        self._labels = numpy.empty(full_pairs_count)
-        self._labels[::2] = negaitve_labels
-        self._labels[1::2] = positive_labels
-
-    def __len__(self):
-        return self._labels.shape[0]
-
-    def __getitem__(self, idx):
-        pairs = self._pairs[idx, :]
-        flips = numpy.random.randint(0, 2, 2)
-
-        if flips[0] == 1:
-            pairs[0] = numpy.flip(pairs[0], axis=0)
-            pairs[1] = numpy.flip(pairs[1], axis=0)
-
-        # if flips[1] == 1:
-        #     pairs[1] = numpy.flip(pairs[1], axis=0)
-
-        curves = torch.from_numpy(pairs).cuda().double()
-        label = torch.from_numpy(numpy.array([self._labels[idx]])).cuda().double()
-
-        first_curve = torch.unsqueeze(curves[0, :, :], dim=0).cuda().double()
-        second_curve = torch.unsqueeze(curves[1, :, :], dim=0).cuda().double()
-
-        return {
-            'curves_channel1': first_curve,
-            'curves_channel2': second_curve,
-            'labels': label
-        }
-
-
-class DeepSignatureNet(torch.nn.Module):
-    def __init__(self, sample_points):
-        super(DeepSignatureNet, self).__init__()
-
-        self._feature_extractor = DeepSignatureNet._create_feature_extractor(
-            kernel_size=3)
-
-        dim_test = torch.unsqueeze(torch.unsqueeze(torch.rand(sample_points, 2), 0), 0)
-
-        features = self._feature_extractor(dim_test)
-        in_features = numpy.prod(features.shape)
-
-        self._regressor = DeepSignatureNet._create_regressor(layers=3, in_features=in_features)
-
-    def forward(self, x):
-        features = self._feature_extractor(x)
-        features_reshaped = features.reshape([x.shape[0], -1])
-        output = self._regressor(features_reshaped)
-        return output
-
-    @staticmethod
-    def _create_feature_extractor(kernel_size):
-        return torch.nn.Sequential(
-            DeepSignatureNet._create_cnn_block(
-                in_channels=1,
-                out_channels=64,
-                kernel_size=kernel_size,
-                first_block=True,
-                last_block=False),
-            DeepSignatureNet._create_cnn_block(
-                in_channels=64,
-                out_channels=32,
-                kernel_size=kernel_size,
-                first_block=False,
-                last_block=False),
-            DeepSignatureNet._create_cnn_block(
-                in_channels=32,
-                out_channels=16,
-                kernel_size=kernel_size,
-                first_block=False,
-                last_block=True)
-            # DeepSignatureNet._create_cnn_block(
-            #     in_channels=8,
-            #     out_channels=4,
-            #     kernel_size=kernel_size,
-            #     first_block=False,
-            #     last_block=False)
-            # DeepSignatureNet._create_cnn_block(
-            #     in_channels=8,
-            #     out_channels=8,
-            #     kernel_size=kernel_size,
-            #     first_block=False,
-            #     last_block=False),
-            # DeepSignatureNet._create_cnn_block(
-            #     in_channels=8,
-            #     out_channels=8,
-            #     kernel_size=kernel_size,
-            #     first_block=False,
-            #     last_block=False),
-            # DeepSignatureNet._create_cnn_block(
-            #     in_channels=8,
-            #     out_channels=8,
-            #     kernel_size=kernel_size,
-            #     first_block=False,
-            #     last_block=True)
-        )
-
-    @staticmethod
-    def _create_regressor(layers, in_features):
-        linear_modules = []
-        for _ in range(layers):
-            out_features = int(0.5 * in_features)
-            linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=out_features))
-            # linear_modules.append(torch.nn.BatchNorm1d(out_features))
-            linear_modules.append(torch.nn.GELU())
-
-            # linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
-            # linear_modules.append(torch.nn.BatchNorm1d(out_features))
-            # linear_modules.append(torch.nn.GELU())
-
-            # linear_modules.append(torch.nn.Dropout2d(0.1))
-
-            # linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=out_features))
-
-            in_features = out_features
-
-        linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
-        return torch.nn.Sequential(*linear_modules)
-
-    @staticmethod
-    def _create_cnn_block(in_channels, out_channels, kernel_size, first_block, last_block):
-        padding = int(kernel_size / 2)
-
-        layers = [
-            torch.nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=(kernel_size, 2) if first_block is True else (kernel_size, 1),
-                padding=(padding, 0),
-                padding_mode='zeros'),
-            # torch.nn.BatchNorm2d(out_channels),
-            torch.nn.GELU(),
-            # torch.nn.Dropout2d(0.05),
-            torch.nn.Conv2d(
-                in_channels=out_channels,
-                out_channels=out_channels,
-                kernel_size=(kernel_size, 1),
-                padding=(padding, 0),
-                padding_mode='zeros'),
-            # torch.nn.BatchNorm2d(out_channels),
-            torch.nn.GELU(),
-            # torch.nn.Dropout2d(0.05),
-            torch.nn.Conv2d(
-                in_channels=out_channels,
-                out_channels=out_channels,
-                kernel_size=(kernel_size, 1),
-                padding=(padding, 0),
-                padding_mode='zeros'),
-            # torch.nn.BatchNorm2d(out_channels),
-            torch.nn.GELU(),
-            # torch.nn.Dropout2d(0.05),
-        ]
-
-        if not last_block:
-            layers.append(torch.nn.MaxPool2d(
-                kernel_size=(3, 1),
-                padding=(1, 0)))
-
-        return torch.nn.Sequential(*layers)
-
-
 class ContrastiveLoss(torch.nn.Module):
     def __init__(self, mu=1):
         super(ContrastiveLoss, self).__init__()
@@ -219,6 +33,27 @@ class ContrastiveLoss(torch.nn.Module):
         negative_penalty = torch.sum(negative_penalties)
 
         return (positive_penalty + negative_penalty) / x1.shape[0]
+
+
+class TupletLoss(torch.nn.Module):
+    def __init__(self):
+        super(TupletLoss, self).__init__()
+
+    def forward(self, tuplet_embeddings):
+        v = tuplet_embeddings[:, 0, :]
+        v2 = v.unsqueeze(dim=1)
+        v3 = v2 - tuplet_embeddings
+        v4 = v3.abs().squeeze(dim=2)
+        v5 = v4[:, 1:]
+        v6 = v5[:, 0]
+        v7 = v6.unsqueeze(dim=1)
+        v8 = v7 - v5
+        v9 = v8[:, 1:]
+        v10 = v9.exp()
+        v11 = v10.sum(dim=1)
+        v12 = v11 + 1
+        v13 = v12.log()
+        return v13.mean(dim=0)
 
 
 class ModelTrainer:
@@ -321,10 +156,9 @@ class ModelTrainer:
         return loss.item()
 
     def _evaluate_loss(self, batch_data):
-        x1, x2, labels = ModelTrainer._extract_batch_data(batch_data)
-        out1 = self._model(x1)
-        out2 = self._model(x2)
-        return self._loss_fn(out1, out2, torch.squeeze(labels))
+        tuplets = ModelTrainer._extract_batch_data_tuplets(batch_data)
+        out = self._model(tuplets)
+        return self._loss_fn(out)
 
     @staticmethod
     def _epoch(epoch_index, data_loader, process_batch_fn):
@@ -361,8 +195,12 @@ class ModelTrainer:
     def _extract_batch_data(batch_data):
         return batch_data['curves_channel1'], batch_data['curves_channel2'], batch_data['labels']
 
+    @staticmethod
+    def _extract_batch_data_tuplets(batch_data):
+        return batch_data['tuplets']
 
-class SimpleDeepSignatureDataset(Dataset):
+
+class DeepSignaturePairsDataset(Dataset):
     def __init__(self):
         self._pairs = None
         self._labels = None
@@ -370,25 +208,28 @@ class SimpleDeepSignatureDataset(Dataset):
     def load_dataset(self, negative_pairs_dir_path, positive_pairs_dir_path):
         negative_pairs = numpy.load(file=os.path.normpath(os.path.join(negative_pairs_dir_path, 'negative_pairs.npy')), allow_pickle=True)
         positive_pairs = numpy.load(file=os.path.normpath(os.path.join(positive_pairs_dir_path, 'positive_pairs.npy')), allow_pickle=True)
-        pairs_count = numpy.minimum(negative_pairs.shape[0], positive_pairs.shape[0])
-        full_pairs_count = 2 * pairs_count
+        # pairs_count = numpy.minimum(negative_pairs.shape[0], positive_pairs.shape[0])
+        # full_pairs_count = 2 * pairs_count
+        full_pairs_count = negative_pairs.shape[0] + positive_pairs.shape[0]
 
         random.shuffle(negative_pairs)
         random.shuffle(positive_pairs)
-        negative_pairs = negative_pairs[:pairs_count]
-        positive_pairs = positive_pairs[:pairs_count]
+        # negative_pairs = negative_pairs[:pairs_count]
+        # positive_pairs = positive_pairs[:pairs_count]
 
         self._pairs = numpy.empty((full_pairs_count, negative_pairs.shape[1], negative_pairs.shape[2], negative_pairs.shape[3]))
-        self._pairs[::2, :] = negative_pairs
-        self._pairs[1::2, :] = positive_pairs
-        del negative_pairs
-        del positive_pairs
+        self._pairs[:negative_pairs.shape[0], :] = negative_pairs
+        self._pairs[negative_pairs.shape[0]:, :] = positive_pairs
+        # del negative_pairs
+        # del positive_pairs
 
-        negaitve_labels = numpy.zeros(pairs_count)
-        positive_labels = numpy.ones(pairs_count)
+        negaitve_labels = numpy.zeros(negative_pairs.shape[0])
+        positive_labels = numpy.ones(positive_pairs.shape[0])
         self._labels = numpy.empty(full_pairs_count)
-        self._labels[::2] = negaitve_labels
-        self._labels[1::2] = positive_labels
+        self._labels[:negative_pairs.shape[0]] = negaitve_labels
+        self._labels[negative_pairs.shape[0]:] = positive_labels
+        # self._labels[::2] = negaitve_labels
+        # self._labels[1::2] = positive_labels
 
     def __len__(self):
         return self._labels.shape[0]
@@ -417,32 +258,52 @@ class SimpleDeepSignatureDataset(Dataset):
         }
 
 
-class SimpleDeepSignatureNet(torch.nn.Module):
+class DeepSignatureTupletsDataset(Dataset):
+    def __init__(self):
+        self._tuplets = None
+
+    def load_dataset(self, tuplets_dir_path):
+        self._tuplets = numpy.load(file=os.path.normpath(os.path.join(tuplets_dir_path, 'tuplets.npy')), allow_pickle=True)
+
+    def __len__(self):
+        return self._tuplets.shape[0]
+
+    def __getitem__(self, index):
+        # tuplet = torch.unsqueeze(torch.from_numpy(self._tuplets[index].astype('float64')), dim=0).cuda().double()
+        tuplet = torch.from_numpy(self._tuplets[index].astype('float64')).cuda().double()
+
+        return {
+            'tuplets': tuplet,
+        }
+
+
+class DeepSignatureNet(torch.nn.Module):
     def __init__(self, sample_points, layers):
-        super(SimpleDeepSignatureNet, self).__init__()
-        self._regressor = SimpleDeepSignatureNet._create_regressor(layers=layers, in_features=2 * sample_points)
+        super(DeepSignatureNet, self).__init__()
+        self._regressor = DeepSignatureNet._create_regressor(layers=layers, in_features=2 * sample_points)
 
     def forward(self, x):
-        features = x.reshape([x.shape[0], x.shape[1], x.shape[2] * x.shape[3]])
-        output = self._regressor(features)
+        features = x.reshape([x.shape[0] * x.shape[1], x.shape[2] * x.shape[3]])
+        # features2 = x.reshape([x.shape[0], x.shape[1], x.shape[2], x.shape[3]])
+        output = self._regressor(features).reshape([x.shape[0], x.shape[1], 1])
         return output
 
     @staticmethod
     def _create_feature_extractor(kernel_size):
         return torch.nn.Sequential(
-            SimpleDeepSignatureNet._create_cnn_block(
+            DeepSignatureNet._create_cnn_block(
                 in_channels=1,
                 out_channels=64,
                 kernel_size=kernel_size,
                 first_block=True,
                 last_block=False),
-            SimpleDeepSignatureNet._create_cnn_block(
+            DeepSignatureNet._create_cnn_block(
                 in_channels=64,
                 out_channels=32,
                 kernel_size=kernel_size,
                 first_block=False,
                 last_block=False),
-            SimpleDeepSignatureNet._create_cnn_block(
+            DeepSignatureNet._create_cnn_block(
                 in_channels=32,
                 out_channels=16,
                 kernel_size=kernel_size,
@@ -453,40 +314,34 @@ class SimpleDeepSignatureNet(torch.nn.Module):
     @staticmethod
     def _create_regressor(layers, in_features):
         linear_modules = []
+        in_features = 6
+        out_features = 80
+        p = None
+        while out_features > 10:
+            linear_modules.extend(DeepSignatureNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True))
+            linear_modules.extend(DeepSignatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True))
+            in_features = out_features
+            out_features = int(out_features / 2)
 
-        linear_modules.append(torch.nn.Linear(in_features=6, out_features=40))
-        linear_modules.append(torch.nn.BatchNorm1d(40))
-        linear_modules.append(torch.nn.GELU())
-        linear_modules.append(torch.nn.Dropout(0.3))
-        linear_modules.append(torch.nn.Linear(in_features=40, out_features=30))
-        linear_modules.append(torch.nn.BatchNorm1d(30))
-        linear_modules.append(torch.nn.GELU())
-        linear_modules.append(torch.nn.Dropout(0.3))
-        linear_modules.append(torch.nn.Linear(in_features=30, out_features=20))
-        linear_modules.append(torch.nn.BatchNorm1d(20))
-        linear_modules.append(torch.nn.GELU())
-        linear_modules.append(torch.nn.Dropout(0.3))
-        linear_modules.append(torch.nn.Linear(in_features=20, out_features=10))
-        linear_modules.append(torch.nn.BatchNorm1d(10))
-        linear_modules.append(torch.nn.GELU())
-        linear_modules.append(torch.nn.Dropout(0.3))
-        linear_modules.append(torch.nn.Linear(in_features=10, out_features=1))
-        # linear_modules.append(torch.nn.ReLU())
-        # linear_modules.append(torch.nn.Linear(in_features=10, out_features=6))
-        # linear_modules.append(torch.nn.ReLU())
-        # linear_modules.append(torch.nn.Linear(in_features=6, out_features=1))
-        # linear_modules.append(torch.nn.ReLU())
+        linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
 
-        # out_features = 100
-        # linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=out_features))
-        # for _ in range(layers):
-        #     in_features = out_features
-        #     out_features = int(out_features / layers)
-        #     linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=out_features))
-        #     linear_modules.append(torch.nn.ReLU())
-        #
-        # linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
+        # linear_modules.extend(SimpleDeepSignatureNet._create_hidden_layer(in_features=6, out_features=10, p=None, use_batch_norm=False))
+        # linear_modules.extend(SimpleDeepSignatureNet._create_hidden_layer(in_features=10, out_features=5, p=None, use_batch_norm=False))
+        # linear_modules.extend(SimpleDeepSignatureNet._create_hidden_layer(in_features=5, out_features=1, p=None, use_batch_norm=False))
         return torch.nn.Sequential(*linear_modules)
+
+    @staticmethod
+    def _create_hidden_layer(in_features, out_features, p=None, use_batch_norm=False):
+        linear_modules = []
+        linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=out_features))
+        if use_batch_norm:
+            linear_modules.append(torch.nn.BatchNorm1d(out_features))
+
+        linear_modules.append(torch.nn.GELU())
+
+        if p is not None:
+            linear_modules.append(torch.nn.Dropout(p))
+        return linear_modules
 
     @staticmethod
     def _create_cnn_block(in_channels, out_channels, kernel_size, first_block, last_block):
