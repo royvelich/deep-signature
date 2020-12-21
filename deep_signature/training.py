@@ -22,27 +22,25 @@ class ContrastiveLoss(torch.nn.Module):
         super(ContrastiveLoss, self).__init__()
         self._mu = mu
 
-    def forward(self, x1, x2, y):
-        diff = x1 - x2
-        diff_norm = torch.norm(diff, dim=1)
-
-        positive_penalties = y * diff_norm
-        negative_penalties = (1 - y) * torch.max(torch.zeros_like(diff_norm), self._mu - diff_norm)
-
-        positive_penalty = torch.sum(positive_penalties)
-        negative_penalty = torch.sum(negative_penalties)
-
-        return (positive_penalty + negative_penalty) / x1.shape[0]
+    def forward(self, output, batch_data):
+        v = output[:, 0, :]
+        v2 = v.unsqueeze(dim=1)
+        v3 = v2 - output
+        v4 = v3.abs().squeeze(dim=2)
+        v5 = v4[:, 1:].squeeze(dim=1)
+        labels = batch_data['labels'].squeeze(dim=1)
+        penalties = labels * v5 + (1 - labels) * torch.max(torch.zeros_like(v5), self._mu - v5)
+        return penalties.mean()
 
 
 class TupletLoss(torch.nn.Module):
     def __init__(self):
         super(TupletLoss, self).__init__()
 
-    def forward(self, tuplet_embeddings):
-        v = tuplet_embeddings[:, 0, :]
+    def forward(self, output, batch_data):
+        v = output[:, 0, :]
         v2 = v.unsqueeze(dim=1)
-        v3 = v2 - tuplet_embeddings
+        v3 = v2 - output
         v4 = v3.abs().squeeze(dim=2)
         v5 = v4[:, 1:]
         v6 = v5[:, 0]
@@ -146,19 +144,18 @@ class ModelTrainer:
 
     def _train_batch(self, batch_data):
         self._optimizer.zero_grad()
-        loss = self._evaluate_loss(batch_data)
+        loss = self._evaluate_loss(batch_data=batch_data)
         loss.backward()
         self._optimizer.step()
         return loss.item()
 
     def _validation_batch(self, batch_data):
-        loss = self._evaluate_loss(batch_data)
+        loss = self._evaluate_loss(batch_data=batch_data)
         return loss.item()
 
     def _evaluate_loss(self, batch_data):
-        tuplets = ModelTrainer._extract_batch_data_tuplets(batch_data)
-        out = self._model(tuplets)
-        return self._loss_fn(out)
+        output = self._model(batch_data['input'])
+        return self._loss_fn(output=output, batch_data=batch_data)
 
     @staticmethod
     def _epoch(epoch_index, data_loader, process_batch_fn):
@@ -191,13 +188,13 @@ class ModelTrainer:
     def _print_batch_loss(epoch_index, batch_index, batch_loss, average_batch_loss, fill, align, index_width, loss_width, batch_count, batch_duration):
         print(f'        - [Epoch {epoch_index:{fill}{align}{index_width}} | Batch {batch_index:{fill}{align}{index_width}} / {batch_count}]: Batch Loss = {batch_loss:{fill}{align}{loss_width}}, Avg. Batch Loss = {average_batch_loss:{fill}{align}{loss_width}}, Batch Duration: {batch_duration} sec.')
 
-    @staticmethod
-    def _extract_batch_data(batch_data):
-        return batch_data['curves_channel1'], batch_data['curves_channel2'], batch_data['labels']
-
-    @staticmethod
-    def _extract_batch_data_tuplets(batch_data):
-        return batch_data['tuplets']
+    # @staticmethod
+    # def _extract_batch_data(batch_data):
+    #     return batch_data['curves_channel1'], batch_data['curves_channel2'], batch_data['labels']
+    #
+    # @staticmethod
+    # def _extract_batch_data_tuplets(batch_data):
+    #     return batch_data['tuplets']
 
 
 class DeepSignaturePairsDataset(Dataset):
@@ -235,26 +232,22 @@ class DeepSignaturePairsDataset(Dataset):
         return self._labels.shape[0]
 
     def __getitem__(self, idx):
-        pairs = self._pairs[idx, :]
+        pair = self._pairs[idx, :]
 
         for i in range(2):
-            if not curve_processing.is_ccw(curve_sample=pairs[i]):
-                pairs[i] = numpy.flip(pairs[i], axis=0)
+            if not curve_processing.is_ccw(curve_sample=pair[i]):
+                pair[i] = numpy.flip(pair[i], axis=0)
 
         for i in range(2):
-            radians = curve_processing.calculate_tangent_angle(curve_sample=pairs[i])
-            pairs[i] = curve_processing.rotate_curve(curve=pairs[i], radians=radians)
+            radians = curve_processing.calculate_tangent_angle(curve_sample=pair[i])
+            pair[i] = curve_processing.rotate_curve(curve=pair[i], radians=radians)
 
-        curves = torch.from_numpy(pairs).cuda().double()
-        label = torch.from_numpy(numpy.array([self._labels[idx]])).cuda().double()
-
-        first_curve = torch.unsqueeze(curves[0, :, :], dim=0).cuda().double()
-        second_curve = torch.unsqueeze(curves[1, :, :], dim=0).cuda().double()
+        pair_torch = torch.from_numpy(pair).cuda().double()
+        label_torch = torch.from_numpy(numpy.array([self._labels[idx]])).cuda().double()
 
         return {
-            'curves_channel1': first_curve,
-            'curves_channel2': second_curve,
-            'labels': label
+            'input': pair_torch,
+            'labels': label_torch
         }
 
 
@@ -269,11 +262,9 @@ class DeepSignatureTupletsDataset(Dataset):
         return self._tuplets.shape[0]
 
     def __getitem__(self, index):
-        # tuplet = torch.unsqueeze(torch.from_numpy(self._tuplets[index].astype('float64')), dim=0).cuda().double()
         tuplet = torch.from_numpy(self._tuplets[index].astype('float64')).cuda().double()
-
         return {
-            'tuplets': tuplet,
+            'input': tuplet,
         }
 
 
@@ -282,9 +273,9 @@ class DeepSignatureNet(torch.nn.Module):
         super(DeepSignatureNet, self).__init__()
         self._regressor = DeepSignatureNet._create_regressor(layers=layers, in_features=2 * sample_points)
 
-    def forward(self, x):
-        features = x.reshape([x.shape[0] * x.shape[1], x.shape[2] * x.shape[3]])
-        output = self._regressor(features).reshape([x.shape[0], x.shape[1], 1])
+    def forward(self, input):
+        features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
+        output = self._regressor(features).reshape([input.shape[0], input.shape[1], 1])
         return output
 
     @staticmethod

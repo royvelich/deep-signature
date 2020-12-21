@@ -20,7 +20,7 @@ if __name__ == '__main__':
     batch_size = 64
     learning_rate = 1e-4
     validation_split = .1
-    mu = 0.1
+    mu = 1
 
     torch.set_default_dtype(torch.float64)
     dataset = DeepSignaturePairsDataset()

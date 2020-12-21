@@ -849,7 +849,7 @@ class SimpleCurveDatasetGenerator:
         curve_indices = numpy.random.randint(0, curves_count, size=count).tolist()
         zipped_data = list(zip(curve_indices, curves_dup))
         for i, current_positive_pairs in enumerate(pool.imap_unordered(SimpleCurveDatasetGenerator._process_positive_pair, zipped_data, chunk_size)):
-            positive_pairs.extend(current_positive_pairs)
+            positive_pairs.append(current_positive_pairs)
             print('\r    - Generating positive pairs... {0:.1%} Done.'.format((i + 1) / count), end="")
 
         print('\r    - Generating positive pairs... {0:.1%} Done.'.format((i + 1) / count))
