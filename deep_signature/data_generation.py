@@ -834,9 +834,8 @@ class SimpleCurveDatasetGenerator:
         numpy.save(file=os.path.normpath(os.path.join(pairs_dir_path, f'negative_pairs.npy')), arr=numpy.array(negative_pairs, dtype=object))
 
     @staticmethod
-    def generate_positive_pairs(pairs_dir_path, curves_dir_path, count, pairs_per_curve, chunk_size=5):
+    def generate_positive_pairs(pairs_dir_path, curves_dir_path, count, chunk_size=5):
         positive_pairs = []
-        positive_pairs_per_curve = []
         curves = numpy.load(file=os.path.normpath(os.path.join(curves_dir_path, f'curves.npy')), allow_pickle=True)
         curves_count = len(curves)
 
@@ -846,21 +845,17 @@ class SimpleCurveDatasetGenerator:
 
         print('    - Generating positive pairs...', end="")
 
-        pairs_per_curve_dup = [pairs_per_curve] * count
         curves_dup = [curves] * count
         curve_indices = numpy.random.randint(0, curves_count, size=count).tolist()
-        zipped_data = list(zip(curve_indices, curves_dup, pairs_per_curve_dup))
+        zipped_data = list(zip(curve_indices, curves_dup))
         for i, current_positive_pairs in enumerate(pool.imap_unordered(SimpleCurveDatasetGenerator._process_positive_pair, zipped_data, chunk_size)):
             positive_pairs.extend(current_positive_pairs)
-            positive_pairs_per_curve.append(current_positive_pairs)
             print('\r    - Generating positive pairs... {0:.1%} Done.'.format((i + 1) / count), end="")
 
         print('\r    - Generating positive pairs... {0:.1%} Done.'.format((i + 1) / count))
 
         pathlib.Path(pairs_dir_path).mkdir(parents=True, exist_ok=True)
         numpy.save(file=os.path.normpath(os.path.join(pairs_dir_path, f'positive_pairs.npy')), arr=numpy.array(positive_pairs, dtype=object))
-        numpy.save(file=os.path.normpath(os.path.join(pairs_dir_path, f'packed_positive_pairs.npy')), arr=numpy.array(positive_pairs_per_curve, dtype=object))
-        numpy.save(file=os.path.normpath(os.path.join(pairs_dir_path, f'positive_tuplets.npy')), arr=numpy.array(positive_pairs_per_curve, dtype=object))
 
     @staticmethod
     def generate_negative_pairs_from_positive_pairs(pairs_dir_path, packed_positive_pairs_dir_path, chunk_size=5):
@@ -976,38 +971,33 @@ class SimpleCurveDatasetGenerator:
 
     @staticmethod
     def _process_positive_pair(data):
-        index, curves, pairs_per_curve = data
-
-        pairs = []
+        index, curves = data
         curve_manager = SimpleCurveManager(curve=curves[index])
 
-        # for _ in range(pairs_per_curve):
-        #     curve_section_sample1 = curve_manager.sample_curve_section_randomly()
-        #     curve_section_sample2 = curve_manager.sample_curve_section_randomly()
+        curve_section_sample1 = curve_manager.sample_curve_section_randomly()
+        curve_section_sample2 = curve_manager.sample_curve_section_randomly()
+
+        curve_section_sample1 = curve_processing.translate_curve(
+            curve=curve_section_sample1,
+            offset=-curve_section_sample1[1])
+        curve_section_sample2 = curve_processing.translate_curve(
+            curve=curve_section_sample2,
+            offset=-curve_section_sample2[1])
+
+        return [curve_section_sample1, curve_section_sample2]
+
+        # for _ in range(30):
+        #     curve_section_sample = curve_manager.sample_curve_section_randomly()
         #
-        #     curve_section_sample1 = curve_processing.translate_curve(
-        #         curve=curve_section_sample1,
-        #         offset=-curve_section_sample1[1])
-        #     curve_section_sample2 = curve_processing.translate_curve(
-        #         curve=curve_section_sample2,
-        #         offset=-curve_section_sample2[1])
+        #     curve_section_sample = curve_processing.translate_curve(
+        #         curve=curve_section_sample,
+        #         offset=-curve_section_sample[1])
         #
-        #     pairs.append([curve_section_sample1, curve_section_sample2])
+        #     pairs.append(curve_section_sample)
         #
-        # return pairs
-
-        for _ in range(30):
-            curve_section_sample = curve_manager.sample_curve_section_randomly()
-
-            curve_section_sample = curve_processing.translate_curve(
-                curve=curve_section_sample,
-                offset=-curve_section_sample[1])
-
-            pairs.append(curve_section_sample)
-
-        pairs = list(itertools.combinations(pairs, 2))
-        numpy.random.shuffle(pairs)
-        return pairs[:pairs_per_curve]
+        # pairs = list(itertools.combinations(pairs, 2))
+        # numpy.random.shuffle(pairs)
+        # return pairs[:pairs_per_curve]
 
     @staticmethod
     def _generate_circle(sampling_density, radius):

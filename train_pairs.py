@@ -25,8 +25,8 @@ if __name__ == '__main__':
     torch.set_default_dtype(torch.float64)
     dataset = DeepSignaturePairsDataset()
     dataset.load_dataset(
-        negative_pairs_dir_path='C:/deep-signature-data/circles/negative-pairs',
-        positive_pairs_dir_path='C:/deep-signature-data/circles/positive-pairs')
+        negative_pairs_dir_path='C:/deep-signature-data/circles/datasets/pairs/negative-pairs',
+        positive_pairs_dir_path='C:/deep-signature-data/circles/datasets/pairs/positive-pairs')
     model = DeepSignatureNet(layers=6, sample_points=3).cuda()
     print(model)
 

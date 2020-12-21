@@ -284,7 +284,6 @@ class DeepSignatureNet(torch.nn.Module):
 
     def forward(self, x):
         features = x.reshape([x.shape[0] * x.shape[1], x.shape[2] * x.shape[3]])
-        # features2 = x.reshape([x.shape[0], x.shape[1], x.shape[2], x.shape[3]])
         output = self._regressor(features).reshape([x.shape[0], x.shape[1], 1])
         return output
 

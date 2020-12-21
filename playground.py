@@ -88,6 +88,12 @@ def strided_indexing_roll(a, r):
 
 if __name__ == '__main__':
 
+    lengths = numpy.random.randint(low=10, high=100, size=500)
+    lengths = lengths[:, None]
+    delta = numpy.random.uniform(low=0, high=1, size=[500,2]) *  lengths
+
+
+
     v = torch.tensor([[[1],[2],[3],[4],[5]], [[11],[13],[14],[15],[16]], [[21],[24],[25],[26],[27]], [[31],[35],[36],[37],[38]]]).double()
 
     v2 = v[:, 0, :]
