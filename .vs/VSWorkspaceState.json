@@ -1,0 +1,12 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\deep_signature",
+    "\\deep_signature\\data_generation",
+    "\\deep_signature\\data_manipulation",
+    "\\deep_signature\\linalg",
+    "\\notebooks"
+  ],
+  "SelectedNode": "\\notebooks\\dataset_sanity_check.ipynb",
+  "PreviewInSolutionExplorer": false
+}
