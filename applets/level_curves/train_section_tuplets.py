@@ -1,5 +1,6 @@
 import torch
 import os
+import numpy
 from deep_signature.nn.datasets import DeepSignatureTupletsDataset
 from deep_signature.nn.networks import DeepSignatureNet
 from deep_signature.nn.losses import TupletLoss
@@ -18,8 +19,8 @@ def all_subdirs_of(b='.'):
 if __name__ == '__main__':
     epochs = 350
     batch_size = 4000
-    learning_rate = 1e-4
-    validation_split = .1
+    learning_rate = 1e-6
+    validation_split = .05
 
     torch.set_default_dtype(torch.float64)
     dataset = DeepSignatureTupletsDataset()
@@ -27,11 +28,11 @@ if __name__ == '__main__':
     model = DeepSignatureNet(sample_points=9).cuda()
     print(model)
 
-    # device = torch.device('cuda')
-    # all_subdirs = all_subdirs_of(settings.circles_section_tuplets_results_dir_path)
-    # latest_subdir = os.path.normpath(max(all_subdirs, key=os.path.getmtime))
-    # results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-    # model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
+    device = torch.device('cuda')
+    all_subdirs = all_subdirs_of(settings.level_curves_section_tuplets_results_dir_path)
+    latest_subdir = os.path.normpath(max(all_subdirs, key=os.path.getmtime))
+    results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+    model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     loss_fn = TupletLoss()

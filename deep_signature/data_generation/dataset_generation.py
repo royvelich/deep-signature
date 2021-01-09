@@ -124,6 +124,10 @@ class TupletsDatasetGenerator(TuplesDatasetGenerator):
             sample = curve_processing.normalize_curve(curve=sample)
             tuplet.append(sample)
 
+        flipped_anchor = numpy.flip(m=tuplet[0], axis=0).copy()
+        sample = curve_processing.normalize_curve(curve=flipped_anchor)
+        tuplet.append(sample)
+
         # rng = numpy.random.default_rng()
         # indices_pool = numpy.arange(start=0, stop=curve.shape[0])
         # indices_pool = numpy.delete(indices_pool, center_point_index)

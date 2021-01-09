@@ -87,8 +87,8 @@ def evolve_curve(curve, evolution_iterations, evolution_dt, smoothing_window_len
 
 def normalize_curve(curve):
     normalized_curve = translate_curve(curve=curve, offset=-curve[get_middle_index(curve)])
-    if not is_ccw(curve=normalized_curve):
-        normalized_curve = numpy.flip(m=normalized_curve, axis=0)
+    # if not is_ccw(curve=normalized_curve):
+    #     normalized_curve = numpy.flip(m=normalized_curve, axis=0)
 
     radians = calculate_secant_angle(curve=normalized_curve)
     normalized_curve = rotate_curve(curve=normalized_curve, radians=radians)
@@ -163,12 +163,12 @@ def calculate_secant_angle(curve, index1=None, index2=None):
         index2 = get_middle_index(curve)
 
     eps = 1e-9
-    tangent = curve[index1] - curve[index2]
-    tangent = tangent / (numpy.linalg.norm(tangent) + eps)
+    secant = curve[index1] - curve[index2]
+    secant = secant / (numpy.linalg.norm(secant) + eps)
     axis = numpy.array([1, 0])
     axis = axis / numpy.linalg.norm(axis)
     normal = numpy.array([-axis[1], axis[0]])
-    radians = -numpy.sign(numpy.dot(tangent, normal)) * numpy.arccos(numpy.dot(tangent, axis))
+    radians = -numpy.sign(numpy.dot(secant, normal)) * numpy.arccos(numpy.dot(secant, axis))
     return radians
 
 
