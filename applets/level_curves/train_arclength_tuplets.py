@@ -2,8 +2,9 @@ import torch
 import os
 import numpy
 from deep_signature.nn.datasets import DeepSignatureTupletsDataset
-from deep_signature.nn.networks import DeepSignatureNet
+from deep_signature.nn.networks import DeepSignatureArcLengthNet
 from deep_signature.nn.losses import TupletLoss
+from deep_signature.nn.losses import NegativeLoss
 from deep_signature.nn.trainers import ModelTrainer
 from common import settings
 
@@ -17,29 +18,31 @@ def all_subdirs_of(b='.'):
 
 
 if __name__ == '__main__':
-    epochs = 350
-    batch_size = 4000
-    learning_rate = 1e-6
-    validation_split = .05
+    epochs = 1200
+    batch_size = 400
+    learning_rate = 1e-4
+    validation_split = .1
 
     torch.set_default_dtype(torch.float64)
     dataset = DeepSignatureTupletsDataset()
-    dataset.load_dataset(dir_path=settings.level_curves_section_tuplets_dir_path)
-    model = DeepSignatureNet(sample_points=9).cuda()
+    dataset.load_dataset(dir_path=settings.level_curves_arclength_tuplets_dir_path)
+    model = DeepSignatureArcLengthNet(sample_points=30).cuda()
     print(model)
 
     device = torch.device('cuda')
-    all_subdirs = all_subdirs_of(settings.level_curves_section_tuplets_results_dir_path)
+    all_subdirs = all_subdirs_of(settings.level_curves_arclength_tuplets_results_dir_path)
     latest_subdir = os.path.normpath(max(all_subdirs, key=os.path.getmtime))
     results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
     model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    loss_fn = TupletLoss()
-    model_trainer = ModelTrainer(model=model, loss_fn=loss_fn, optimizer=optimizer)
+    tuplet_loss_fn = TupletLoss()
+    negative_loss_fn = NegativeLoss(factor=1)
+    model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn, negative_loss_fn], optimizer=optimizer)
+    # model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn], optimizer=optimizer)
     model_trainer.fit(
         dataset=dataset,
         epochs=epochs,
         batch_size=batch_size,
         validation_split=validation_split,
-        results_base_dir_path=settings.level_curves_section_tuplets_results_dir_path)
+        results_base_dir_path=settings.level_curves_arclength_tuplets_results_dir_path)

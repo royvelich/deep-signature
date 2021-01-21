@@ -59,6 +59,13 @@ def calculate_curvature(curve):
     return kappa
 
 
+def calculate_arclength(curve):
+    adjacent_diff = numpy.diff(a=curve, n=1, axis=0)
+    diff_norm = numpy.linalg.norm(x=adjacent_diff, ord=2, axis=1)
+    s = numpy.cumsum(a=numpy.concatenate((numpy.array([0]), diff_norm), axis=0))
+    return s
+
+
 def smooth_curve(curve, iterations, window_length, poly_order):
     smoothed_curve = numpy.copy(curve)
     for _ in range(iterations):
@@ -85,12 +92,15 @@ def evolve_curve(curve, evolution_iterations, evolution_dt, smoothing_window_len
     return evolved_curve
 
 
-def normalize_curve(curve):
-    normalized_curve = translate_curve(curve=curve, offset=-curve[get_middle_index(curve)])
-    # if not is_ccw(curve=normalized_curve):
-    #     normalized_curve = numpy.flip(m=normalized_curve, axis=0)
+def normalize_curve(curve, force_ccw=False, index1=None, index2=None, center_index=None):
+    if center_index is None:
+        center_index = get_middle_index(curve)
+    normalized_curve = translate_curve(curve=curve, offset=-curve[center_index])
+    if force_ccw is True:
+        if not is_ccw(curve=normalized_curve):
+            normalized_curve = numpy.flip(m=normalized_curve, axis=0)
 
-    radians = calculate_secant_angle(curve=normalized_curve)
+    radians = calculate_secant_angle(curve=normalized_curve, index1=index1, index2=index2)
     normalized_curve = rotate_curve(curve=normalized_curve, radians=radians)
     return normalized_curve
 

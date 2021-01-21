@@ -27,7 +27,7 @@ import numpy
 if __name__ == '__main__':
 
     curve = numpy.random.uniform(low=0, high=20, size=[15, 2])
-    curve_sampling.sample_curve(curve=curve, max_offset=14, supporting_point_count=1)
+    curve_sampling.sample_curve_point_neighbourhood(curve=curve, max_offset=14, supporting_point_count=1)
 
     bla = numpy.arange(start=2, stop=20)
     g = 5

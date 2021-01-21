@@ -12,9 +12,9 @@ from torch.utils.data.sampler import SubsetRandomSampler
 
 
 class ModelTrainer:
-    def __init__(self, model, loss_fn, optimizer, device='cuda'):
+    def __init__(self, model, loss_functions, optimizer, device='cuda'):
         self._model = model
-        self._loss_fn = loss_fn
+        self._loss_functions = loss_functions
         self._optimizer = optimizer
         self._device = device
         self._model.to(device)
@@ -48,7 +48,29 @@ class ModelTrainer:
         results_dir_path = os.path.normpath(os.path.join(results_base_dir_path, datetime.now().strftime('%Y-%m-%d-%H-%M-%S')))
         model_file_path = os.path.normpath(os.path.join(results_dir_path, 'model.pt'))
         results_file_path = os.path.normpath(os.path.join(results_dir_path, 'results.npy'))
+        model_architecture_file_path = os.path.normpath(os.path.join(results_dir_path, 'model_arch.txt'))
+        loss_functions_file_path = os.path.normpath(os.path.join(results_dir_path, 'loss_functions.txt'))
+        optimizer_file_path = os.path.normpath(os.path.join(results_dir_path, 'optimizer.txt'))
+        trainer_data_file_path = os.path.normpath(os.path.join(results_dir_path, 'trainer_data.txt'))
         Path(results_dir_path).mkdir(parents=True, exist_ok=True)
+
+        with open(model_architecture_file_path, "w") as text_file:
+            text_file.write(str(self._model))
+
+        with open(loss_functions_file_path, "w") as text_file:
+            for loss_function in self._loss_functions:
+                text_file.write(str(loss_function))
+                print('\n')
+
+        with open(optimizer_file_path, "w") as text_file:
+            text_file.write(str(self._optimizer))
+
+        with open(trainer_data_file_path, "w") as text_file:
+            text_file.write(f'batch_size: {batch_size}\n')
+            text_file.write(f'epochs: {epochs}\n')
+            text_file.write(f'results_dir_path: {results_dir_path}\n')
+            text_file.write(f'validation_split: {validation_split}\n')
+            text_file.write(f'dataset_size: {dataset_size}\n')
 
         print(f' - Start Training:')
         best_validation_average_loss = None
@@ -112,7 +134,10 @@ class ModelTrainer:
 
     def _evaluate_loss(self, batch_data):
         output = self._model(batch_data['input'])
-        return self._loss_fn(output=output, batch_data=batch_data)
+        v = torch.tensor(0).cuda().double()
+        for loss_function in self._loss_functions:
+            v = v + loss_function(output=output, batch_data=batch_data)
+        return v
 
     @staticmethod
     def _epoch(epoch_index, data_loader, process_batch_fn):

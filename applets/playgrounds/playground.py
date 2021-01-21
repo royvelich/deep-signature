@@ -88,6 +88,85 @@ def strided_indexing_roll(a, r):
 
 if __name__ == '__main__':
 
+    bla = torch.tensor([1,5,4,6,-2,-3,-7,5])
+    v = torch.max(-bla, torch.zeros_like(bla))
+
+    bla = numpy.array([[1,1],[2,2],[4,4],[5,5],[7,7],[8,8]])
+    bla2 = numpy.diff(a=bla,n=1,axis=0)
+    bla3 = numpy.linalg.norm(x=bla2,ord=2,axis=1)
+    bla4 = numpy.cumsum(a=numpy.concatenate((numpy.array([0]), bla3),axis=0))
+
+    h = 5
+
+
+
+
+
+
+    v = torch.rand([3, 9, 1])
+    v2 = v[:, 0, :].unsqueeze(dim=1)
+    v3 = v[:, 1:, :]
+    v4 = v3[:, 0::2, :]
+    v5 = v3[:, 1::2, :]
+    v6 = v4 + v5
+    v7 = torch.cat((v2, v6), dim=1)
+
+    print('------- V -------')
+    print(v)
+    print('------- V2 -------')
+    print(v2)
+    print('------- V3 -------')
+    print(v3)
+    print('------- V4 -------')
+    print(v4)
+    print('------- V5 -------')
+    print(v5)
+    print('------- V6 -------')
+    print(v6)
+    print('------- V7 -------')
+    print(v7)
+
+    bla = 3
+
+
+
+
+
+
+
+
+
+
+    bla = numpy.random.uniform(low=-0.2,high=0.2,size=100)
+
+    bla = numpy.array([1,2,3,4,5,6])
+
+    da = bla[-1]
+
+    bla2 = bla[1:-1]
+
+    bla = numpy.arange(start=60, stop=-20, step=-1)
+
+    start_point_index = 100
+    end_point_index = 200
+    indices = numpy.linspace(
+        start=start_point_index,
+        stop=end_point_index,
+        num=int(numpy.abs(end_point_index - start_point_index)),
+        endpoint=False,
+        dtype=int)
+
+    h = 5
+
+
+
+
+
+
+
+
+
+
     a = numpy.array([5,8,7,4,1,2,3])
     b = numpy.sort(a)
 

@@ -107,7 +107,7 @@ class TuplesDatasetGenerator:
 #         raise NotImplemented
 
 
-class TupletsDatasetGenerator(TuplesDatasetGenerator):
+class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
     _file_name = 'tuplets'
     _label = 'tuplets'
 
@@ -116,7 +116,7 @@ class TupletsDatasetGenerator(TuplesDatasetGenerator):
         tuplet = []
         curve = curves[curve_index]
         for _ in range(2):
-            sample = curve_sampling.sample_curve(
+            sample = curve_sampling.sample_curve_point_neighbourhood(
                 curve=curve,
                 center_point_index=center_point_index,
                 supporting_point_count=supporting_points_count,
@@ -128,26 +128,13 @@ class TupletsDatasetGenerator(TuplesDatasetGenerator):
         sample = curve_processing.normalize_curve(curve=flipped_anchor)
         tuplet.append(sample)
 
-        # rng = numpy.random.default_rng()
-        # indices_pool = numpy.arange(start=0, stop=curve.shape[0])
-        # indices_pool = numpy.delete(indices_pool, center_point_index)
-        # indices = rng.choice(a=indices_pool, size=negative_examples_count, replace=False)
-        # for index in indices:
-        #     sample = curve_sampling.sample_curve(
-        #         curve=curve,
-        #         center_point_index=index,
-        #         supporting_point_count=supporting_points_count,
-        #         max_offset=max_offset)
-        #     sample = curve_processing.normalize_curve(curve=sample)
-        #     tuplet.append(sample)
-
         rng = numpy.random.default_rng()
         indices_pool = numpy.arange(start=0, stop=len(curves))
         indices_pool = numpy.delete(indices_pool, curve_index)
         indices = rng.choice(a=indices_pool, size=negative_examples_count, replace=False)
         for index in indices:
             current_curve = curves[index]
-            sample = curve_sampling.sample_curve(
+            sample = curve_sampling.sample_curve_point_neighbourhood(
                 curve=current_curve,
                 center_point_index=int(numpy.random.randint(current_curve.shape[0])),
                 supporting_point_count=supporting_points_count,
@@ -181,5 +168,112 @@ class TupletsDatasetGenerator(TuplesDatasetGenerator):
         max_offset_pack = [max_offset] * items_count
         zipped_data = zip(curves_pack, curve_indices_pack, center_point_indices_pack, negative_examples_count_pack, supporting_points_count_pack, max_offset_pack)
         entry_names = ['curves', 'curve_index', 'center_point_index', 'negative_examples_count', 'supporting_points_count', 'max_offset']
+        iterable = [dict(zip(entry_names, values)) for values in zipped_data]
+        return iterable
+
+
+class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
+    _file_name = 'tuplets'
+    _label = 'tuplets'
+
+    @staticmethod
+    def _sample_curve_section(curve, supporting_points_count, start_point_index, end_point_index):
+        sample = curve_sampling.sample_curve_section(
+            curve=curve,
+            supporting_points_count=supporting_points_count,
+            start_point_index=start_point_index,
+            end_point_index=end_point_index)
+        sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, index1=0, index2=1, center_index=0)
+
+        # value = int(numpy.random.randint(0, 2, size=1))
+        # if value == 1:
+        #     sample = numpy.flip(m=sample, axis=0)
+
+        return sample
+
+    @staticmethod
+    def _generate_tuple(curves, curve_index, center_point_index, negative_examples_count, supporting_points_count, max_perturbation, min_offset, max_offset):
+        tuplet = []
+        curve = curves[curve_index]
+
+        if curve.shape[0] < 1200:
+            return None
+
+        raw_offset = numpy.random.randint(max_offset, size=2)
+        offset = numpy.maximum(raw_offset, [min_offset] * 2)
+        start_point_index = numpy.mod(center_point_index - offset[0], curve.shape[0])
+        end_point_index = numpy.mod(center_point_index + offset[1], curve.shape[0])
+
+        # anchor
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve,
+            supporting_points_count=supporting_points_count,
+            start_point_index=start_point_index,
+            end_point_index=end_point_index)
+        tuplet.append(sample)
+
+        # positive example
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve,
+            supporting_points_count=supporting_points_count,
+            start_point_index=start_point_index,
+            end_point_index=center_point_index)
+        tuplet.append(sample)
+
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve,
+            supporting_points_count=supporting_points_count,
+            start_point_index=center_point_index,
+            end_point_index=end_point_index)
+        tuplet.append(sample)
+
+        # negative examples
+        for _ in range(negative_examples_count):
+            perturbation_ratio = numpy.random.uniform(low=-max_perturbation, high=max_perturbation, size=2)
+            perturbation = perturbation_ratio * offset
+            current_start_point_index = numpy.mod(start_point_index - int(perturbation[0]), curve.shape[0])
+            current_end_point_index = numpy.mod(end_point_index + int(perturbation[1]), curve.shape[0])
+            sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+                curve=curve,
+                supporting_points_count=supporting_points_count,
+                start_point_index=current_start_point_index,
+                end_point_index=center_point_index)
+            tuplet.append(sample)
+
+            sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+                curve=curve,
+                supporting_points_count=supporting_points_count,
+                start_point_index=center_point_index,
+                end_point_index=current_end_point_index)
+            tuplet.append(sample)
+
+        return tuplet
+
+    @staticmethod
+    def _zip_iterable(curves, sections_density, negative_examples_count, supporting_points_count, max_perturbation, min_offset, max_offset=None):
+        center_point_indices_pack = []
+        curve_indices_pack = []
+
+        for i, curve in enumerate(curves):
+            sections_count = int(curve.shape[0] * sections_density)
+            center_point_indices = numpy.linspace(
+                start=0,
+                stop=curve.shape[0],
+                num=sections_count,
+                endpoint=False,
+                dtype=int)
+
+            curve_indices_pack.extend([i] * sections_count)
+            center_point_indices_pack.extend(center_point_indices)
+
+        items_count = len(curve_indices_pack)
+        curves_pack = [curves] * items_count
+        negative_examples_count_pack = [negative_examples_count] * items_count
+        supporting_points_count_pack = [supporting_points_count] * items_count
+        min_offset_pack = [min_offset] * items_count
+        max_offset_pack = [max_offset] * items_count
+        max_perturbation_pack = [max_perturbation] * items_count
+        zipped_data = zip(curves_pack, curve_indices_pack, center_point_indices_pack, negative_examples_count_pack, supporting_points_count_pack, max_perturbation_pack, min_offset_pack, max_offset_pack)
+        entry_names = ['curves', 'curve_index', 'center_point_index', 'negative_examples_count', 'supporting_points_count', 'max_perturbation', 'min_offset', 'max_offset']
         iterable = [dict(zip(entry_names, values)) for values in zipped_data]
         return iterable

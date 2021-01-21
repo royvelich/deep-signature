@@ -9,5 +9,7 @@ circles_triangle_tuplets_results_dir_path = "C:/deep-signature-data/circles/resu
 # level-curves
 level_curves_dir_path_train = "C:/deep-signature-data/level-curves/curves/train"
 level_curves_dir_path_test = "C:/deep-signature-data/level-curves/curves/test"
-level_curves_section_tuplets_dir_path = "C:/deep-signature-data/level-curves/datasets/tuplets/sections"
-level_curves_section_tuplets_results_dir_path = "C:/deep-signature-data/level-curves/results/tuplets/sections"
+level_curves_curvature_tuplets_dir_path = "C:/deep-signature-data/level-curves/datasets/tuplets/curvature"
+level_curves_curvature_tuplets_results_dir_path = "C:/deep-signature-data/level-curves/results/tuplets/curvature"
+level_curves_arclength_tuplets_dir_path = "C:/deep-signature-data/level-curves/datasets/tuplets/arclength"
+level_curves_arclength_tuplets_results_dir_path = "C:/deep-signature-data/level-curves/results/tuplets/arclength"

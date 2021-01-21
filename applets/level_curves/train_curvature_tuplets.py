@@ -1,6 +1,6 @@
 import torch
-import numpy
 import os
+import numpy
 from deep_signature.nn.datasets import DeepSignatureTupletsDataset
 from deep_signature.nn.networks import DeepSignatureCurvatureNet
 from deep_signature.nn.losses import TupletLoss
@@ -18,18 +18,18 @@ def all_subdirs_of(b='.'):
 
 if __name__ == '__main__':
     epochs = 350
-    batch_size = 2000
-    learning_rate = 1e-4
-    validation_split = .1
+    batch_size = 4000
+    learning_rate = 1e-6
+    validation_split = .05
 
     torch.set_default_dtype(torch.float64)
     dataset = DeepSignatureTupletsDataset()
-    dataset.load_dataset(dir_path=settings.circles_section_tuplets_dir_path)
-    model = DeepSignatureCurvatureNet(sample_points=13).cuda()
+    dataset.load_dataset(dir_path=settings.level_curves_curvature_tuplets_dir_path)
+    model = DeepSignatureCurvatureNet(sample_points=9).cuda()
     print(model)
 
     device = torch.device('cuda')
-    all_subdirs = all_subdirs_of(settings.circles_section_tuplets_results_dir_path)
+    all_subdirs = all_subdirs_of(settings.level_curves_curvature_tuplets_results_dir_path)
     latest_subdir = os.path.normpath(max(all_subdirs, key=os.path.getmtime))
     results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
     model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
@@ -42,4 +42,4 @@ if __name__ == '__main__':
         epochs=epochs,
         batch_size=batch_size,
         validation_split=validation_split,
-        results_base_dir_path=settings.circles_section_tuplets_results_dir_path)
+        results_base_dir_path=settings.level_curves_curvature_tuplets_results_dir_path)

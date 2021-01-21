@@ -37,3 +37,13 @@ class TupletLoss(torch.nn.Module):
         v12 = v11 + 1
         v13 = v12.log()
         return v13.mean(dim=0)
+
+
+class NegativeLoss(torch.nn.Module):
+    def __init__(self, factor):
+        self._factor = float(factor)
+        super(NegativeLoss, self).__init__()
+
+    def forward(self, output, batch_data):
+        v = torch.max(-output, torch.zeros_like(output))
+        return v.reshape([-1, 1]).sum(dim=0) * self._factor
