@@ -92,16 +92,26 @@ def evolve_curve(curve, evolution_iterations, evolution_dt, smoothing_window_len
     return evolved_curve
 
 
-def normalize_curve(curve, force_ccw=False, index1=None, index2=None, center_index=None):
+def normalize_curve(curve, force_ccw=False, force_end_point=False, index1=None, index2=None, center_index=None):
     if center_index is None:
         center_index = get_middle_index(curve)
     normalized_curve = translate_curve(curve=curve, offset=-curve[center_index])
+
     if force_ccw is True:
         if not is_ccw(curve=normalized_curve):
             normalized_curve = numpy.flip(m=normalized_curve, axis=0)
 
     radians = calculate_secant_angle(curve=normalized_curve, index1=index1, index2=index2)
     normalized_curve = rotate_curve(curve=normalized_curve, radians=radians)
+
+    if force_end_point is True:
+        end_point = normalized_curve[-1]
+        if end_point[0] < 0:
+            normalized_curve = normalized_curve * numpy.array([[-1,1]] * curve.shape[0])
+
+        if end_point[1] < 0:
+            normalized_curve = normalized_curve * numpy.array([[1,-1]] * curve.shape[0])
+
     return normalized_curve
 
 

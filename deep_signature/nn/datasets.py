@@ -76,7 +76,17 @@ class DeepSignatureTupletsDataset(Dataset):
         return self._tuplets.shape[0]
 
     def __getitem__(self, index):
-        tuplet = torch.from_numpy(self._tuplets[index].astype('float64')).cuda().double()
+        input = torch.from_numpy(numpy.array(self._tuplets[index]['input']).astype('float64')).cuda().double()
+        factors = torch.from_numpy(numpy.array(self._tuplets[index]['factors']).astype('float64')).cuda().double()
+        # curve = torch.from_numpy(numpy.array(self._tuplets[index]['curve']).astype('float64')).cuda().double()
+        # anchor_indices = torch.from_numpy(numpy.array(self._tuplets[index]['anchor_indices']).astype('float64')).cuda().double()
+        # positive_indices1 = torch.from_numpy(numpy.array(self._tuplets[index]['positive_indices1']).astype('float64')).cuda().double()
+        # positive_indices2 = torch.from_numpy(numpy.array(self._tuplets[index]['positive_indices2']).astype('float64')).cuda().double()
         return {
-            'input': tuplet,
+            'input': input,
+            'factors': factors,
+            # 'curve': curve,
+            # 'anchor_indices': anchor_indices,
+            # 'positive_indices1': positive_indices1,
+            # 'positive_indices2': positive_indices2
         }

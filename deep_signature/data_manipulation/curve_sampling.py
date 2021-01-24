@@ -25,7 +25,8 @@ def sample_curve_section(curve, supporting_points_count, start_point_index, end_
     curve_points_count = curve.shape[0]
 
     if start_point_index > end_point_index:
-        end_point_index = -end_point_index
+        start_point_index = -(curve_points_count - start_point_index)
+        # end_point_index = -end_point_index
 
     indices_pool = numpy.linspace(
         start=start_point_index,

@@ -183,7 +183,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             supporting_points_count=supporting_points_count,
             start_point_index=start_point_index,
             end_point_index=end_point_index)
-        sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, index1=0, index2=1, center_index=0)
+        sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
 
         # value = int(numpy.random.randint(0, 2, size=1))
         # if value == 1:
@@ -191,13 +191,22 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         return sample
 
-    @staticmethod
-    def _generate_tuple(curves, curve_index, center_point_index, negative_examples_count, supporting_points_count, max_perturbation, min_offset, max_offset):
-        tuplet = []
-        curve = curves[curve_index]
 
-        if curve.shape[0] < 1200:
+
+    @staticmethod
+    def _generate_tuple(curves, curve_index, center_point_index, negative_examples_count, supporting_points_count, min_perturbation, max_perturbation, min_offset, max_offset):
+        input = []
+        factors = []
+
+        curve = curves[curve_index]
+        if curve.shape[0] < 2500:
             return None
+
+        tuplet = {
+            'input': input,
+            'factors': factors,
+            # 'curve': curve
+        }
 
         raw_offset = numpy.random.randint(max_offset, size=2)
         offset = numpy.maximum(raw_offset, [min_offset] * 2)
@@ -210,47 +219,64 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             supporting_points_count=supporting_points_count,
             start_point_index=start_point_index,
             end_point_index=end_point_index)
-        tuplet.append(sample)
+        input.append(sample)
+        factors.append(1)
+
+        # tuplet['anchor_indices'] = [start_point_index, end_point_index]
 
         # positive example
-        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+        sample1 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve,
             supporting_points_count=supporting_points_count,
             start_point_index=start_point_index,
             end_point_index=center_point_index)
-        tuplet.append(sample)
 
-        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+        # tuplet['positive_indices1'] = [start_point_index, center_point_index]
+
+        sample2 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve,
             supporting_points_count=supporting_points_count,
             start_point_index=center_point_index,
             end_point_index=end_point_index)
-        tuplet.append(sample)
+
+        # tuplet['positive_indices2'] = [center_point_index, end_point_index]
+        input.append(sample1)
+        input.append(sample2)
+        factors.append(1)
 
         # negative examples
         for _ in range(negative_examples_count):
-            perturbation_ratio = numpy.random.uniform(low=-max_perturbation, high=max_perturbation, size=2)
-            perturbation = perturbation_ratio * offset
-            current_start_point_index = numpy.mod(start_point_index - int(perturbation[0]), curve.shape[0])
-            current_end_point_index = numpy.mod(end_point_index + int(perturbation[1]), curve.shape[0])
-            sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            perturbation = numpy.random.randint(low=min_perturbation, high=max_perturbation, size=2)
+
+            negative_example_type = numpy.random.choice(['longer', 'shorter'])
+            if negative_example_type == 'longer':
+                perturbation[0] = -perturbation[0]
+                factors.append(-1)
+            else:
+                perturbation[1] = -perturbation[1]
+                factors.append(1)
+
+            current_start_point_index = numpy.mod(start_point_index + perturbation[0], curve.shape[0])
+            current_end_point_index = numpy.mod(end_point_index + perturbation[1], curve.shape[0])
+
+            sample1 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
                 curve=curve,
                 supporting_points_count=supporting_points_count,
                 start_point_index=current_start_point_index,
                 end_point_index=center_point_index)
-            tuplet.append(sample)
 
-            sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            sample2 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
                 curve=curve,
                 supporting_points_count=supporting_points_count,
                 start_point_index=center_point_index,
                 end_point_index=current_end_point_index)
-            tuplet.append(sample)
+            input.append(sample1)
+            input.append(sample2)
 
         return tuplet
 
     @staticmethod
-    def _zip_iterable(curves, sections_density, negative_examples_count, supporting_points_count, max_perturbation, min_offset, max_offset=None):
+    def _zip_iterable(curves, sections_density, negative_examples_count, supporting_points_count, min_perturbation, max_perturbation, min_offset, max_offset=None):
         center_point_indices_pack = []
         curve_indices_pack = []
 
@@ -272,8 +298,9 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         supporting_points_count_pack = [supporting_points_count] * items_count
         min_offset_pack = [min_offset] * items_count
         max_offset_pack = [max_offset] * items_count
+        min_perturbation_pack = [min_perturbation] * items_count
         max_perturbation_pack = [max_perturbation] * items_count
-        zipped_data = zip(curves_pack, curve_indices_pack, center_point_indices_pack, negative_examples_count_pack, supporting_points_count_pack, max_perturbation_pack, min_offset_pack, max_offset_pack)
-        entry_names = ['curves', 'curve_index', 'center_point_index', 'negative_examples_count', 'supporting_points_count', 'max_perturbation', 'min_offset', 'max_offset']
+        zipped_data = zip(curves_pack, curve_indices_pack, center_point_indices_pack, negative_examples_count_pack, supporting_points_count_pack, min_perturbation_pack, max_perturbation_pack, min_offset_pack, max_offset_pack)
+        entry_names = ['curves', 'curve_index', 'center_point_index', 'negative_examples_count', 'supporting_points_count', 'min_perturbation', 'max_perturbation', 'min_offset', 'max_offset']
         iterable = [dict(zip(entry_names, values)) for values in zipped_data]
         return iterable
