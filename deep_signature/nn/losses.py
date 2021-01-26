@@ -49,7 +49,7 @@ class SignedTupletLoss(torch.nn.Module):
         v3 = v2 - output
         v4 = v3[:, 1, :]
         v5 = v3[:, 2:, :]
-        v6 = 100 * v4.abs().unsqueeze(dim=1)
+        v6 = 100*v4.abs().unsqueeze(dim=1)
         v7 = batch_data['factors'][:, 2:].unsqueeze(dim=2)
         v8 = v5.sign()
         v9 = v5 * (v7 * v8)
