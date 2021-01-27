@@ -7,6 +7,6 @@ if __name__ == '__main__':
         curves_dir_path=settings.level_curves_dir_path_train,
         sections_density=0.1,
         negative_examples_count=10,
-        supporting_points_count=4,
-        max_offset=10,
-        chunksize=1000)
+        supporting_points_count=6,
+        max_offset=15,
+        chunksize=6000)

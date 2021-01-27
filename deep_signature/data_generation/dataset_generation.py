@@ -113,7 +113,11 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
 
     @staticmethod
     def _generate_tuple(curves, curve_index, center_point_index, negative_examples_count, supporting_points_count, max_offset):
-        tuplet = []
+        input = []
+        tuplet = {
+            'input': input
+        }
+
         curve = curves[curve_index]
         for _ in range(2):
             sample = curve_sampling.sample_curve_point_neighbourhood(
@@ -122,11 +126,11 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
                 supporting_point_count=supporting_points_count,
                 max_offset=max_offset)
             sample = curve_processing.normalize_curve(curve=sample)
-            tuplet.append(sample)
+            input.append(sample)
 
-        flipped_anchor = numpy.flip(m=tuplet[0], axis=0).copy()
+        flipped_anchor = numpy.flip(m=input[0], axis=0).copy()
         sample = curve_processing.normalize_curve(curve=flipped_anchor)
-        tuplet.append(sample)
+        input.append(sample)
 
         rng = numpy.random.default_rng()
         indices_pool = numpy.arange(start=0, stop=len(curves))
@@ -140,7 +144,7 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
                 supporting_point_count=supporting_points_count,
                 max_offset=max_offset)
             sample = curve_processing.normalize_curve(curve=sample)
-            tuplet.append(sample)
+            input.append(sample)
 
         return tuplet
 
