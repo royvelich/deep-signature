@@ -20,7 +20,7 @@ def sample_curve_point_neighbourhood(curve, supporting_point_count, center_point
     return curve[indices]
 
 
-def sample_curve_section(curve, supporting_points_count, start_point_index, end_point_index):
+def sample_curve_section_indices(curve, supporting_points_count, start_point_index, end_point_index):
     rng = numpy.random.default_rng()
     curve_points_count = curve.shape[0]
 
@@ -42,6 +42,15 @@ def sample_curve_section(curve, supporting_points_count, start_point_index, end_
         indices,
         numpy.mod(numpy.array([indices_pool[-1]]), curve_points_count)))
 
+    return indices
+
+
+def sample_curve_section(curve, supporting_points_count, start_point_index, end_point_index):
+    indices = sample_curve_section_indices(
+        curve=curve,
+        supporting_points_count=supporting_points_count,
+        start_point_index=start_point_index,
+        end_point_index=end_point_index)
     return curve[indices]
 
 

@@ -88,6 +88,28 @@ def strided_indexing_roll(a, r):
 
 if __name__ == '__main__':
 
+    bla = list(range(200))[::20]
+
+    indices = [1,2,3,4,5,6]
+    indices2 = [7,8,9,10,11,12]
+    indices3 = indices + indices2
+    for i, [bla1, bla2] in enumerate(zip(indices, indices[1:])):
+        j = 5
+
+
+    bla = indices[:-1]
+
+    h= 5
+
+    # indices = numpy.linspace(
+    #     start=start_point_index,
+    #     stop=end_point_index,
+    #     num=int(numpy.abs(end_point_index - start_point_index)),
+    #     endpoint=False,
+    #     dtype=int)
+
+
+
     bla = torch.tensor([1,5,4,6,-2,-3,-7,5])
     v = torch.max(-bla, torch.zeros_like(bla))
 
