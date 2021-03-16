@@ -11,6 +11,9 @@ import matplotlib.collections as mcoll
 # from deep_signature.data_generation import CurveManager
 from skimage.util.shape import view_as_windows
 import os
+from deep_signature.linalg import affine_transform
+from deep_signature.linalg import euclidean_transform
+from deep_signature.data_manipulation import curve_processing
 
 
 # https://stackoverflow.com/questions/36074455/python-matplotlib-with-a-line-color-gradient-and-colorbar
@@ -87,6 +90,56 @@ def strided_indexing_roll(a, r):
 
 
 if __name__ == '__main__':
+
+    i = 1
+    bla = list(range((i-2),(i+3)))
+
+    bla = numpy.square(2)
+
+    from itertools import combinations
+
+    indices = numpy.array([1,2,3,4,5])
+    for item in combinations(indices, 3):
+        sorted_indices = sorted(item)
+        bla = 5
+
+
+
+
+
+
+
+    bla = numpy.array([[9, 4], [2, 3], [2, 4], [2, 5], [7, 7], [8, 8]])
+    curve_processing.calculate_affine_curvature(curve=bla)
+
+    curve_processing.transform_curve(curve=bla, transform=affine_transform.random_equiaffine_transform_2d())
+
+
+
+
+    points = bla[[0,1,2]]
+    points = numpy.hstack((points, numpy.ones((points.shape[0], 1), dtype=points.dtype)))
+
+    print(points)
+    print(numpy.linalg.det(points))
+
+
+
+
+    scale = numpy.random.randint(low=1, high=5, size=2)
+    coeffs = numpy.random.random(size=2)
+    entries = scale * coeffs
+
+    bla1 = numpy.array([[1, 0], [entries[0], 1]])
+    print(bla1)
+
+    bla2 = numpy.array([[1, entries[1]], [0, 1]])
+    print(bla2)
+
+    bla = numpy.matmul(bla1, bla2)
+    print(bla)
+
+    print(bla[0,0] * bla[1,1] - bla[0, 1] * bla[1, 0])
 
     bla = list(range(200))[::20]
 

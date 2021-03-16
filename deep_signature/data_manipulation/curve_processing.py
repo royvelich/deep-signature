@@ -7,10 +7,15 @@ import scipy.signal
 # sklearn
 import sklearn.preprocessing
 
+# itertools
+from itertools import combinations
+
 # deep_signature
 from deep_signature.linalg import euclidean_transform
 
-
+# -------------------------------------------------
+# curve padding
+# -------------------------------------------------
 def pad_curve(curve, padding):
     return numpy.pad(curve, ((padding, padding), (0, 0)), 'wrap')
 
@@ -24,6 +29,9 @@ def unpad_curve(curve, padding):
     return numpy.hstack((unpadded_x[:, numpy.newaxis], unpadded_y[:, numpy.newaxis]))
 
 
+# -------------------------------------------------
+# partial derivatives
+# -------------------------------------------------
 def calculate_dx_dt(curve):
     return numpy.gradient(curve[:, 0])
 
@@ -32,6 +40,9 @@ def calculate_dy_dt(curve):
     return numpy.gradient(curve[:, 1])
 
 
+# -------------------------------------------------
+# tangent and normal
+# -------------------------------------------------
 def calculate_tangent(curve):
     tangent = numpy.empty_like(curve)
     tangent[:, 0] = calculate_dx_dt(curve)
@@ -46,7 +57,10 @@ def calculate_normal(curve):
     return normal
 
 
-def calculate_curvature(curve):
+# -------------------------------------------------
+# euclidean curvature and arclength
+# -------------------------------------------------
+def calculate_euclidean_curvature(curve):
     padded_curve = pad_curve(curve=curve, padding=2)
     tangent = calculate_tangent(padded_curve)
     dtangent_dt = calculate_tangent(tangent)
@@ -59,13 +73,16 @@ def calculate_curvature(curve):
     return kappa
 
 
-def calculate_arclength(curve):
+def calculate_euclidean_arclength(curve):
     adjacent_diff = numpy.diff(a=curve, n=1, axis=0)
     diff_norm = numpy.linalg.norm(x=adjacent_diff, ord=2, axis=1)
     s = numpy.cumsum(a=numpy.concatenate((numpy.array([0]), diff_norm), axis=0))
     return s
 
 
+# -------------------------------------------------
+# curve smoothing
+# -------------------------------------------------
 def smooth_curve(curve, iterations, window_length, poly_order):
     smoothed_curve = numpy.copy(curve)
     for _ in range(iterations):
@@ -77,10 +94,13 @@ def smooth_curve(curve, iterations, window_length, poly_order):
     return smoothed_curve
 
 
+# -------------------------------------------------
+# curve evolution
+# -------------------------------------------------
 def evolve_curve(curve, evolution_iterations, evolution_dt, smoothing_window_length, smoothing_poly_order, smoothing_iterations):
     evolved_curve = numpy.copy(curve)
     for _ in range(evolution_iterations):
-        kappa = calculate_curvature(evolved_curve)
+        kappa = calculate_euclidean_curvature(evolved_curve)
         padded_curve = pad_curve(curve=curve, padding=1)
         normal = calculate_normal(curve=padded_curve)
         normal = unpad_curve(curve=normal, padding=1)
@@ -92,6 +112,9 @@ def evolve_curve(curve, evolution_iterations, evolution_dt, smoothing_window_len
     return evolved_curve
 
 
+# -------------------------------------------------
+# curve transformation
+# -------------------------------------------------
 def normalize_curve(curve, force_ccw=False, force_end_point=False, index1=None, index2=None, center_index=None):
     if center_index is None:
         center_index = get_middle_index(curve)
@@ -120,26 +143,20 @@ def translate_curve(curve, offset):
     return translated_curve
 
 
-def transform_curve(curve, radians, reflection):
-    reflection_transform = euclidean_transform.identity_2d()
-    if reflection == 'horizontal':
-        reflection_transform = euclidean_transform.horizontal_reflection_2d()
-    elif reflection == 'vertical':
-        reflection_transform = euclidean_transform.vertical_reflection_2d()
-
-    rotation_transform = euclidean_transform.rotation_2d(radians)
-    transform = rotation_transform.dot(reflection_transform)
-    transformed_curve = curve.dot(transform)
-
-    return transformed_curve
-
-
 def rotate_curve(curve, radians):
     rotation_transform = euclidean_transform.rotation_2d(radians)
     transformed_curve = curve.dot(rotation_transform)
     return transformed_curve
 
 
+def transform_curve(curve, transform):
+    transformed_curve = curve.dot(transform)
+    return transformed_curve
+
+
+# -------------------------------------------------
+# helpers
+# -------------------------------------------------
 def match_curve_sample_tangents(curve_sample1, curve_sample2, index1, index2):
     tangent1 = curve_sample1[index1] - curve_sample1[index2]
     tangent2 = curve_sample2[index1] - curve_sample2[index2]
@@ -204,3 +221,56 @@ def get_rightmost_index(curve):
     return curve.shape[0] - 1
 
 
+# -------------------------------------------------
+# affine curvature approximation
+# https://link.springer.com/article/10.1023/A:1007992709392
+# -------------------------------------------------
+def calculate_signed_parallelogram_area(curve, indices):
+    if indices.shape[0] == 4:
+        return calculate_signed_parallelogram_area(curve=curve, indices=indices[[0, 1, 3]]) - calculate_signed_parallelogram_area(curve=curve, indices=indices[[0, 1, 2]])
+
+    points = curve[indices]
+    points = numpy.hstack((points, numpy.ones((points.shape[0], 1), dtype=points.dtype)))
+    return numpy.linalg.det(points)
+
+
+def calculate_T(curve, indices):
+    T = 1
+    for item in combinations(indices, 3):
+        sorted_indices = sorted(item)
+        T = T * calculate_signed_parallelogram_area(curve=curve, indices=numpy.array(sorted_indices))
+    return T / 4
+
+
+def calculate_S(curve, indices):
+    c013 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[0, 1, 3]])
+    c024 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[0, 2, 4]])
+    c1234 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[1, 2, 3, 4]])
+    c012 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[0, 1, 2]])
+    c034 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[0, 3, 4]])
+    c1324 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[1, 3, 2, 4]])
+    c123 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[1, 2, 3]])
+    c234 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[2, 3, 4]])
+    c124 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[1, 2, 4]])
+    c134 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[1, 3, 4]])
+
+    t1 = numpy.square(c013) * numpy.square(c024) * numpy.square(c1234)
+    t2 = numpy.square(c012) * numpy.square(c034) * numpy.square(c1324)
+    t3 = 2 * c012 * c034 * c013 * c024 * ((c123 * c234) + (c124 * c134))
+
+    return (t1 + t2 - t3) / 4
+
+
+def calculate_affine_curvature_at_point(curve, indices):
+    T = calculate_T(curve=curve, indices=indices)
+    S = calculate_S(curve=curve, indices=indices)
+    return S / numpy.power(T, 2/3)
+
+
+def calculate_affine_curvature(curve):
+    affine_curvature = numpy.zeros(curve.shape[0])
+    for i in range(curve.shape[0]):
+        indices = numpy.array(list(range((i - 2), (i + 3))))
+        indices = numpy.mod(indices, curve.shape[0])
+        affine_curvature[i] = calculate_affine_curvature_at_point(curve=curve, indices=indices)
+    return affine_curvature

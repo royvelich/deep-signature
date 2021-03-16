@@ -110,7 +110,7 @@ class LevelCurvesGenerator(CurvesGenerator):
                 window_length=99,
                 poly_order=2)
 
-            kappa = curve_processing.calculate_curvature(curve)
+            kappa = curve_processing.calculate_euclidean_curvature(curve)
             min_kappa = numpy.abs(numpy.min(kappa))
             max_kappa = numpy.abs(numpy.max(kappa))
             flat_points = numpy.sum(numpy.array([1 if x < flat_point_threshold else 0 for x in numpy.abs(kappa)]))

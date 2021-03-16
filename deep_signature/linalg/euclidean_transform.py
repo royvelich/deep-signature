@@ -17,3 +17,8 @@ def vertical_reflection_2d():
 
 def identity_2d():
     return numpy.array([[1, 0], [0, 1]])
+
+
+def random_euclidean_transform_2d():
+    radians = numpy.random.uniform(low=0, high=2*numpy.pi, size=1)
+    return rotation_2d(float(radians))

@@ -10,13 +10,14 @@ import numpy
 from deep_signature.data_manipulation import curve_sampling, curve_processing
 from deep_signature.data_generation.curve_generation import CurvesGenerator
 from deep_signature.utils import utils
+from deep_signature.linalg import euclidean_transform, affine_transform
 
 
 class CurveManager:
     def __init__(self, curve):
         self._curve = curve_processing.translate_curve(curve=curve, offset=-numpy.mean(curve, axis=0))
         self._curve_points_count = self._curve.shape[0]
-        self._curvature = curve_processing.calculate_curvature(self._curve)
+        self._curvature = curve_processing.calculate_euclidean_curvature(self._curve)
 
     @property
     def curve(self):
@@ -60,71 +61,62 @@ class TuplesDatasetGenerator:
     def _map_func(cls, kwargs):
         return cls._generate_tuple(**kwargs)
 
+    @classmethod
+    def _zip_iterable(cls, curves, sections_density, **kwargs):
+        center_point_indices_pack = []
+        curve_indices_pack = []
+
+        for i, curve in enumerate(curves):
+            sections_count = int(curve.shape[0] * sections_density)
+            center_point_indices = numpy.linspace(
+                start=0,
+                stop=curve.shape[0],
+                num=sections_count,
+                endpoint=False,
+                dtype=int)
+
+            curve_indices_pack.extend([i] * sections_count)
+            center_point_indices_pack.extend(center_point_indices)
+
+        items_count = len(curve_indices_pack)
+        curves_pack = [curves] * items_count
+
+        names, data = cls._generate_zip_data(items_count, **kwargs)
+        data = [curves_pack, curve_indices_pack, center_point_indices_pack] + data
+        names = ['curves', 'curve_index', 'center_point_index'] + names
+        zipped_data = zip(*data)
+        iterable = [dict(zip(names, values)) for values in zipped_data]
+        return iterable
+
     @staticmethod
-    def _generate_tuples():
+    def _generate_tuple():
         raise NotImplemented
 
     @staticmethod
-    def _zip_iterable():
+    def _generate_zip_data():
         raise NotImplemented
-
-# class PairsDatasetGenerator(TuplesDatasetGenerator):
-#     @staticmethod
-#     def _zip_iterable(curves, sections_per_curve, pairs_per_section):
-#         center_point_indices_pack = []
-#         curves_pack = []
-#         for curve in curves:
-#             center_point_indices = numpy.linspace(
-#                 start=0,
-#                 stop=curve.shape[0],
-#                 num=sections_per_curve,
-#                 endpoint=False,
-#                 dtype=int)
-#
-#             center_point_indices_pack.extend([center_point_indices] * pairs_per_section)
-#             curves_pack.extend([curve] * sections_per_curve * pairs_per_section)
-#
-#         entry_names = ['curve', 'center_point_index']
-#         iterable = [dict(zip(entry_names, values)) for values in zip(curves_pack, center_point_indices_pack)]
-#         return iterable
-#
-#
-# class PositiveSectionPairsDatasetGenerator(PairsDatasetGenerator):
-#     _file_name = 'positive_pairs'
-#     _label = 'positive pairs'
-#
-#     @staticmethod
-#     def _generate_tuple():
-#         raise NotImplemented
-#
-#
-# class NegativeSectionPairsDatasetGenerator(PairsDatasetGenerator):
-#     _file_name = 'negative_pairs'
-#     _label = 'negative pairs'
-#
-#     @staticmethod
-#     def _generate_tuple():
-#         raise NotImplemented
 
 
 class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
     _file_name = 'tuplets'
     _label = 'tuplets'
 
-    @staticmethod
-    def _generate_tuple(curves, curve_index, center_point_index, negative_examples_count, supporting_points_count, max_offset):
+    @classmethod
+    def _generate_tuple(cls, curves, curve_index, center_point_index, negative_examples_count, supporting_points_count, max_offset):
         input = []
         tuplet = {
             'input': input
         }
 
         curve = curves[curve_index]
+        transform = cls._generate_curve_transform()
         for _ in range(2):
             sample = curve_sampling.sample_curve_point_neighbourhood(
                 curve=curve,
                 center_point_index=center_point_index,
                 supporting_point_count=supporting_points_count,
                 max_offset=max_offset)
+            sample = curve_processing.transform_curve(curve=sample, transform=transform)
             sample = curve_processing.normalize_curve(curve=sample)
             input.append(sample)
 
@@ -143,37 +135,43 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
                 center_point_index=int(numpy.random.randint(current_curve.shape[0])),
                 supporting_point_count=supporting_points_count,
                 max_offset=max_offset)
+            transform = cls._generate_curve_transform()
+            sample = curve_processing.transform_curve(curve=sample, transform=transform)
             sample = curve_processing.normalize_curve(curve=sample)
             input.append(sample)
 
         return tuplet
 
     @staticmethod
-    def _zip_iterable(curves, sections_density, negative_examples_count, supporting_points_count, max_offset=None):
-        center_point_indices_pack = []
-        curve_indices_pack = []
-
-        for i, curve in enumerate(curves):
-            sections_count = int(curve.shape[0] * sections_density)
-            center_point_indices = numpy.linspace(
-                start=0,
-                stop=curve.shape[0],
-                num=sections_count,
-                endpoint=False,
-                dtype=int)
-
-            curve_indices_pack.extend([i] * sections_count)
-            center_point_indices_pack.extend(center_point_indices)
-
-        items_count = len(curve_indices_pack)
-        curves_pack = [curves] * items_count
+    def _generate_zip_data(items_count, negative_examples_count, supporting_points_count, max_offset=None):
         negative_examples_count_pack = [negative_examples_count] * items_count
         supporting_points_count_pack = [supporting_points_count] * items_count
         max_offset_pack = [max_offset] * items_count
-        zipped_data = zip(curves_pack, curve_indices_pack, center_point_indices_pack, negative_examples_count_pack, supporting_points_count_pack, max_offset_pack)
-        entry_names = ['curves', 'curve_index', 'center_point_index', 'negative_examples_count', 'supporting_points_count', 'max_offset']
-        iterable = [dict(zip(entry_names, values)) for values in zipped_data]
-        return iterable
+        data = [negative_examples_count_pack, supporting_points_count_pack, max_offset_pack]
+        names = ['negative_examples_count', 'supporting_points_count', 'max_offset']
+        return names, data
+
+    @staticmethod
+    def _generate_curve_transform():
+        raise NotImplemented
+
+
+class EuclideanCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator):
+    _file_name = 'tuplets'
+    _label = 'tuplets'
+
+    @staticmethod
+    def _generate_curve_transform():
+        return euclidean_transform.identity_2d()
+
+
+class AffineCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator):
+    _file_name = 'tuplets'
+    _label = 'tuplets'
+
+    @staticmethod
+    def _generate_curve_transform():
+        return affine_transform.random_equiaffine_transform_2d()
 
 
 class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
@@ -194,8 +192,6 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         #     sample = numpy.flip(m=sample, axis=0)
 
         return sample
-
-
 
     @staticmethod
     def _generate_tuple(curves, curve_index, center_point_index, negative_examples_count, supporting_points_count, min_perturbation, max_perturbation, min_offset, max_offset):
@@ -280,31 +276,13 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         return tuplet
 
     @staticmethod
-    def _zip_iterable(curves, sections_density, negative_examples_count, supporting_points_count, min_perturbation, max_perturbation, min_offset, max_offset=None):
-        center_point_indices_pack = []
-        curve_indices_pack = []
-
-        for i, curve in enumerate(curves):
-            sections_count = int(curve.shape[0] * sections_density)
-            center_point_indices = numpy.linspace(
-                start=0,
-                stop=curve.shape[0],
-                num=sections_count,
-                endpoint=False,
-                dtype=int)
-
-            curve_indices_pack.extend([i] * sections_count)
-            center_point_indices_pack.extend(center_point_indices)
-
-        items_count = len(curve_indices_pack)
-        curves_pack = [curves] * items_count
+    def _generate_zip_data(items_count, negative_examples_count, supporting_points_count, min_perturbation, max_perturbation, min_offset, max_offset=None):
         negative_examples_count_pack = [negative_examples_count] * items_count
         supporting_points_count_pack = [supporting_points_count] * items_count
         min_offset_pack = [min_offset] * items_count
         max_offset_pack = [max_offset] * items_count
         min_perturbation_pack = [min_perturbation] * items_count
         max_perturbation_pack = [max_perturbation] * items_count
-        zipped_data = zip(curves_pack, curve_indices_pack, center_point_indices_pack, negative_examples_count_pack, supporting_points_count_pack, min_perturbation_pack, max_perturbation_pack, min_offset_pack, max_offset_pack)
-        entry_names = ['curves', 'curve_index', 'center_point_index', 'negative_examples_count', 'supporting_points_count', 'min_perturbation', 'max_perturbation', 'min_offset', 'max_offset']
-        iterable = [dict(zip(entry_names, values)) for values in zipped_data]
-        return iterable
+        data = [negative_examples_count_pack, supporting_points_count_pack, min_perturbation_pack, max_perturbation_pack, min_offset_pack, max_offset_pack]
+        names = ['negative_examples_count', 'supporting_points_count', 'min_perturbation', 'max_perturbation', 'min_offset', 'max_offset']
+        return data, names
