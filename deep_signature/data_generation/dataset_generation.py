@@ -109,14 +109,15 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
         }
 
         curve = curves[curve_index]
-        transform = cls._generate_curve_transform()
-        for _ in range(2):
+        for i in range(2):
             sample = curve_sampling.sample_curve_point_neighbourhood(
                 curve=curve,
                 center_point_index=center_point_index,
                 supporting_point_count=supporting_points_count,
                 max_offset=max_offset)
-            sample = curve_processing.transform_curve(curve=sample, transform=transform)
+            if i == 1:
+                transform = cls._generate_curve_transform()
+                sample = curve_processing.transform_curve(curve=sample, transform=transform)
             sample = curve_processing.normalize_curve(curve=sample)
             input.append(sample)
 
@@ -135,8 +136,8 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
                 center_point_index=int(numpy.random.randint(current_curve.shape[0])),
                 supporting_point_count=supporting_points_count,
                 max_offset=max_offset)
-            transform = cls._generate_curve_transform()
-            sample = curve_processing.transform_curve(curve=sample, transform=transform)
+            # transform = cls._generate_curve_transform()
+            # sample = curve_processing.transform_curve(curve=sample, transform=transform)
             sample = curve_processing.normalize_curve(curve=sample)
             input.append(sample)
 

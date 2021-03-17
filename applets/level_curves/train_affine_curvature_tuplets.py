@@ -1,25 +1,17 @@
 import torch
-import os
 import numpy
 from deep_signature.nn.datasets import DeepSignatureTupletsDataset
 from deep_signature.nn.networks import DeepSignatureCurvatureNet
 from deep_signature.nn.losses import TupletLoss
 from deep_signature.nn.trainers import ModelTrainer
 from common import settings
-
-
-def all_subdirs_of(b='.'):
-  result = []
-  for d in os.listdir(b):
-    bd = os.path.join(b, d)
-    if os.path.isdir(bd): result.append(bd)
-  return result
+from common import utils as common_utils
 
 
 if __name__ == '__main__':
-    epochs = 1000
-    batch_size = 2000
-    learning_rate = 5e-4
+    epochs = 2000
+    batch_size = 7000
+    learning_rate = 5e-5
     validation_split = .05
 
     torch.set_default_dtype(torch.float64)
@@ -29,8 +21,7 @@ if __name__ == '__main__':
     print(model)
 
     device = torch.device('cuda')
-    all_subdirs = all_subdirs_of(settings.level_curves_affine_curvature_tuplets_results_dir_path)
-    latest_subdir = os.path.normpath(max(all_subdirs, key=os.path.getmtime))
+    latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_affine_curvature_tuplets_results_dir_path)
     results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
     model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
