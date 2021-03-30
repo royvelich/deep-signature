@@ -91,6 +91,15 @@ def strided_indexing_roll(a, r):
 
 if __name__ == '__main__':
 
+    bla = range(2,6)
+
+    arr = numpy.array([1,2,3,4,5,6,7,8,9,10,11])
+    for i in numpy.arange(start=1, stop=arr.shape[0] - 1, step=3):
+        indices = numpy.arange(i-1,i+4)
+
+    bla = numpy.arange(start=2, stop=10)
+
+
     i = 1
     bla = list(range((i-2),(i+3)))
 
@@ -110,7 +119,7 @@ if __name__ == '__main__':
 
 
     bla = numpy.array([[9, 4], [2, 3], [2, 4], [2, 5], [7, 7], [8, 8]])
-    curve_processing.calculate_affine_curvature(curve=bla)
+    curve_processing.calculate_equiaffine_curvature(curve=bla)
 
     curve_processing.transform_curve(curve=bla, transform=affine_transform.random_equiaffine_transform_2d())
 

@@ -97,6 +97,18 @@ class TuplesDatasetGenerator:
         raise NotImplemented
 
 
+class EuclideanTransform:
+    @staticmethod
+    def _generate_curve_transform():
+        return euclidean_transform.identity_2d()
+
+
+class EquiaffineTransform:
+    @staticmethod
+    def _generate_curve_transform():
+        return affine_transform.random_equiaffine_transform_2d()
+
+
 class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
     _file_name = 'tuplets'
     _label = 'tuplets'
@@ -136,8 +148,6 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
                 center_point_index=int(numpy.random.randint(current_curve.shape[0])),
                 supporting_point_count=supporting_points_count,
                 max_offset=max_offset)
-            # transform = cls._generate_curve_transform()
-            # sample = curve_processing.transform_curve(curve=sample, transform=transform)
             sample = curve_processing.normalize_curve(curve=sample)
             input.append(sample)
 
@@ -152,27 +162,13 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
         names = ['negative_examples_count', 'supporting_points_count', 'max_offset']
         return names, data
 
-    @staticmethod
-    def _generate_curve_transform():
-        raise NotImplemented
+
+class EuclideanCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator, EuclideanTransform):
+    pass
 
 
-class EuclideanCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator):
-    _file_name = 'tuplets'
-    _label = 'tuplets'
-
-    @staticmethod
-    def _generate_curve_transform():
-        return euclidean_transform.identity_2d()
-
-
-class AffineCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator):
-    _file_name = 'tuplets'
-    _label = 'tuplets'
-
-    @staticmethod
-    def _generate_curve_transform():
-        return affine_transform.random_equiaffine_transform_2d()
+class EquiaffineCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator, EquiaffineTransform):
+    pass
 
 
 class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
@@ -187,15 +183,10 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             start_point_index=start_point_index,
             end_point_index=end_point_index)
         sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
-
-        # value = int(numpy.random.randint(0, 2, size=1))
-        # if value == 1:
-        #     sample = numpy.flip(m=sample, axis=0)
-
         return sample
 
-    @staticmethod
-    def _generate_tuple(curves, curve_index, center_point_index, negative_examples_count, supporting_points_count, min_perturbation, max_perturbation, min_offset, max_offset):
+    @classmethod
+    def _generate_tuple(cls, curves, curve_index, center_point_index, negative_examples_count, supporting_points_count, min_perturbation, max_perturbation, min_offset, max_offset):
         input = []
         factors = []
 
@@ -223,8 +214,6 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         input.append(sample)
         factors.append(1)
 
-        # tuplet['anchor_indices'] = [start_point_index, end_point_index]
-
         # positive example
         sample1 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve,
@@ -232,15 +221,14 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             start_point_index=start_point_index,
             end_point_index=center_point_index)
 
-        # tuplet['positive_indices1'] = [start_point_index, center_point_index]
-
+        transform = cls._generate_curve_transform()
         sample2 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve,
             supporting_points_count=supporting_points_count,
             start_point_index=center_point_index,
             end_point_index=end_point_index)
+        sample2 = curve_processing.transform_curve(curve=sample2, transform=transform)
 
-        # tuplet['positive_indices2'] = [center_point_index, end_point_index]
         input.append(sample1)
         input.append(sample2)
         factors.append(1)
@@ -286,4 +274,12 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         max_perturbation_pack = [max_perturbation] * items_count
         data = [negative_examples_count_pack, supporting_points_count_pack, min_perturbation_pack, max_perturbation_pack, min_offset_pack, max_offset_pack]
         names = ['negative_examples_count', 'supporting_points_count', 'min_perturbation', 'max_perturbation', 'min_offset', 'max_offset']
-        return data, names
+        return names, data
+
+
+class EuclideanArcLengthTupletsDatasetGenerator(ArcLengthTupletsDatasetGenerator, EuclideanTransform):
+    pass
+
+
+class EquiaffineArcLengthTupletsDatasetGenerator(ArcLengthTupletsDatasetGenerator, EquiaffineTransform):
+    pass

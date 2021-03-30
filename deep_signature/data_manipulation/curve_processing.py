@@ -222,7 +222,7 @@ def get_rightmost_index(curve):
 
 
 # -------------------------------------------------
-# affine curvature approximation
+# equiaffine curvature and arclength approximation
 # https://link.springer.com/article/10.1023/A:1007992709392
 # -------------------------------------------------
 def calculate_signed_parallelogram_area(curve, indices):
@@ -261,16 +261,54 @@ def calculate_S(curve, indices):
     return (t1 + t2 - t3) / 4
 
 
-def calculate_affine_curvature_at_point(curve, indices):
+def calculate_N(curve, indices):
+    c123 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[1, 2, 3]])
+    c134 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[1, 3, 4]])
+    c023 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[0, 2, 3]])
+    c014 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[0, 1, 4]])
+    c1234 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[1, 2, 3, 4]])
+    c012 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[0, 1, 2]])
+    c034 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[0, 3, 4]])
+    c2314 = calculate_signed_parallelogram_area(curve=curve, indices=indices[[2, 3, 1, 4]])
+
+    t1 = -c123 * c134
+    t2 = numpy.square(c023) * numpy.square(c014) * c1234
+    t3 = numpy.square(c012) * numpy.square(c034) * c2314
+    t4 = c012 * c023 * c014 * c034 * (c134 - c123)
+
+    return (t1 * (t2 + t3 + t4)) / 4
+
+
+def calculate_elliptic_area(curve, indices):
+    S = calculate_S(curve=curve, indices=indices)
+    N = calculate_N(curve=curve, indices=indices)
+    return N / (2 * S)
+
+
+def calculate_equiaffine_curvature_at_point(curve, indices):
     T = calculate_T(curve=curve, indices=indices)
     S = calculate_S(curve=curve, indices=indices)
     return S / numpy.power(T, 2/3)
 
 
-def calculate_affine_curvature(curve):
+def calculate_equiaffine_curvature(curve):
     affine_curvature = numpy.zeros(curve.shape[0])
     for i in range(curve.shape[0]):
         indices = numpy.array(list(range((i - 2), (i + 3))))
         indices = numpy.mod(indices, curve.shape[0])
-        affine_curvature[i] = calculate_affine_curvature_at_point(curve=curve, indices=indices)
+        affine_curvature[i] = calculate_equiaffine_curvature_at_point(curve=curve, indices=indices)
     return affine_curvature
+
+
+def calculate_equiaffine_arclength_for_quintuple(curve, indices):
+    kappa = calculate_equiaffine_curvature_at_point(curve=curve, indices=indices)
+    area = calculate_elliptic_area(curve=curve, indices=indices)
+    return 2 * area * kappa
+
+
+def calculate_equiaffine_arclength(curve):
+    s = 0
+    for i in numpy.arange(start=1, stop=curve.shape[0] - 1, step=3):
+        indices = numpy.arange(start=i-1, stop=i+4)
+        s = s + calculate_equiaffine_arclength_for_quintuple(curve=curve, indices=indices)
+    return s
