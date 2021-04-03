@@ -218,12 +218,6 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         # positive examples
         for i in range(negative_examples_count):
-            # if i % 2 == 0:
-            #     transform = cls._generate_curve_transform()
-            #     transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
-            # else:
-            #     transformed_curve = curve
-
             transform = cls._generate_curve_transform()
             transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
 
@@ -243,10 +237,29 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             input.append(positive_sample2)
             factors.append(1)
 
-            # flipped_positive_sample = numpy.flip(m=positive_sample, axis=0).copy()
-            # flipped_positive_sample = curve_processing.normalize_curve(curve=flipped_positive_sample)
-            # input.append(flipped_positive_sample)
-            # factors.append(1)
+        for i in range(negative_examples_count):
+            transform = cls._generate_curve_transform()
+            transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+
+            positive_sample1 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+                curve=transformed_curve,
+                supporting_points_count=supporting_points_count,
+                start_point_index=start_point_index,
+                end_point_index=center_point_index)
+            flipped_positive_sample1 = numpy.flip(m=positive_sample1, axis=0).copy()
+            flipped_positive_sample1 = curve_processing.normalize_curve(curve=flipped_positive_sample1)
+
+            positive_sample2 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+                curve=transformed_curve,
+                supporting_points_count=supporting_points_count,
+                start_point_index=center_point_index,
+                end_point_index=end_point_index)
+            flipped_positive_sample2 = numpy.flip(m=positive_sample2, axis=0).copy()
+            flipped_positive_sample2 = curve_processing.normalize_curve(curve=flipped_positive_sample2)
+
+            input.append(flipped_positive_sample1)
+            input.append(flipped_positive_sample2)
+            factors.append(1)
 
         # negative examples
         for _ in range(negative_examples_count):
@@ -263,14 +276,16 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             current_start_point_index = numpy.mod(start_point_index + perturbation[0], curve.shape[0])
             current_end_point_index = numpy.mod(end_point_index + perturbation[1], curve.shape[0])
 
+            transform = cls._generate_curve_transform()
+            transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
             sample1 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-                curve=curve,
+                curve=transformed_curve,
                 supporting_points_count=supporting_points_count,
                 start_point_index=current_start_point_index,
                 end_point_index=center_point_index)
 
             sample2 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-                curve=curve,
+                curve=transformed_curve,
                 supporting_points_count=supporting_points_count,
                 start_point_index=center_point_index,
                 end_point_index=current_end_point_index)

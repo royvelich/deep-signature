@@ -12,8 +12,8 @@ from common import utils as common_utils
 
 if __name__ == '__main__':
     epochs = 1200
-    batch_size = 3000
-    learning_rate = 5e-5
+    batch_size = 8000
+    learning_rate = 1e-4
     validation_split = .05
 
     torch.set_default_dtype(torch.float64)
@@ -22,14 +22,14 @@ if __name__ == '__main__':
     model = DeepSignatureArcLengthNet(sample_points=40).cuda()
     print(model)
 
-    # device = torch.device('cuda')
-    # latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_equiaffine_arclength_tuplets_results_dir_path)
-    # results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-    # model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
+    device = torch.device('cuda')
+    latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_equiaffine_arclength_tuplets_results_dir_path)
+    results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+    model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     tuplet_loss_fn = SignedTupletLoss()
-    negative_loss_fn = NegativeLoss(factor=1000)
+    negative_loss_fn = NegativeLoss(factor=1)
     model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn, negative_loss_fn], optimizer=optimizer)
     # model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn], optimizer=optimizer)
     model_trainer.fit(

@@ -94,7 +94,7 @@ elif transform_type == 'equiaffine':
 
 # %%
 # constants
-limit = 4
+limit = 10
 arclength_sample_points = 40
 step = 40
 comparision_curves_count = 1
