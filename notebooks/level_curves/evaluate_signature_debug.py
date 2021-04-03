@@ -338,10 +338,11 @@ color_map = plt.get_cmap('rainbow', limit)
 #  ## ** EVALUATE ARC-LENGTH VISUALLY **
 
 # %%
-true_arclength_colors = ['orange', 'black']
-sample_colors = ['red', 'green']
+true_arclength_colors = ['#FF8C00', 'black']
+predicted_arclength_colors = ['#AA0000', '#00AA00']
+sample_colors = ['#AA0000', '#00AA00']
 
-evaluated_curves_arclength = notebook_utils.evaluate_curves_arclength(
+curve_arclength_records = notebook_utils.generate_curve_arclength_records(
     model=arclength_model, 
     curves=curves,
     transform_type=transform_type,
@@ -349,34 +350,53 @@ evaluated_curves_arclength = notebook_utils.evaluate_curves_arclength(
     step=step,
     sample_points=arclength_sample_points)
 
-axes_list = []
-for i in range(len(evaluated_curves_arclength)):
-    fig, axes = plt.subplots(2, 1, figsize=(20,20))
-    fig.patch.set_facecolor('white')
-    axes[0].axis('equal')
-    for axis in axes:
-        for label in (axis.get_xticklabels() + axis.get_yticklabels()):
-            label.set_fontsize(10)
+notebook_utils.plot_curve_arclength_records(
+    curve_arclength_records=curve_arclength_records, 
+    true_arclength_colors=true_arclength_colors, 
+    predicted_arclength_colors=predicted_arclength_colors, 
+    sample_colors=sample_colors, 
+    curve_color='#FF8C00', 
+    anchor_color='#3333FF', 
+    first_anchor_color='#FC0FC0')
 
-    axes_list.append(axes)
 
-notebook_utils.plot_sectioned_curve(
-    axes_list=axes_list,
-    axis_index=0,
-    evaluated_curves_arclength=evaluated_curves_arclength,
-    sample_colors=sample_colors,
-    curve_color='black',
-    anchor_color='black',
-    first_anchor_color='magenta')
 
-notebook_utils.plot_arclength_by_index(
-    axes_list=axes_list,
-    axis_index=1,
-    evaluated_curves_arclength=evaluated_curves_arclength,
-    true_arclength_colors=true_arclength_colors,
-    predicted_arclength_colors=sample_colors)
+    # axes_list=axes_list,
+    # axis_index=0,
+    # evaluated_curves_arclength=evaluated_curves_arclength,
+    # sample_colors=sample_colors,
+    # curve_color='black',
+    # anchor_color='black',
+    # first_anchor_color='magenta')
 
-plt.show()
+# axes_list = []
+# for i in range(len(evaluated_curves_arclength)):
+#     fig, axes = plt.subplots(2, 1, figsize=(20,20))
+#     fig.patch.set_facecolor('white')
+#     axes[0].axis('equal')
+#     for axis in axes:
+#         for label in (axis.get_xticklabels() + axis.get_yticklabels()):
+#             label.set_fontsize(10)
+
+#     axes_list.append(axes)
+
+# notebook_utils.plot_sectioned_curve(
+#     axes_list=axes_list,
+#     axis_index=0,
+#     evaluated_curves_arclength=evaluated_curves_arclength,
+#     sample_colors=sample_colors,
+#     curve_color='black',
+#     anchor_color='black',
+#     first_anchor_color='magenta')
+
+# notebook_utils.plot_arclength_by_index(
+#     axes_list=axes_list,
+#     axis_index=1,
+#     evaluated_curves_arclength=evaluated_curves_arclength,
+#     true_arclength_colors=true_arclength_colors,
+#     predicted_arclength_colors=sample_colors)
+
+# plt.show()
 
 # d = {
 #     'True [i, i+1]': true_arclengths[0][1:, 1, 1],
