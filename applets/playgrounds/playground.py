@@ -91,6 +91,20 @@ def strided_indexing_roll(a, r):
 
 if __name__ == '__main__':
 
+    indices = [1,2,3,4,5,6,7,8,9]
+    for i, (index1, index2, index3) in enumerate(zip(indices, indices[1:], indices[2:])):
+        h = 5
+
+
+    curve = numpy.array([[1, 1], [2, 3], [3, 7], [4, 6], [5, 5], [6, 2]])
+    curve_processing.calculate_equiaffine_arclength_by_euclidean_metrics(curve=curve)
+
+
+
+
+
+
+
     bla = range(2,6)
 
     arr = numpy.array([1,2,3,4,5,6,7,8,9,10,11])

@@ -60,8 +60,12 @@ def calculate_normal(curve):
 # -------------------------------------------------
 # euclidean curvature and arclength
 # -------------------------------------------------
-def calculate_euclidean_curvature(curve):
-    padded_curve = pad_curve(curve=curve, padding=2)
+def calculate_euclidean_curvature(curve, padding=True):
+    if padding is True:
+        padded_curve = pad_curve(curve=curve, padding=2)
+    else:
+        padded_curve = curve
+
     tangent = calculate_tangent(padded_curve)
     dtangent_dt = calculate_tangent(tangent)
     dx_dt = tangent[:, 0]
@@ -136,6 +140,10 @@ def normalize_curve(curve, force_ccw=False, force_end_point=False, index1=None, 
             normalized_curve = normalized_curve * numpy.array([[1,-1]] * curve.shape[0])
 
     return normalized_curve
+
+
+def center_curve(curve):
+    return translate_curve(curve=curve, offset=-numpy.mean(curve, axis=0))
 
 
 def translate_curve(curve, offset):
@@ -292,23 +300,34 @@ def calculate_equiaffine_curvature_at_point(curve, indices):
 
 
 def calculate_equiaffine_curvature(curve):
-    affine_curvature = numpy.zeros(curve.shape[0])
+    k = numpy.zeros(curve.shape[0])
     for i in range(curve.shape[0]):
         indices = numpy.array(list(range((i - 2), (i + 3))))
         indices = numpy.mod(indices, curve.shape[0])
-        affine_curvature[i] = calculate_equiaffine_curvature_at_point(curve=curve, indices=indices)
-    return affine_curvature
+        k[i] = calculate_equiaffine_curvature_at_point(curve=curve, indices=indices)
+    return k
 
 
 def calculate_equiaffine_arclength_for_quintuple(curve, indices):
     kappa = calculate_equiaffine_curvature_at_point(curve=curve, indices=indices)
     area = calculate_elliptic_area(curve=curve, indices=indices)
-    return 2 * area * kappa
+    return 2 * area * numpy.abs(kappa)
 
 
 def calculate_equiaffine_arclength(curve):
-    s = 0
+    s = numpy.zeros(curve.shape[0])
     for i in numpy.arange(start=1, stop=curve.shape[0] - 1, step=3):
         indices = numpy.arange(start=i-1, stop=i+4)
-        s = s + calculate_equiaffine_arclength_for_quintuple(curve=curve, indices=indices)
+        s[i] = s[i - 1] + calculate_equiaffine_arclength_for_quintuple(curve=curve, indices=indices)
     return s
+
+
+def calculate_equiaffine_arclength_by_euclidean_metrics(curve):
+    s = calculate_euclidean_arclength(curve=curve[2:-2])
+    k = numpy.abs(calculate_euclidean_curvature(curve=curve, padding=False))
+    ds = numpy.diff(a=s, n=1, axis=0)
+    ds = numpy.concatenate((numpy.array([0]), ds))
+    k_cbrt = numpy.cbrt(k)
+    ds_affine = k_cbrt * ds
+    s_affine = numpy.cumsum(a=ds_affine, axis=0)
+    return s_affine

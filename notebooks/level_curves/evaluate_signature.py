@@ -17,6 +17,7 @@ import numpy
 # matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import matplotlib.lines
 
 # pytorch
 import torch
@@ -35,6 +36,8 @@ from deep_signature.nn.losses import ContrastiveLoss
 from deep_signature.nn.trainers import ModelTrainer
 from deep_signature.data_manipulation import curve_sampling
 from deep_signature.data_manipulation import curve_processing
+from deep_signature.linalg import euclidean_transform
+from deep_signature.linalg import affine_transform
 
 # common
 from common import settings
@@ -88,6 +91,7 @@ for i, curve in enumerate(curves[:limit]):
 limit = 40
 arclength_sample_points = 40
 step = 40
+comparision_curves_count = 1
 device = torch.device('cuda')
 
 # if we're in the equiaffine case, snap 'step' to the closest mutiple of 3 (from above)
@@ -96,7 +100,7 @@ if transform_type == "equiaffine":
 
 # package settings
 torch.set_default_dtype(torch.float64)
-numpy.random.seed(60)
+# numpy.random.seed(60)
 
 # create model
 arclength_model = DeepSignatureArcLengthNet(sample_points=arclength_sample_points).cuda()
@@ -114,102 +118,77 @@ curves = curves[:limit]
 
 # create color map
 color_map = plt.get_cmap('rainbow', limit)
+colors = ['red', 'green']
 
 # for each curve
 for curve_index, curve in enumerate(curves):
-    indices = list(range(curve.shape[0]))[::step]
-    sampled_segments = []
-    full_segments = []
-    for index1, index2 in zip(indices, indices[1:]):
-        sampled_indices = curve_sampling.sample_curve_section_indices(
-            curve=curve,
-            supporting_points_count=arclength_sample_points,
-            start_point_index=index1,
-            end_point_index=index2)
+    comparision_curves = [curve_processing.center_curve(curve=curve)]
+    for i in range(comparision_curves_count):
+        if transform_type == 'euclidean':
+            transform = euclidean_transform.random_euclidean_transform_2d()
+        elif transform_type == 'equiaffine':
+            transform = affine_transform.random_equiaffine_transform_2d()
+        transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+        comparision_curves.append(curve_processing.center_curve(curve=transformed_curve))
 
-        sampled_segment = {
-            'indices': sampled_indices,
-            'sample': curve[sampled_indices]
-        }
+    comparision_curves_data = []
+    for comparision_curve in comparision_curves:
+        sampled_sections, full_sections = notebook_utils.extract_curve_sections(
+            curve=comparision_curve, 
+            step=step, 
+            sample_points=arclength_sample_points)
 
-        sampled_segments.append(sampled_segment)
+        comparision_curves_data.append({
+            'curve': comparision_curve,
+            'sampled_sections': sampled_sections,
+            'full_sections': full_sections
+        })
 
-        full_indices = curve_sampling.sample_curve_section_indices(
-            curve=curve,
-            supporting_points_count=step,
-            start_point_index=index1,
-            end_point_index=index2)
-
-        full_segment = {
-            'indices': full_indices,
-            'sample': curve[full_indices]
-        }
-
-        full_segments.append(full_segment)
-
-    fig, axes = plt.subplots(2, 1, figsize=(20,20))
+    fig, axes = plt.subplots(3, 1, figsize=(20,20))
+    fig.patch.set_facecolor('white')
     axes[0].axis('equal')
-
     for axis in axes:
         for label in (axis.get_xticklabels() + axis.get_yticklabels()):
             label.set_fontsize(10)
 
-    for i, sampled_segment in enumerate(sampled_segments):
-        sample = sampled_segment['sample']
-        # plot_curve(ax=ax, curve=curve, color=color_map(curve_index), linewidth=5)
-        axes[0].set_xlabel('X Coordinate', fontsize=18)
-        axes[0].set_ylabel('Y Coordinate', fontsize=18)
-        notebook_utils.plot_curve(ax=axes[0], curve=curve, color='orange', linewidth=3)
-        notebook_utils.plot_sample(ax=axes[0], sample=sample, point_size=10, color='red', zorder=150)
-        notebook_utils.plot_sample(ax=axes[0], sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=70, alpha=1, color='blue', zorder=200)
-        if i == 0:
-            notebook_utils.plot_sample(ax=axes[0], sample=numpy.array([[sample[0,0] ,sample[0, 1]]]), point_size=70, alpha=1, color='black', zorder=300) 
+    for i, comparision_curve_data in enumerate(comparision_curves_data):
+        notebook_utils.plot_sectioned_curve(
+            ax=axes[0], 
+            curve=comparision_curve_data['curve'], 
+            sampled_sections=comparision_curve_data['sampled_sections'],
+            sampled_section_color=colors[i],
+            curve_color='black',
+            anchor_color='black',
+            first_anchor_color='magenta')
 
-    true_arclength = numpy.zeros([len(indices), 2])
-    predicted_arclength = numpy.zeros([len(indices), 2])
+    true_arclengths = []
+    for comparision_curve_data in comparision_curves_data:
+        true_arclength = notebook_utils.calculate_arclength_by_index(
+            curve=comparision_curve_data['curve'], 
+            full_sections=comparision_curve_data['full_sections'], 
+            transform_type=transform_type,
+            modifier='calabi')
+        true_arclengths.append(true_arclength)
 
-    for i, full_segment in enumerate(full_segments):
-        if transform_type == 'equiaffine':
-            segment_indices = list(full_segment['indices'])
-            left_index = numpy.mod(segment_indices[0] - 1, curve.shape[0])
-            right_index = numpy.mod(segment_indices[-1] + 1, curve.shape[0])
-            segment_indices = numpy.concatenate((numpy.array([left_index]), numpy.array(segment_indices), numpy.array([right_index])))
-            sample = curve[segment_indices]
-        else:
-            sample = full_segment['sample']
-        
-        point_index = i+1
-        true_arclength[point_index, 0] = point_index
+    predicted_arclengths = []
+    for comparision_curve_data in comparision_curves_data:
+        predicted_arclength = notebook_utils.predict_arclength_by_index(
+            model=arclength_model, 
+            sampled_sections=comparision_curve_data['sampled_sections'])
+        predicted_arclengths.append(predicted_arclength)
 
-        if transform_type == 'euclidean':
-            true_arclength[point_index, 1] = curve_processing.calculate_euclidean_arclength(curve=sample)[-1] + true_arclength[i, 1]
-        elif transform_type == 'equiaffine':
-            true_arclength[point_index, 1] = curve_processing.calculate_equiaffine_arclength(curve=sample) + true_arclength[i, 1]
+    notebook_utils.plot_arclength_comparision_by_index(
+        plt=plt, 
+        ax=axes[1], 
+        true_arclengths=true_arclengths, 
+        predicted_arclengths=predicted_arclengths, 
+        colors=['orange', 'black', 'red', 'green'])
 
-    for i, sampled_segment in enumerate(sampled_segments):
-        sample = sampled_segment['sample']
-        indices = list(sampled_segment['indices'])
-        point_index = i+1
-        sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
-        arclength_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample).double(), dim=0), dim=0).cuda()
-        with torch.no_grad():
-            predicted_arclength[point_index, 0] = point_index
-            predicted_arclength[point_index, 1] = torch.squeeze(arclength_model(arclength_batch_data), dim=0).cpu().detach().numpy() + predicted_arclength[i, 1]
 
-    axes[1].set_xlabel('Index', fontsize=18)
-    axes[1].set_ylabel('Arc-Length', fontsize=18)
-    notebook_utils.plot_sample(ax=axes[1], sample=true_arclength, point_size=40, color='orange', zorder=250)
-    notebook_utils.plot_curve(ax=axes[1], curve=true_arclength, linewidth=2, color='orange', zorder=150)
+    # curve = comparision_curves_data[0]['curve']
+    # curvature = numpy.cbrt(numpy.abs(curve_processing.calculate_euclidean_curvature(curve=curve)))
+    # notebook_utils.plot_curvature(ax=axes[2], curvature=curvature)
 
-    factor = numpy.mean(true_arclength[1:, 1] / predicted_arclength[1:, 1])
-    if numpy.isnan(factor):
-        factor = 1000
-        
-    predicted_arclength[:, 1] = predicted_arclength[:, 1] * factor
-    notebook_utils.plot_sample(ax=axes[1], sample=predicted_arclength, point_size=40, color='green', zorder=250)
-    notebook_utils.plot_curve(ax=axes[1], curve=predicted_arclength, linewidth=2, color='green', zorder=150)
-
-    axes[1].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
     plt.show()
 
@@ -217,98 +196,98 @@ for curve_index, curve in enumerate(curves):
 # # ** EVALUATE SIGNATURE **
 
 # %%
-limit = 2
-curvature_supporting_points = 6
-curvature_sample_points = 2 * curvature_supporting_points + 1
-arclength_sample_points = 40
-step = 120
+# limit = 2
+# curvature_supporting_points = 6
+# curvature_sample_points = 2 * curvature_supporting_points + 1
+# arclength_sample_points = 40
+# step = 120
 
-torch.set_default_dtype(torch.float64)
-device = torch.device('cuda')
-numpy.random.seed(60)
+# torch.set_default_dtype(torch.float64)
+# device = torch.device('cuda')
+# numpy.random.seed(60)
 
-curvature_model = DeepSignatureCurvatureNet(sample_points=curvature_sample_points).cuda()
-arclength_model = DeepSignatureArcLengthNet(sample_points=arclength_sample_points).cuda()
+# curvature_model = DeepSignatureCurvatureNet(sample_points=curvature_sample_points).cuda()
+# arclength_model = DeepSignatureArcLengthNet(sample_points=arclength_sample_points).cuda()
 
-latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_curvature_tuplets_results_dir_path)
-results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-curvature_model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
-curvature_model.eval()
+# latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_curvature_tuplets_results_dir_path)
+# results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+# curvature_model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
+# curvature_model.eval()
 
-latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_arclength_tuplets_results_dir_path)
-results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-arclength_model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
-arclength_model.eval()
+# latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_arclength_tuplets_results_dir_path)
+# results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+# arclength_model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
+# arclength_model.eval()
 
-curves = LevelCurvesGenerator.load_curves(dir_path=settings.level_curves_dir_path_train)
-numpy.random.shuffle(curves)
-curves = curves[:limit]
-color_map = plt.get_cmap('rainbow', limit)
+# curves = LevelCurvesGenerator.load_curves(dir_path=settings.level_curves_dir_path_train)
+# numpy.random.shuffle(curves)
+# curves = curves[:limit]
+# color_map = plt.get_cmap('rainbow', limit)
 
-for _ in range(3):
-    for curve_index, curve in enumerate(curves):
-        indices = list(range(curve.shape[0]))[::step]
-        sampled_segments = []
-        for index1, index2 in zip(indices, indices[1:]):
-            sampled_indices = curve_sampling.sample_curve_section_indices(
-                curve=curve,
-                supporting_points_count=arclength_sample_points,
-                start_point_index=index1,
-                end_point_index=index2)
+# for _ in range(3):
+#     for curve_index, curve in enumerate(curves):
+#         indices = list(range(curve.shape[0]))[::step]
+#         sampled_segments = []
+#         for index1, index2 in zip(indices, indices[1:]):
+#             sampled_indices = curve_sampling.sample_curve_section_indices(
+#                 curve=curve,
+#                 supporting_points_count=arclength_sample_points,
+#                 start_point_index=index1,
+#                 end_point_index=index2)
 
-            sampled_segment = {
-                'indices': sampled_indices,
-                'sample': curve[sampled_indices]
-            }
+#             sampled_segment = {
+#                 'indices': sampled_indices,
+#                 'sample': curve[sampled_indices]
+#             }
 
-            sampled_segments.append(sampled_segment)
-            # print(sampled_segment['sample'].shape[0])
-            # print(sampled_segment['indices'])
+#             sampled_segments.append(sampled_segment)
+#             # print(sampled_segment['sample'].shape[0])
+#             # print(sampled_segment['indices'])
 
         
-        fig, axes = plt.subplots(2, 1, figsize=(20,20))
-        axes[0].axis('equal')
+#         fig, axes = plt.subplots(2, 1, figsize=(20,20))
+#         axes[0].axis('equal')
 
-        for axis in axes:
-            for label in (axis.get_xticklabels() + axis.get_yticklabels()):
-                label.set_fontsize(10)
+#         for axis in axes:
+#             for label in (axis.get_xticklabels() + axis.get_yticklabels()):
+#                 label.set_fontsize(10)
 
-        for i, sampled_segment in enumerate(sampled_segments):
-            sample = sampled_segment['sample']
-            # plot_curve(ax=ax, curve=curve, color=color_map(curve_index), linewidth=5)
-            axes[0].set_xlabel('X Coordinate', fontsize=18)
-            axes[0].set_ylabel('Y Coordinate', fontsize=18)
-            notebook_utils.plot_curve(ax=axes[0], curve=curve, color='orange', linewidth=3)
-            notebook_utils.plot_sample(ax=axes[0], sample=sample, point_size=10, color='red', zorder=150)
-            notebook_utils.plot_sample(ax=axes[0], sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=70, alpha=1, color='blue', zorder=200)
-            if i == 0:
-                notebook_utils.plot_sample(ax=axes[0], sample=numpy.array([[sample[0,0] ,sample[0, 1]]]), point_size=70, alpha=1, color='black', zorder=300) 
+#         for i, sampled_segment in enumerate(sampled_segments):
+#             sample = sampled_segment['sample']
+#             # plot_curve(ax=ax, curve=curve, color=color_map(curve_index), linewidth=5)
+#             axes[0].set_xlabel('X Coordinate', fontsize=18)
+#             axes[0].set_ylabel('Y Coordinate', fontsize=18)
+#             notebook_utils.plot_curve(ax=axes[0], curve=curve, color='orange', linewidth=3)
+#             notebook_utils.plot_sample(ax=axes[0], sample=sample, point_size=10, color='red', zorder=150)
+#             notebook_utils.plot_sample(ax=axes[0], sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=70, alpha=1, color='blue', zorder=200)
+#             if i == 0:
+#                 notebook_utils.plot_sample(ax=axes[0], sample=numpy.array([[sample[0,0] ,sample[0, 1]]]), point_size=70, alpha=1, color='black', zorder=300) 
 
-        signature = numpy.zeros([len(indices) - 2, 2])
-        for i, [sampled_segment1, sampled_segment2] in enumerate(zip(sampled_segments, sampled_segments[1:])):
-            arclength_sample1 = sampled_segment1['sample']
-            arclength_sample2 = sampled_segment2['sample']
-            indices1 = list(sampled_segment1['indices'])
-            indices2 = list(sampled_segment2['indices'])
-            curvature_indices = indices1[(len(indices1) - curvature_supporting_points - 1):len(indices1)] + indices2[:curvature_supporting_points]
-            curvature_sample = curve[curvature_indices]
+#         signature = numpy.zeros([len(indices) - 2, 2])
+#         for i, [sampled_segment1, sampled_segment2] in enumerate(zip(sampled_segments, sampled_segments[1:])):
+#             arclength_sample1 = sampled_segment1['sample']
+#             arclength_sample2 = sampled_segment2['sample']
+#             indices1 = list(sampled_segment1['indices'])
+#             indices2 = list(sampled_segment2['indices'])
+#             curvature_indices = indices1[(len(indices1) - curvature_supporting_points - 1):len(indices1)] + indices2[:curvature_supporting_points]
+#             curvature_sample = curve[curvature_indices]
 
-            arclength_sample = curve_processing.normalize_curve(curve=arclength_sample1, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
-            arclength_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(arclength_sample).double(), dim=0), dim=0).cuda()
+#             arclength_sample = curve_processing.normalize_curve(curve=arclength_sample1, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
+#             arclength_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(arclength_sample).double(), dim=0), dim=0).cuda()
 
-            curvature_sample = curve_processing.normalize_curve(curve=curvature_sample)
-            curvature_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(curvature_sample).double(), dim=0), dim=0).cuda()
+#             curvature_sample = curve_processing.normalize_curve(curve=curvature_sample)
+#             curvature_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(curvature_sample).double(), dim=0), dim=0).cuda()
 
-            with torch.no_grad():
-                signature[i, 0] = torch.squeeze(arclength_model(arclength_batch_data), dim=0).cpu().detach().numpy() + signature[i - 1, 0]
-                signature[i, 1] = torch.squeeze(curvature_model(curvature_batch_data), dim=0).cpu().detach().numpy()
+#             with torch.no_grad():
+#                 signature[i, 0] = torch.squeeze(arclength_model(arclength_batch_data), dim=0).cpu().detach().numpy() + signature[i - 1, 0]
+#                 signature[i, 1] = torch.squeeze(curvature_model(curvature_batch_data), dim=0).cpu().detach().numpy()
 
-        # print(signature)
-        axes[1].set_xlabel('Arc-Length', fontsize=18)
-        axes[1].set_ylabel('Curvature', fontsize=18)
-        notebook_utils.plot_sample(ax=axes[1], sample=signature, point_size=40, color='blue', zorder=250)
-        notebook_utils.plot_curve(ax=axes[1], curve=signature, linewidth=2, color='orange', zorder=150)
-        plt.show()
+#         # print(signature)
+#         axes[1].set_xlabel('Arc-Length', fontsize=18)
+#         axes[1].set_ylabel('Curvature', fontsize=18)
+#         notebook_utils.plot_sample(ax=axes[1], sample=signature, point_size=40, color='blue', zorder=250)
+#         notebook_utils.plot_curve(ax=axes[1], curve=signature, linewidth=2, color='orange', zorder=150)
+#         plt.show()
 
 
 # %%
