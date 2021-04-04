@@ -22,14 +22,14 @@ if __name__ == '__main__':
     model = DeepSignatureArcLengthNet(sample_points=40).cuda()
     print(model)
 
-    device = torch.device('cuda')
-    latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_equiaffine_arclength_tuplets_results_dir_path)
-    results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-    model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
+    # device = torch.device('cuda')
+    # latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_equiaffine_arclength_tuplets_results_dir_path)
+    # results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+    # model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    tuplet_loss_fn = SignedTupletLoss()
-    negative_loss_fn = NegativeLoss(factor=1)
+    tuplet_loss_fn = SignedTupletLoss(exact_examples_count=1, inexact_examples_count=4)
+    negative_loss_fn = NegativeLoss(factor=1000)
     model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn, negative_loss_fn], optimizer=optimizer)
     # model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn], optimizer=optimizer)
     model_trainer.fit(

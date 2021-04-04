@@ -188,7 +188,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         return sample
 
     @classmethod
-    def _generate_tuple(cls, curves, curve_index, center_point_index, negative_examples_count, supporting_points_count, min_perturbation, max_perturbation, min_offset, max_offset):
+    def _generate_tuple(cls, curves, curve_index, center_point_index, exact_examples_count, inexact_examples_count, supporting_points_count, min_perturbation, max_perturbation, min_offset, max_offset):
         input = []
         factors = []
 
@@ -216,8 +216,8 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         input.append(sample)
         factors.append(1)
 
-        # positive examples
-        for i in range(negative_examples_count):
+        # exact examples
+        for i in range(exact_examples_count):
             transform = cls._generate_curve_transform()
             transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
 
@@ -237,32 +237,32 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             input.append(positive_sample2)
             factors.append(1)
 
-        for i in range(negative_examples_count):
-            transform = cls._generate_curve_transform()
-            transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+        # for i in range(negative_examples_count):
+        #     transform = cls._generate_curve_transform()
+        #     transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+        #
+        #     positive_sample1 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+        #         curve=transformed_curve,
+        #         supporting_points_count=supporting_points_count,
+        #         start_point_index=start_point_index,
+        #         end_point_index=center_point_index)
+        #     flipped_positive_sample1 = numpy.flip(m=positive_sample1, axis=0).copy()
+        #     flipped_positive_sample1 = curve_processing.normalize_curve(curve=flipped_positive_sample1)
+        #
+        #     positive_sample2 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+        #         curve=transformed_curve,
+        #         supporting_points_count=supporting_points_count,
+        #         start_point_index=center_point_index,
+        #         end_point_index=end_point_index)
+        #     flipped_positive_sample2 = numpy.flip(m=positive_sample2, axis=0).copy()
+        #     flipped_positive_sample2 = curve_processing.normalize_curve(curve=flipped_positive_sample2)
+        #
+        #     input.append(flipped_positive_sample1)
+        #     input.append(flipped_positive_sample2)
+        #     factors.append(1)
 
-            positive_sample1 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-                curve=transformed_curve,
-                supporting_points_count=supporting_points_count,
-                start_point_index=start_point_index,
-                end_point_index=center_point_index)
-            flipped_positive_sample1 = numpy.flip(m=positive_sample1, axis=0).copy()
-            flipped_positive_sample1 = curve_processing.normalize_curve(curve=flipped_positive_sample1)
-
-            positive_sample2 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-                curve=transformed_curve,
-                supporting_points_count=supporting_points_count,
-                start_point_index=center_point_index,
-                end_point_index=end_point_index)
-            flipped_positive_sample2 = numpy.flip(m=positive_sample2, axis=0).copy()
-            flipped_positive_sample2 = curve_processing.normalize_curve(curve=flipped_positive_sample2)
-
-            input.append(flipped_positive_sample1)
-            input.append(flipped_positive_sample2)
-            factors.append(1)
-
-        # negative examples
-        for _ in range(negative_examples_count):
+        # inexact examples
+        for _ in range(inexact_examples_count):
             perturbation = numpy.random.randint(low=min_perturbation, high=max_perturbation, size=2)
 
             negative_example_type = numpy.random.choice(['longer', 'shorter'])
@@ -295,15 +295,16 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         return tuplet
 
     @staticmethod
-    def _generate_zip_data(items_count, negative_examples_count, supporting_points_count, min_perturbation, max_perturbation, min_offset, max_offset=None):
-        negative_examples_count_pack = [negative_examples_count] * items_count
+    def _generate_zip_data(items_count, exact_examples_count, inexact_examples_count, supporting_points_count, min_perturbation, max_perturbation, min_offset, max_offset=None):
+        exact_examples_count_pack = [exact_examples_count] * items_count
+        inexact_examples_count_pack = [inexact_examples_count] * items_count
         supporting_points_count_pack = [supporting_points_count] * items_count
         min_offset_pack = [min_offset] * items_count
         max_offset_pack = [max_offset] * items_count
         min_perturbation_pack = [min_perturbation] * items_count
         max_perturbation_pack = [max_perturbation] * items_count
-        data = [negative_examples_count_pack, supporting_points_count_pack, min_perturbation_pack, max_perturbation_pack, min_offset_pack, max_offset_pack]
-        names = ['negative_examples_count', 'supporting_points_count', 'min_perturbation', 'max_perturbation', 'min_offset', 'max_offset']
+        data = [exact_examples_count_pack, inexact_examples_count_pack, supporting_points_count_pack, min_perturbation_pack, max_perturbation_pack, min_offset_pack, max_offset_pack]
+        names = ['exact_examples_count', 'inexact_examples_count', 'supporting_points_count', 'min_perturbation', 'max_perturbation', 'min_offset', 'max_offset']
         return names, data
 
 
