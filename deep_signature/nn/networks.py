@@ -54,7 +54,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         v3 = v2[:, 0::2, :]
         v4 = v2[:, 1::2, :]
         v5 = v3 + v4
-        v6 = torch.cat((v1, v5), dim=1)
+        v6 = torch.cat((v1, v5), dim=1).abs()
         return v6
 
     @staticmethod

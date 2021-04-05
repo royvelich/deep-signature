@@ -11,10 +11,10 @@ from common import utils as common_utils
 
 
 if __name__ == '__main__':
-    epochs = 1200
+    epochs = 2000
     batch_size = 8000
     learning_rate = 1e-4
-    validation_split = .05
+    validation_split = .1
 
     torch.set_default_dtype(torch.float64)
     dataset = DeepSignatureTupletsDataset()
@@ -28,10 +28,10 @@ if __name__ == '__main__':
     # model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    tuplet_loss_fn = SignedTupletLoss(exact_examples_count=1, inexact_examples_count=4)
-    negative_loss_fn = NegativeLoss(factor=1000)
-    model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn, negative_loss_fn], optimizer=optimizer)
-    # model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn], optimizer=optimizer)
+    tuplet_loss_fn = SignedTupletLoss()
+    # negative_loss_fn = NegativeLoss(factor=100)
+    # model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn, negative_loss_fn], optimizer=optimizer)
+    model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn], optimizer=optimizer)
     model_trainer.fit(
         dataset=dataset,
         epochs=epochs,

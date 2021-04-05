@@ -40,9 +40,8 @@ class TupletLoss(torch.nn.Module):
 
 
 class SignedTupletLoss(torch.nn.Module):
-    def __init__(self, exact_examples_count, inexact_examples_count):
+    def __init__(self, exact_examples_count=1):
         self._exact_examples_count = exact_examples_count
-        self._inexact_examples_count = inexact_examples_count
         super(SignedTupletLoss, self).__init__()
 
     def forward(self, output, batch_data):
@@ -52,12 +51,11 @@ class SignedTupletLoss(torch.nn.Module):
         v3 = v2 - output
         v4 = v3[:, 1:k, :]
         v5 = v3[:, k:, :]
-        v6 = 10 * v4.abs()
+        v6 = v4.abs()
         v7 = batch_data['factors'][:, k:].unsqueeze(dim=2)
         v8 = v5.sign()
         v9 = v5 * (v7 * v8)
         v10 = v6 - v9
-        # v11 = v10.abs().exp()
         v11 = v10.exp()
         v12 = v11.sum(dim=1)
         v13 = v12 + 1

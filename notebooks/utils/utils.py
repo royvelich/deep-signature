@@ -293,9 +293,9 @@ def generate_curve_arclength_records(model, curves, transform_type, comparision_
                 'predicted_arclength': predicted_arclength
             })
 
-            if i == 0:
-                factor = numpy.mean(true_arclength[1:, 1, 0] / predicted_arclength[1:, 1, 0])
-                factors.append(factor)
+            # if i == 0:
+            factor = numpy.mean(true_arclength[1:, 1, 0] / predicted_arclength[1:, 1, 0])
+            factors.append(factor)
 
         curve_arclength_records.append(curve_arclength_record)
 

@@ -184,6 +184,10 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             start_point_index=start_point_index,
             end_point_index=end_point_index)
 
+        # flip_sample = bool(random.getrandbits(1))
+        # if flip_sample is True:
+        #     sample = numpy.flip(m=sample, axis=0).copy()
+
         sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
         return sample
 
@@ -193,7 +197,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         factors = []
 
         curve = curves[curve_index]
-        if curve.shape[0] < 2500:
+        if curve.shape[0] < 2000:
             return None
 
         tuplet = {
@@ -236,30 +240,6 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             input.append(positive_sample1)
             input.append(positive_sample2)
             factors.append(1)
-
-        # for i in range(negative_examples_count):
-        #     transform = cls._generate_curve_transform()
-        #     transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
-        #
-        #     positive_sample1 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-        #         curve=transformed_curve,
-        #         supporting_points_count=supporting_points_count,
-        #         start_point_index=start_point_index,
-        #         end_point_index=center_point_index)
-        #     flipped_positive_sample1 = numpy.flip(m=positive_sample1, axis=0).copy()
-        #     flipped_positive_sample1 = curve_processing.normalize_curve(curve=flipped_positive_sample1)
-        #
-        #     positive_sample2 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-        #         curve=transformed_curve,
-        #         supporting_points_count=supporting_points_count,
-        #         start_point_index=center_point_index,
-        #         end_point_index=end_point_index)
-        #     flipped_positive_sample2 = numpy.flip(m=positive_sample2, axis=0).copy()
-        #     flipped_positive_sample2 = curve_processing.normalize_curve(curve=flipped_positive_sample2)
-        #
-        #     input.append(flipped_positive_sample1)
-        #     input.append(flipped_positive_sample2)
-        #     factors.append(1)
 
         # inexact examples
         for _ in range(inexact_examples_count):
