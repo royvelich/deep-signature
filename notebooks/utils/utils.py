@@ -359,16 +359,16 @@ def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, p
             'True [i, i+1]': true_arclength[1:, 1, 1],
             'True [i+1, i+2]': true_arclength[1:, 1, 2],
             'True [i, i+2]': true_arclength[1:, 1, 3],
-            'True [i, i+1] + [i+1, i+2]': true_arclength[1:, 1, 1] + true_arclength[1:, 1, 2],
+            'True [i, i+1] + True [i+1, i+2]': true_arclength[1:, 1, 1] + true_arclength[1:, 1, 2],
             'Pred [i, i+1]': predicted_arclength[1:, 1, 1],
             'Pred [i+1, i+2]': predicted_arclength[1:, 1, 2],
             'Pred [i, i+2]': predicted_arclength[1:, 1, 3],
-            'Pred [i, i+1] + [i+1, i+2]': predicted_arclength[1:, 1, 1] + predicted_arclength[1:, 1, 2]
+            'Pred [i, i+1] + Pred [i+1, i+2]': predicted_arclength[1:, 1, 1] + predicted_arclength[1:, 1, 2]
         }
 
         df = pandas.DataFrame(data=d)
 
-        style = df.style.set_properties(**{'background-color': true_arclength_colors[0]}, subset=list(d.keys())[:4])
+        style = df.style.set_properties(**{'background-color': true_arclength_colors[i]}, subset=list(d.keys())[:4])
         style = style.set_properties(**{'background-color': predicted_arclength_colors[i]}, subset=list(d.keys())[4:8])
         style = style.set_properties(**{'color': 'white', 'border-color': 'black', 'border-style': 'solid', 'border-width': '1px'})
 

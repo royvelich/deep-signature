@@ -44,23 +44,59 @@ class SignedTupletLoss(torch.nn.Module):
         self._exact_examples_count = exact_examples_count
         super(SignedTupletLoss, self).__init__()
 
+    # def forward(self, output, batch_data):
+    #     k = self._exact_examples_count + 1
+    #     v = output[:, 0, :]
+    #     v2 = v.unsqueeze(dim=1)
+    #     v3 = v2 - output
+    #     v4 = v3[:, 1:k, :]
+    #     v5 = v3[:, k:, :]
+    #     v6 = 10 * v4.abs()
+    #     v7 = batch_data['factors'][:, k:].unsqueeze(dim=2)
+    #     v8 = v5.sign()
+    #     v9 = v5 * (v7 * v8)
+    #     v10 = v6 - v9
+    #     v11 = v10.exp()
+    #     v12 = v11.sum(dim=1)
+    #     v13 = v12 + 1
+    #     v14 = v13.log()
+    #     return v14.mean(dim=0)
+
     def forward(self, output, batch_data):
-        k = self._exact_examples_count + 1
+        # k = self._exact_examples_count + 1
         v = output[:, 0, :]
         v2 = v.unsqueeze(dim=1)
         v3 = v2 - output
-        v4 = v3[:, 1:k, :]
-        v5 = v3[:, k:, :]
+        v4 = v3[:, 1:, :]
+        # v5 = v3[:, k:, :]
         v6 = v4.abs()
-        v7 = batch_data['factors'][:, k:].unsqueeze(dim=2)
-        v8 = v5.sign()
-        v9 = v5 * (v7 * v8)
-        v10 = v6 - v9
-        v11 = v10.exp()
-        v12 = v11.sum(dim=1)
-        v13 = v12 + 1
-        v14 = v13.log()
+        # v7 = batch_data['factors'][:, k:].unsqueeze(dim=2)
+        # v8 = v5.sign()
+        # v9 = v5 * (v7 * v8)
+        # v10 = v6 - v9
+        v11 = v6.exp()
+        v12 = v11.sum(dim=1) / float(v4.shape[1])
+        # v13 = v12 + 1
+        v14 = v12.log()
         return v14.mean(dim=0)
+
+    # def forward(self, output, batch_data):
+    #     # k = self._exact_examples_count + 1
+    #     v = output[:, 0, :]
+    #     v2 = v.unsqueeze(dim=1)
+    #     v3 = v2 - output
+    #     v4 = v3[:, 1:, :]
+    #     # v5 = v3[:, k:, :]
+    #     # v6 = v4.abs()
+    #     v7 = batch_data['factors'][:, 1:].unsqueeze(dim=2)
+    #     v8 = v4.sign()
+    #     v9 = -v4 * (v7 * v8)
+    #     # v10 = v6 - v9
+    #     v11 = v9.exp()
+    #     v12 = v11.sum(dim=1)
+    #     v13 = v12 + 1
+    #     v14 = v13.log()
+    #     return v14.mean(dim=0)
 
 
 class NegativeLoss(torch.nn.Module):

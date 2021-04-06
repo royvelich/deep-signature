@@ -197,7 +197,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         factors = []
 
         curve = curves[curve_index]
-        if curve.shape[0] < 2000:
+        if curve.shape[0] < 2500:
             return None
 
         tuplet = {

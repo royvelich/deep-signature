@@ -338,7 +338,7 @@ color_map = plt.get_cmap('rainbow', limit)
 #  ## ** EVALUATE ARC-LENGTH VISUALLY **
 
 # %%
-true_arclength_colors = ['#FF8C00', 'black']
+true_arclength_colors = ['#FF8C00', '#444444']
 predicted_arclength_colors = ['#AA0000', '#00AA00']
 sample_colors = ['#AA0000', '#00AA00']
 
@@ -357,7 +357,7 @@ notebook_utils.plot_curve_arclength_records(
     sample_colors=sample_colors, 
     curve_color='#FF8C00', 
     anchor_color='#3333FF', 
-    first_anchor_color='#FC0FC0')
+    first_anchor_color='#FF0FF0')
 
 
 
