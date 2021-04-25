@@ -62,23 +62,23 @@ class SignedTupletLoss(torch.nn.Module):
     #     v14 = v13.log()
     #     return v14.mean(dim=0)
 
-    def forward(self, output, batch_data):
-        # k = self._exact_examples_count + 1
-        v = output[:, 0, :]
-        v2 = v.unsqueeze(dim=1)
-        v3 = v2 - output
-        v4 = v3[:, 1:, :]
-        # v5 = v3[:, k:, :]
-        v6 = v4.abs()
-        # v7 = batch_data['factors'][:, k:].unsqueeze(dim=2)
-        # v8 = v5.sign()
-        # v9 = v5 * (v7 * v8)
-        # v10 = v6 - v9
-        v11 = v6.exp()
-        v12 = v11.sum(dim=1) / float(v4.shape[1])
-        # v13 = v12 + 1
-        v14 = v12.log()
-        return v14.mean(dim=0)
+    # def forward(self, output, batch_data):
+    #     # k = self._exact_examples_count + 1
+    #     v = output[:, 0, :]
+    #     v2 = v.unsqueeze(dim=1)
+    #     v3 = v2 - output
+    #     v4 = v3[:, 1:, :]
+    #     # v5 = v3[:, k:, :]
+    #     v6 = v4.abs()
+    #     # v7 = batch_data['factors'][:, k:].unsqueeze(dim=2)
+    #     # v8 = v5.sign()
+    #     # v9 = v5 * (v7 * v8)
+    #     # v10 = v6 - v9
+    #     v11 = v6.exp()
+    #     v12 = v11.sum(dim=1) / float(v4.shape[1])
+    #     # v13 = v12 + 1
+    #     v14 = v12.log()
+    #     return v14.mean(dim=0)
 
     # def forward(self, output, batch_data):
     #     # k = self._exact_examples_count + 1
@@ -97,6 +97,16 @@ class SignedTupletLoss(torch.nn.Module):
     #     v13 = v12 + 1
     #     v14 = v13.log()
     #     return v14.mean(dim=0)
+
+    def forward(self, output, batch_data):
+        v1 = output[:, 0::2, :]
+        v2 = output[:, 1::2, :]
+        v3 = (v1 - v2).abs()
+        v4 = v3.exp()
+        v5 = v4.sum(dim=1) / 3
+        v6 = v5.log()
+        return v6.mean(dim=0)
+
 
 
 class NegativeLoss(torch.nn.Module):

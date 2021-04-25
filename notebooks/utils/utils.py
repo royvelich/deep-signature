@@ -308,7 +308,7 @@ def generate_curve_arclength_records(model, curves, transform_type, comparision_
 
 
 def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, predicted_arclength_colors, sample_colors, curve_color, anchor_color, first_anchor_color):
-    fig, axes = plt.subplots(2, 1, figsize=(20,20))
+    fig, axes = plt.subplots(3, 1, figsize=(20,20))
     fig.patch.set_facecolor('white')
     for axis in axes:
         for label in (axis.get_xticklabels() + axis.get_yticklabels()):
@@ -363,7 +363,8 @@ def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, p
             'Pred [i, i+1]': predicted_arclength[1:, 1, 1],
             'Pred [i+1, i+2]': predicted_arclength[1:, 1, 2],
             'Pred [i, i+2]': predicted_arclength[1:, 1, 3],
-            'Pred [i, i+1] + Pred [i+1, i+2]': predicted_arclength[1:, 1, 1] + predicted_arclength[1:, 1, 2]
+            'Pred [i, i+1] + Pred [i+1, i+2]': predicted_arclength[1:, 1, 1] + predicted_arclength[1:, 1, 2],
+            'Diff [i, i+2]': numpy.abs((true_arclength[1:, 1, 3] - predicted_arclength[1:, 1, 3]) / true_arclength[1:, 1, 3]) * 100
         }
 
         df = pandas.DataFrame(data=d)
@@ -373,6 +374,34 @@ def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, p
         style = style.set_properties(**{'color': 'white', 'border-color': 'black', 'border-style': 'solid', 'border-width': '1px'})
 
         display(HTML(style.render()))
+
+    # predicted_arclength1 = curve_arclength_record[0]['predicted_arclength']
+    # predicted_arclength2 = curve_arclength_record[1]['predicted_arclength']
+    # display(HTML((numpy.mean(predicted_arclength1[1:, 1, 3] - predicted_arclength2[1:, 1, 3])))
+
+    predicted_arclength1 = curve_arclength_record[0]['predicted_arclength']
+    predicted_arclength2 = curve_arclength_record[1]['predicted_arclength']
+
+    d = {
+        'Diff [i, i+2]': (((numpy.abs(predicted_arclength1[1:, 1, 3] - predicted_arclength2[1:, 1, 3]) / predicted_arclength1[1:, 1, 3]) + (numpy.abs(predicted_arclength1[1:, 1, 3] - predicted_arclength2[1:, 1, 3]) / predicted_arclength2[1:, 1, 3])) / 2) * 100
+    }
+
+    df = pandas.DataFrame(data=d)
+
+    # style = df.style.set_properties(**{'background-color': true_arclength_colors[i]}, subset=list(d.keys())[:4])
+    # style = style.set_properties(**{'background-color': predicted_arclength_colors[i]}, subset=list(d.keys())[4:8])
+    # style = style.set_properties(**{'color': 'white', 'border-color': 'black', 'border-style': 'solid', 'border-width': '1px'})
+
+    display(HTML(df.style.render()))
+
+
+    axes[2].set_xlabel('Index', fontsize=18)
+    axes[2].set_ylabel(r'$\kappa^{\frac{1}{3}}$', fontsize=18)
+    for i, curve_arclength in enumerate(curve_arclength_record):
+        curve_sections = curve_arclength['curve_sections']
+        curve = curve_sections['curve']
+        curvature = curve_processing.calculate_euclidean_curvature(curve=curve)
+        plot_curvature(ax=axes[2], curvature=numpy.cbrt(curvature), color=sample_colors[i])
 
     plt.show()
 

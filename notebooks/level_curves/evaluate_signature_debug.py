@@ -94,7 +94,7 @@ elif transform_type == 'equiaffine':
 
 # %%
 # constants
-limit = 5
+limit = 2
 arclength_sample_points = 40
 step = 40
 comparision_curves_count = 1
@@ -106,7 +106,7 @@ if transform_type == "equiaffine":
 
 # package settings
 torch.set_default_dtype(torch.float64)
-numpy.random.seed(60)
+# numpy.random.seed(60)
 
 # create model
 arclength_model = DeepSignatureArcLengthNet(sample_points=arclength_sample_points).cuda()

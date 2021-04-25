@@ -50,12 +50,19 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
         output = self._regressor(features).reshape([input.shape[0], input.shape[1], 1])
         v1 = output[:, 0, :].unsqueeze(dim=1)
-        v2 = output[:, 1:, :]
-        v3 = v2[:, 0::2, :]
-        v4 = v2[:, 1::2, :]
-        v5 = v3 + v4
-        v6 = torch.cat((v1, v5), dim=1).abs()
-        return v6
+        v2 = output[:, 1, :].unsqueeze(dim=1)
+        v3 = output[:, 2, :].unsqueeze(dim=1)
+
+        # v2 = output[:, 1:, :]
+        v4 = output[:, 3, :].unsqueeze(dim=1)
+        v5 = output[:, 4, :].unsqueeze(dim=1)
+        v6 = output[:, 5, :].unsqueeze(dim=1)
+
+        v7 = v4 + v5
+        v8 = v5 + v6
+        v9 = v4 + v5 + v6
+        v10 = torch.cat((v1, v7, v2, v8, v3, v9), dim=1).abs()
+        return v10
 
     @staticmethod
     def _create_regressor(in_features):
