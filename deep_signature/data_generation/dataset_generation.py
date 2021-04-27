@@ -205,60 +205,94 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             'factors': factors
         }
 
-        raw_offset = numpy.random.randint(max_offset, size=3)
-        offset = numpy.maximum(raw_offset, [min_offset] * 3)
+        raw_offset = numpy.random.randint(max_offset, size=4)
+        offset = numpy.maximum(raw_offset, [min_offset] * 4)
         index1 = center_point_index
         index2 = numpy.mod(index1 + offset[0], curve.shape[0])
         index3 = numpy.mod(index2 + offset[1], curve.shape[0])
         index4 = numpy.mod(index3 + offset[2], curve.shape[0])
-        # indices = numpy.array([index1, index2, index3, index4])
-
-        # anchor
-        sample1 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-            curve=curve,
-            supporting_points_count=supporting_points_count,
-            start_point_index=index1,
-            end_point_index=index3)
-
-        sample2 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-            curve=curve,
-            supporting_points_count=supporting_points_count,
-            start_point_index=index2,
-            end_point_index=index4)
-
-        sample3 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-            curve=curve,
-            supporting_points_count=supporting_points_count,
-            start_point_index=index1,
-            end_point_index=index4)
+        index5 = numpy.mod(index4 + offset[3], curve.shape[0])
 
         transform = cls._generate_curve_transform()
         transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
 
-        sample4 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-            curve=transformed_curve,
+        swap = bool(random.getrandbits(1))
+        if swap is True:
+            curve1 = curve
+            curve2 = transformed_curve
+        else:
+            curve1 = transformed_curve
+            curve2 = curve
+
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve1,
+            supporting_points_count=supporting_points_count,
+            start_point_index=index1,
+            end_point_index=index3)
+        input.append(sample)
+
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve1,
+            supporting_points_count=supporting_points_count,
+            start_point_index=index2,
+            end_point_index=index4)
+        input.append(sample)
+
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve1,
+            supporting_points_count=supporting_points_count,
+            start_point_index=index3,
+            end_point_index=index5)
+        input.append(sample)
+
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve1,
+            supporting_points_count=supporting_points_count,
+            start_point_index=index1,
+            end_point_index=index4)
+        input.append(sample)
+
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve1,
+            supporting_points_count=supporting_points_count,
+            start_point_index=index2,
+            end_point_index=index5)
+        input.append(sample)
+
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve1,
+            supporting_points_count=supporting_points_count,
+            start_point_index=index1,
+            end_point_index=index5)
+        input.append(sample)
+
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve2,
             supporting_points_count=supporting_points_count,
             start_point_index=index1,
             end_point_index=index2)
+        input.append(sample)
 
-        sample5 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-            curve=transformed_curve,
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve2,
             supporting_points_count=supporting_points_count,
             start_point_index=index2,
             end_point_index=index3)
+        input.append(sample)
 
-        sample6 = ArcLengthTupletsDatasetGenerator._sample_curve_section(
-            curve=transformed_curve,
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve2,
             supporting_points_count=supporting_points_count,
             start_point_index=index3,
             end_point_index=index4)
+        input.append(sample)
 
-        input.append(sample1)
-        input.append(sample2)
-        input.append(sample3)
-        input.append(sample4)
-        input.append(sample5)
-        input.append(sample6)
+        sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
+            curve=curve2,
+            supporting_points_count=supporting_points_count,
+            start_point_index=index4,
+            end_point_index=index5)
+        input.append(sample)
 
         # exact examples
         # for i in range(exact_examples_count):

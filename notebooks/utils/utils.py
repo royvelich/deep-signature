@@ -290,7 +290,8 @@ def generate_curve_arclength_records(model, curves, transform_type, comparision_
             curve_arclength_record.append({
                 'curve_sections': curve_sections,
                 'true_arclength': true_arclength,
-                'predicted_arclength': predicted_arclength
+                'predicted_arclength': predicted_arclength,
+                'predicted_arclength_original': predicted_arclength.copy()
             })
 
             # if i == 0:
@@ -354,6 +355,7 @@ def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, p
     for i, curve_arclength in enumerate(curve_arclength_record):
         true_arclength = curve_arclength['true_arclength']
         predicted_arclength = curve_arclength['predicted_arclength']
+        predicted_arclength_original = curve_arclength['predicted_arclength_original']
 
         d = {
             'True [i, i+1]': true_arclength[1:, 1, 1],
@@ -364,7 +366,11 @@ def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, p
             'Pred [i+1, i+2]': predicted_arclength[1:, 1, 2],
             'Pred [i, i+2]': predicted_arclength[1:, 1, 3],
             'Pred [i, i+1] + Pred [i+1, i+2]': predicted_arclength[1:, 1, 1] + predicted_arclength[1:, 1, 2],
-            'Diff [i, i+2]': numpy.abs((true_arclength[1:, 1, 3] - predicted_arclength[1:, 1, 3]) / true_arclength[1:, 1, 3]) * 100
+            'Diff [i, i+2]': numpy.abs((true_arclength[1:, 1, 3] - predicted_arclength[1:, 1, 3]) / true_arclength[1:, 1, 3]) * 100,
+            'PredOrg [i, i+1]': predicted_arclength_original[1:, 1, 1],
+            'PredOrg [i+1, i+2]': predicted_arclength_original[1:, 1, 2],
+            'PredOrg [i, i+2]': predicted_arclength_original[1:, 1, 3],
+            'PredOrg [i, i+1] + PredOrg [i+1, i+2]': predicted_arclength_original[1:, 1, 1] + predicted_arclength_original[1:, 1, 2]
         }
 
         df = pandas.DataFrame(data=d)

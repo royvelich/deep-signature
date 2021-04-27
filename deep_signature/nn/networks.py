@@ -2,6 +2,15 @@
 import torch
 
 
+class Sine(torch.nn.Module):
+    def __init__(self, w0 = 1.):
+        super().__init__()
+        self.w0 = w0
+
+    def forward(self, x):
+        return torch.sin(self.w0 * x)
+
+
 class DeepSignatureCurvatureNet(torch.nn.Module):
     def __init__(self, sample_points):
         super(DeepSignatureCurvatureNet, self).__init__()
@@ -49,26 +58,13 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
     def forward(self, input):
         features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
         output = self._regressor(features).reshape([input.shape[0], input.shape[1], 1])
-        v1 = output[:, 0, :].unsqueeze(dim=1)
-        v2 = output[:, 1, :].unsqueeze(dim=1)
-        v3 = output[:, 2, :].unsqueeze(dim=1)
-
-        # v2 = output[:, 1:, :]
-        v4 = output[:, 3, :].unsqueeze(dim=1)
-        v5 = output[:, 4, :].unsqueeze(dim=1)
-        v6 = output[:, 5, :].unsqueeze(dim=1)
-
-        v7 = v4 + v5
-        v8 = v5 + v6
-        v9 = v4 + v5 + v6
-        v10 = torch.cat((v1, v7, v2, v8, v3, v9), dim=1).abs()
-        return v10
+        return output.abs()
 
     @staticmethod
     def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
-        out_features = 120
+        out_features = 250
         p = None
         while out_features > 10:
             linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True))
@@ -87,6 +83,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
             linear_modules.append(torch.nn.BatchNorm1d(out_features))
 
         linear_modules.append(torch.nn.GELU())
+        # linear_modules.append(Sine())
 
         if p is not None:
             linear_modules.append(torch.nn.Dropout(p))
