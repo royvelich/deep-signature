@@ -129,7 +129,7 @@ def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1):
         zorder=zorder)
 
 
-def extract_curve_sections(curve, step, sample_points):
+def extract_curve_sections(curve, step, supporting_points_count):
     indices = list(range(curve.shape[0]))[::step]
     sampled_sections = []
     full_sections = []
@@ -137,25 +137,25 @@ def extract_curve_sections(curve, step, sample_points):
     for index1, index2, index3 in zip(indices, indices[1:], indices[2:]):
         sampled_indices1 = curve_sampling.sample_curve_section_indices(
             curve=curve,
-            supporting_points_count=sample_points,
+            supporting_points_count=supporting_points_count,
             start_point_index=index1,
             end_point_index=index2)
 
         sampled_indices2 = curve_sampling.sample_curve_section_indices(
             curve=curve,
-            supporting_points_count=sample_points,
+            supporting_points_count=supporting_points_count,
             start_point_index=index1,
             end_point_index=index2)
 
         sampled_indices3 = curve_sampling.sample_curve_section_indices(
             curve=curve,
-            supporting_points_count=sample_points,
+            supporting_points_count=supporting_points_count,
             start_point_index=index2,
             end_point_index=index3)
 
         sampled_indices4 = curve_sampling.sample_curve_section_indices(
             curve=curve,
-            supporting_points_count=sample_points,
+            supporting_points_count=supporting_points_count,
             start_point_index=index1,
             end_point_index=index3)
 
@@ -204,6 +204,69 @@ def extract_curve_sections(curve, step, sample_points):
         'full_sections': full_sections,
         'curve': curve
     }
+
+
+def extract_curve_neighborhoods(curve, step, supporting_points_count, max_offset):
+    indices = list(range(curve.shape[0]))[::step]
+    sampled_neighborhoods = []
+    # full_neighborhoods = []
+
+    for index in indices:
+        sampled_indices = curve_sampling.sample_curve_point_neighborhood_indices(
+            curve=curve,
+            supporting_points_count=supporting_points_count,
+            center_point_index=index,
+            max_offset=max_offset)
+
+        sampled_neighborhood = {
+            'indices': [sampled_indices],
+            'samples': [curve[sampled_indices]]
+        }
+
+        sampled_neighborhoods.append(sampled_neighborhood)
+
+        # full_indices = curve_sampling.sample_curve_point_neighborhood(
+        #     curve=curve,
+        #     supporting_points_count=supporting_points_count,
+        #     center_point_index=index,
+        #     max_offset=supporting_points_count)
+        #
+        # full_neighborhood = {
+        #     'indices': [full_indices],
+        #     'samples': [curve[full_indices]],
+        # }
+        #
+        # full_neighborhoods.append(full_neighborhood)
+
+    return {
+        'sampled_neighborhoods': sampled_neighborhoods,
+        # 'full_neighborhoods': full_neighborhoods,
+        'curve': curve
+    }
+
+
+def calculate_curvature_by_index(curve, transform_type, modifier=None):
+    true_curvature = numpy.zeros([curve.shape[0], 2])
+    true_curvature[:, 0] = numpy.arange(curve.shape[0])
+    if transform_type == 'equiaffine':
+        true_curvature[:, 1] = curve_processing.calculate_equiaffine_curvature(curve=curve)
+    elif transform_type == 'euclidean':
+        true_curvature[:, 1] = curve_processing.calculate_euclidean_curvature(curve=curve)
+
+    return true_curvature
+
+
+def predict_curvature_by_index(model, curve_neighborhoods):
+    sampled_neighborhoods = curve_neighborhoods['sampled_neighborhoods']
+    predicted_curvature = numpy.zeros([len(sampled_neighborhoods), 2])
+    for point_index, sampled_neighborhood in enumerate(sampled_neighborhoods):
+        for (indices, sample) in zip(sampled_neighborhood['indices'], sampled_neighborhood['samples']):
+            sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
+            curvature_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample).double(), dim=0), dim=0).cuda()
+            with torch.no_grad():
+                predicted_curvature[point_index, 0] = point_index
+                predicted_curvature[point_index, 1] = torch.squeeze(model(curvature_batch_data), dim=0).cpu().detach().numpy()
+    return predicted_curvature
 
 
 def calculate_arclength_by_index(curve_sections, transform_type, modifier=None):
@@ -258,8 +321,9 @@ def predict_arclength_by_index(model, curve_sections):
     return predicted_arclength
 
 
-def generate_curve_arclength_records(model, curves, transform_type, comparision_curves_count, step, sample_points):
+def generate_curve_records(arclength_model, curvature_model, curves, transform_type, comparision_curves_count, arclength_step, curvature_step, section_supporting_points_count, neighborhood_supporting_points_count, neighborhood_max_offset):
     curve_arclength_records = []
+    curve_curvature_records = []
 
     factors = []
     for curve_index, curve in enumerate(curves):
@@ -273,39 +337,97 @@ def generate_curve_arclength_records(model, curves, transform_type, comparision_
             comparision_curves.append(curve_processing.center_curve(curve=transformed_curve))
 
         curve_arclength_record = []
+        curve_curvature_record = []
         for i, comparision_curve in enumerate(comparision_curves):
             curve_sections = extract_curve_sections(
                 curve=comparision_curve,
-                step=step,
-                sample_points=sample_points)
+                step=arclength_step,
+                supporting_points_count=section_supporting_points_count)
+
+            curve_neighborhoods = extract_curve_neighborhoods(
+                curve=comparision_curve,
+                step=curvature_step,
+                supporting_points_count=neighborhood_supporting_points_count,
+                max_offset=neighborhood_max_offset)
 
             true_arclength = calculate_arclength_by_index(
                 curve_sections=curve_sections,
                 transform_type=transform_type)
 
             predicted_arclength = predict_arclength_by_index(
-                model=model,
+                model=arclength_model,
                 curve_sections=curve_sections)
 
+            true_curvature = calculate_curvature_by_index(
+                curve=curve,
+                transform_type=transform_type)
+
+            predicted_curvature = predict_curvature_by_index(
+                model=curvature_model,
+                curve_neighborhoods=curve_neighborhoods)
+
             curve_arclength_record.append({
+                'curve': comparision_curve,
                 'curve_sections': curve_sections,
                 'true_arclength': true_arclength,
                 'predicted_arclength': predicted_arclength,
                 'predicted_arclength_original': predicted_arclength.copy()
             })
 
-            # if i == 0:
+            curve_curvature_record.append({
+                'curve': comparision_curve,
+                'curve_neighborhoods': curve_neighborhoods,
+                'true_curvature': true_curvature,
+                'predicted_curvature': predicted_curvature
+            })
+
             factor = numpy.mean(true_arclength[1:, 1, 0] / predicted_arclength[1:, 1, 0])
             factors.append(factor)
 
         curve_arclength_records.append(curve_arclength_record)
+        curve_curvature_records.append(curve_curvature_record)
 
     factor = numpy.mean(numpy.array(factors))
     for curve_arclength_record in curve_arclength_records:
         for curve_arclength in curve_arclength_record:
             curve_arclength['predicted_arclength'][:, 1, :] *= factor
 
-    return curve_arclength_records
+    return {
+        'curve_arclength_records': curve_arclength_records,
+        'curve_curvature_records': curve_curvature_records
+    }
+
+
+def plot_curve_curvature_record(curve_curvature_record, curve_colors):
+    fig, axes = plt.subplots(3, 1, figsize=(20,20))
+    fig.patch.set_facecolor('white')
+    for axis in axes:
+        for label in (axis.get_xticklabels() + axis.get_yticklabels()):
+            label.set_fontsize(10)
+
+    axes[0].axis('equal')
+    axes[0].set_xlabel('X Coordinate', fontsize=18)
+    axes[0].set_ylabel('Y Coordinate', fontsize=18)
+
+    for i, curve_curvature_record_instance in enumerate(curve_curvature_record):
+        curve = curve_curvature_record_instance['curve']
+        plot_curve(ax=axes[0], curve=curve, color=curve_colors[i], linewidth=3)
+
+    axes[1].set_xlabel('Index', fontsize=18)
+    axes[1].set_ylabel('True Curvature', fontsize=18)
+    axes[1].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+
+    axes[2].set_xlabel('Index', fontsize=18)
+    axes[2].set_ylabel('Predicted Curvature', fontsize=18)
+    axes[2].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+
+    for i, curve_curvature_record_instance in enumerate(curve_curvature_record):
+        true_curvature = curve_curvature_record_instance['true_curvature']
+        predicted_curvature = curve_curvature_record_instance['predicted_curvature']
+        plot_curvature(ax=axes[1], curvature=true_curvature[:, 1], color=curve_colors[i])
+        plot_curvature(ax=axes[2], curvature=predicted_curvature[:, 1], color=curve_colors[i])
+
+    plt.show()
 
 
 def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, predicted_arclength_colors, sample_colors, curve_color, anchor_color, first_anchor_color):
@@ -423,6 +545,12 @@ def plot_curve_arclength_records(curve_arclength_records, true_arclength_colors,
             anchor_color=anchor_color,
             first_anchor_color=first_anchor_color)
 
+
+def plot_curve_curvature_records(curve_curvature_records, curve_colors):
+    for curve_curvature_record in curve_curvature_records:
+        plot_curve_curvature_record(
+            curve_curvature_record=curve_curvature_record,
+            curve_colors=curve_colors)
 
 # def plot_sectioned_curve(axes_list, axis_index, evaluated_curves_arclength, sample_colors, curve_color='orange', anchor_color='blue', first_anchor_color='black'):
 #     for axes_index, evaluated_curve_arclength in enumerate(evaluated_curves_arclength):

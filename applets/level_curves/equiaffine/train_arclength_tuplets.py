@@ -3,7 +3,7 @@ import os
 import numpy
 from deep_signature.nn.datasets import DeepSignatureTupletsDataset
 from deep_signature.nn.networks import DeepSignatureArcLengthNet
-from deep_signature.nn.losses import SignedTupletLoss
+from deep_signature.nn.losses import ArcLengthLoss
 from deep_signature.nn.losses import NegativeLoss
 from deep_signature.nn.trainers import ModelTrainer
 from common import settings
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     # model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    tuplet_loss_fn = SignedTupletLoss()
+    tuplet_loss_fn = ArcLengthLoss()
     # negative_loss_fn = NegativeLoss(factor=100)
     # model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn, negative_loss_fn], optimizer=optimizer)
     model_trainer = ModelTrainer(model=model, loss_functions=[tuplet_loss_fn], optimizer=optimizer)

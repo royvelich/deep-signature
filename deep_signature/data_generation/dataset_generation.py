@@ -122,32 +122,34 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
         }
 
         curve = curves[curve_index]
-        for i in range(2):
-            sample = curve_sampling.sample_curve_point_neighbourhood(
+        samples_count = 4
+        for i in range(samples_count):
+            sample = curve_sampling.sample_curve_point_neighborhood(
                 curve=curve,
                 center_point_index=center_point_index,
-                supporting_point_count=supporting_points_count,
+                supporting_points_count=supporting_points_count,
                 max_offset=max_offset)
-            if i == 1:
-                transform = cls._generate_curve_transform()
-                sample = curve_processing.transform_curve(curve=sample, transform=transform)
+
+            transform = cls._generate_curve_transform()
+            sample = curve_processing.transform_curve(curve=sample, transform=transform)
             sample = curve_processing.normalize_curve(curve=sample)
             input.append(sample)
 
-        flipped_anchor = numpy.flip(m=input[0], axis=0).copy()
-        sample = curve_processing.normalize_curve(curve=flipped_anchor)
-        input.append(sample)
+        for i in range(samples_count):
+            flipped_sample = numpy.flip(m=input[i], axis=0).copy()
+            sample = curve_processing.normalize_curve(curve=flipped_sample)
+            input.append(sample)
 
         rng = numpy.random.default_rng()
         indices_pool = numpy.arange(start=0, stop=len(curves))
         indices_pool = numpy.delete(indices_pool, curve_index)
-        indices = rng.choice(a=indices_pool, size=negative_examples_count, replace=False)
+        indices = rng.choice(a=indices_pool, size=samples_count, replace=False)
         for index in indices:
             current_curve = curves[index]
-            sample = curve_sampling.sample_curve_point_neighbourhood(
+            sample = curve_sampling.sample_curve_point_neighborhood(
                 curve=current_curve,
                 center_point_index=int(numpy.random.randint(current_curve.shape[0])),
-                supporting_point_count=supporting_points_count,
+                supporting_points_count=supporting_points_count,
                 max_offset=max_offset)
             sample = curve_processing.normalize_curve(curve=sample)
             input.append(sample)

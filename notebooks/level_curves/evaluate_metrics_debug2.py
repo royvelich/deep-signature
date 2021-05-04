@@ -90,6 +90,44 @@ elif transform_type == 'equiaffine':
 #     plt.show()
 
 # %% [markdown]
+#   # ** LEARNING CURVE **
+
+# %%
+latest_subdir = common_utils.get_latest_subdirectory(level_curves_curvature_tuplets_results_dir_path)
+results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+
+# results2 = numpy.load(f"C:/deep-signature-data/level-curves/results/tuplets/arclength/2021-01-14-02-42-52/results.npy", allow_pickle=True).item()
+
+epochs = results['epochs']
+batch_size = results['batch_size']
+train_loss_array = results['train_loss_array'][1:]
+validation_loss_array = results['validation_loss_array'][1:]
+
+# train_loss_array2 = results2['train_loss_array']
+# validation_loss_array2 = results2['validation_loss_array']
+
+epochs_list = numpy.array(range(len(train_loss_array)))
+# epochs_list2 = numpy.array(range(len(train_loss_array2)))
+
+fig, ax = plt.subplots(1, 1, figsize=(30,30))
+ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+
+for label in (ax.get_xticklabels() + ax.get_yticklabels()):
+    label.set_fontsize(20)
+
+ax.plot(epochs_list, train_loss_array, label='Train Loss', linewidth=4.0)
+ax.plot(epochs_list, validation_loss_array, label='Validation Loss', linewidth=4.0)
+
+# ax.plot(epochs_list2, train_loss_array2, label='Train Loss2', linewidth=4.0)
+# ax.plot(epochs_list2, validation_loss_array2, label='Validation Loss2', linewidth=4.0)
+
+plt.legend(fontsize=20, title_fontsize=20)
+
+# print(train_loss_array)
+# print(validation_loss_array)
+plt.show()
+
+# %% [markdown]
 #   # ** ARC-LENGTH **
 # %% [markdown]
 # ## INITIALIZATION ##
@@ -98,7 +136,10 @@ elif transform_type == 'equiaffine':
 # constants
 limit = 10
 arclength_sample_points = 40
-step = 40
+curvature_supporting_points_count = 6
+curvature_sample_points = 2 * curvature_supporting_points_count + 1
+arclength_step = 40
+curvature_step = 1
 comparision_curves_count = 1
 device = torch.device('cuda')
 
@@ -110,14 +151,21 @@ device = torch.device('cuda')
 torch.set_default_dtype(torch.float64)
 numpy.random.seed(60)
 
-# create model
+# create models
 arclength_model = DeepSignatureArcLengthNet(sample_points=arclength_sample_points).cuda()
+curvature_model = DeepSignatureCurvatureNet(sample_points=curvature_sample_points).cuda()
 
-# load model state
+# load arclength model state
 latest_subdir = common_utils.get_latest_subdirectory(level_curves_arclength_tuplets_results_dir_path)
 results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
 arclength_model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 arclength_model.eval()
+
+# load curvature model state
+latest_subdir = common_utils.get_latest_subdirectory(level_curves_curvature_tuplets_results_dir_path)
+results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+curvature_model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
+curvature_model.eval()
 
 # load curves (+ shuffle)
 curves = LevelCurvesGenerator.load_curves(dir_path=settings.level_curves_dir_path_train)
@@ -134,23 +182,32 @@ color_map = plt.get_cmap('rainbow', limit)
 true_arclength_colors = ['#FF8C00', '#444444']
 predicted_arclength_colors = ['#AA0000', '#00AA00']
 sample_colors = ['#AA0000', '#00AA00']
+curve_colors = ['#AA0000', '#00AA00']
 
-curve_arclength_records = notebook_utils.generate_curve_records(
+curve_records = notebook_utils.generate_curve_records(
     arclength_model=arclength_model,
+    curvature_model=curvature_model,
     curves=curves,
     transform_type=transform_type,
     comparision_curves_count=comparision_curves_count,
-    step=step,
-    section_supporting_points_count=arclength_sample_points)
+    arclength_step=arclength_step, 
+    curvature_step=curvature_step,
+    section_supporting_points_count=arclength_sample_points, 
+    neighborhood_supporting_points_count=curvature_supporting_points_count, 
+    neighborhood_max_offset=curvature_supporting_points_count)
 
-notebook_utils.plot_curve_arclength_records(
-    curve_arclength_records=curve_arclength_records, 
-    true_arclength_colors=true_arclength_colors, 
-    predicted_arclength_colors=predicted_arclength_colors, 
-    sample_colors=sample_colors, 
-    curve_color='#FF8C00', 
-    anchor_color='#3333FF', 
-    first_anchor_color='#FF0FF0')
+# notebook_utils.plot_curve_arclength_records(
+#     curve_arclength_records=curve_records['curve_arclength_records'], 
+#     true_arclength_colors=true_arclength_colors, 
+#     predicted_arclength_colors=predicted_arclength_colors, 
+#     sample_colors=sample_colors, 
+#     curve_color='#FF8C00', 
+#     anchor_color='#3333FF', 
+#     first_anchor_color='#FF0FF0')
+
+notebook_utils.plot_curve_curvature_records(
+    curve_curvature_records=curve_records['curve_curvature_records'], 
+    curve_colors=curve_colors)
 
 
 # %%

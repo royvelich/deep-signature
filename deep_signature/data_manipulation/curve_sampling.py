@@ -1,7 +1,7 @@
 import numpy
 
 
-def sample_curve_point_neighbourhood(curve, supporting_point_count, center_point_index=None, max_offset=None):
+def sample_curve_point_neighborhood_indices(curve, supporting_points_count, center_point_index=None, max_offset=None):
     rng = numpy.random.default_rng()
     curve_points_count = curve.shape[0]
 
@@ -14,9 +14,36 @@ def sample_curve_point_neighbourhood(curve, supporting_point_count, center_point
     indices_pool_low = numpy.arange(start=center_point_index - max_offset, stop=center_point_index)
     indices_pool_high = numpy.arange(start=center_point_index + 1, stop=center_point_index + max_offset + 1)
 
-    indices_low = numpy.mod(numpy.sort(rng.choice(a=indices_pool_low, size=supporting_point_count, replace=False)), curve_points_count)
-    indices_high = numpy.mod(numpy.sort(rng.choice(a=indices_pool_high, size=supporting_point_count, replace=False)), curve_points_count)
+    indices_low = numpy.mod(numpy.sort(rng.choice(a=indices_pool_low, size=supporting_points_count, replace=False)), curve_points_count)
+    indices_high = numpy.mod(numpy.sort(rng.choice(a=indices_pool_high, size=supporting_points_count, replace=False)), curve_points_count)
     indices = numpy.concatenate((indices_low, numpy.array([center_point_index]), indices_high))
+    return indices
+
+
+def sample_curve_point_neighborhood(curve, supporting_points_count, center_point_index=None, max_offset=None):
+    # rng = numpy.random.default_rng()
+    # curve_points_count = curve.shape[0]
+
+    # if max_offset is None:
+    #     max_offset = curve_points_count - 1
+
+    # if center_point_index is None:
+    #     center_point_index = int(numpy.random.randint(low=0, high=curve_points_count - 1))
+
+    # indices_pool_low = numpy.arange(start=center_point_index - max_offset, stop=center_point_index)
+    # indices_pool_high = numpy.arange(start=center_point_index + 1, stop=center_point_index + max_offset + 1)
+
+    # indices_low = numpy.mod(numpy.sort(rng.choice(a=indices_pool_low, size=supporting_points_count, replace=False)), curve_points_count)
+    # indices_high = numpy.mod(numpy.sort(rng.choice(a=indices_pool_high, size=supporting_points_count, replace=False)), curve_points_count)
+    # indices = numpy.concatenate((indices_low, numpy.array([center_point_index]), indices_high))
+    # return curve[indices]
+
+    indices = sample_curve_point_neighborhood_indices(
+        curve=curve,
+        supporting_points_count=supporting_points_count,
+        center_point_index=center_point_index,
+        max_offset=max_offset)
+        
     return curve[indices]
 
 

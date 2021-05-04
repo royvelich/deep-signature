@@ -1,3 +1,6 @@
+# python peripherals
+import itertools
+
 # torch
 import torch
 
@@ -39,10 +42,65 @@ class TupletLoss(torch.nn.Module):
         return v13.mean(dim=0)
 
 
-class SignedTupletLoss(torch.nn.Module):
+class CurvatureLoss(torch.nn.Module):
+    def __init__(self):
+        super(CurvatureLoss, self).__init__()
+
+    def forward(self, output, batch_data):
+        samples_count = 4
+        positives = []
+        positives_flipped = []
+        negatives = []
+
+        for i in range(samples_count):
+            positives.append(output[:, i, :])
+            positives_flipped.append(output[:, i + samples_count, :])
+            negatives.append(output[:, i + 2*samples_count, :])
+
+        positive_pairs = list(itertools.combinations(positives, 2))
+
+        positive_diffs = []
+        for positive_pair in positive_pairs:
+            positive_diffs.append((positive_pair[0] - positive_pair[1]).abs())
+
+        for i in range(samples_count):
+            positive_diffs.append((positives[i] + positives_flipped[i]).abs())
+
+        objective = torch.cat(positive_diffs, dim=1).mean(dim=1)
+
+        negative_diffs = []
+        for i in range(samples_count):
+            for j in range(samples_count):
+                negative_diffs.append((positives[i] - negatives[j]).abs().neg())
+
+        regularization = torch.cat(negative_diffs, dim=1).exp().mean(dim=1)
+
+        loss = (objective + regularization).mean(dim=0)
+
+        return loss
+
+        # v10 = torch.cat((v_1_3, v_1_3_sum, v_2_4, v_2_4_sum, v_3_5, v_3_5_sum, v_1_4, v_1_4_sum, v_2_5, v_2_5_sum, v_1_5, v_1_5_sum), dim=1).abs()
+        #
+        # v = output[:, 0, :]
+        # v2 = v.unsqueeze(dim=1)
+        # v3 = v2 - output
+        # v4 = v3.abs().squeeze(dim=2)
+        # v5 = v4[:, 1:]
+        # v6 = v5[:, 0]
+        # v7 = v6.unsqueeze(dim=1)
+        # v8 = v7 - v5
+        # v9 = v8[:, 1:]
+        # v10 = v9.exp()
+        # v11 = v10.sum(dim=1)
+        # v12 = v11 + 1
+        # v13 = v12.log()
+        # return v13.mean(dim=0)
+
+
+class ArcLengthLoss(torch.nn.Module):
     def __init__(self, exact_examples_count=1):
         self._exact_examples_count = exact_examples_count
-        super(SignedTupletLoss, self).__init__()
+        super(ArcLengthLoss, self).__init__()
 
     # def forward(self, output, batch_data):
     #     k = self._exact_examples_count + 1

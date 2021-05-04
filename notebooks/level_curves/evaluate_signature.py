@@ -136,7 +136,7 @@ for curve_index, curve in enumerate(curves):
         sampled_sections, full_sections = notebook_utils.extract_curve_sections(
             curve=comparision_curve, 
             step=step, 
-            sample_points=arclength_sample_points)
+            supporting_points_count=arclength_sample_points)
 
         comparision_curves_data.append({
             'curve': comparision_curve,

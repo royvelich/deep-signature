@@ -342,13 +342,13 @@ true_arclength_colors = ['#FF8C00', '#444444']
 predicted_arclength_colors = ['#AA0000', '#00AA00']
 sample_colors = ['#AA0000', '#00AA00']
 
-curve_arclength_records = notebook_utils.generate_curve_arclength_records(
-    model=arclength_model, 
+curve_arclength_records = notebook_utils.generate_curve_records(
+    arclength_model=arclength_model,
     curves=curves,
     transform_type=transform_type,
     comparision_curves_count=comparision_curves_count,
     step=step,
-    sample_points=arclength_sample_points)
+    section_supporting_points_count=arclength_sample_points)
 
 notebook_utils.plot_curve_arclength_records(
     curve_arclength_records=curve_arclength_records, 
