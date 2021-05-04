@@ -134,7 +134,7 @@ plt.show()
 
 # %%
 # constants
-limit = 10
+limit = 20
 arclength_sample_points = 40
 curvature_supporting_points_count = 6
 curvature_sample_points = 2 * curvature_supporting_points_count + 1
@@ -149,7 +149,7 @@ device = torch.device('cuda')
 
 # package settings
 torch.set_default_dtype(torch.float64)
-numpy.random.seed(60)
+# numpy.random.seed(60)
 
 # create models
 arclength_model = DeepSignatureArcLengthNet(sample_points=arclength_sample_points).cuda()

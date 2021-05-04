@@ -2,7 +2,7 @@
 import numpy
 
 
-def random_equiaffine_transform_2d(max_scale=2, min_eig_value_ratio=1.5, max_eig_value_ratio=6):
+def random_equiaffine_transform_2d(max_scale=3, min_eig_value_ratio=1.5, max_eig_value_ratio=8):
     while True:
         scale = numpy.random.uniform(low=0, high=max_scale, size=2)
         coeffs = numpy.random.random(size=2)

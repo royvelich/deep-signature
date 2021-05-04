@@ -11,8 +11,8 @@ from common import utils as common_utils
 
 if __name__ == '__main__':
     epochs = 2000
-    batch_size = 7000
-    learning_rate = 1e-4
+    batch_size = 9000
+    learning_rate = 5e-4
     validation_split = .05
 
     torch.set_default_dtype(torch.float64)
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     # model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    curvature_loss_fn = CurvatureLoss()
+    curvature_loss_fn = TupletLoss()
     model_trainer = ModelTrainer(model=model, loss_functions=[curvature_loss_fn], optimizer=optimizer)
     model_trainer.fit(
         dataset=dataset,
