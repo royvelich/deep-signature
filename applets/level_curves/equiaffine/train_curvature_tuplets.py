@@ -21,10 +21,10 @@ if __name__ == '__main__':
     model = DeepSignatureCurvatureNet(sample_points=13).cuda()
     print(model)
 
-    # device = torch.device('cuda')
-    # latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_equiaffine_curvature_tuplets_results_dir_path)
-    # results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-    # model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
+    device = torch.device('cuda')
+    latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_equiaffine_curvature_tuplets_results_dir_path)
+    results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+    model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     curvature_loss_fn = TupletLoss()

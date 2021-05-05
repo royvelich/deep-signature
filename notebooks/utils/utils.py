@@ -261,7 +261,7 @@ def predict_curvature_by_index(model, curve_neighborhoods):
     predicted_curvature = numpy.zeros([len(sampled_neighborhoods), 2])
     for point_index, sampled_neighborhood in enumerate(sampled_neighborhoods):
         for (indices, sample) in zip(sampled_neighborhood['indices'], sampled_neighborhood['samples']):
-            sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
+            sample = curve_processing.normalize_curve(curve=sample)
             curvature_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample).double(), dim=0), dim=0).cuda()
             with torch.no_grad():
                 predicted_curvature[point_index, 0] = point_index
