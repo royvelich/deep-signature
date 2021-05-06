@@ -213,7 +213,6 @@ def extract_curve_sections(curve, step, supporting_points_count):
 def extract_curve_neighborhoods(curve, step, supporting_points_count, max_offset):
     indices = list(range(curve.shape[0]))[::step]
     sampled_neighborhoods = []
-    # full_neighborhoods = []
 
     for index in indices:
         sampled_indices = curve_sampling.sample_curve_point_neighborhood_indices(
@@ -229,36 +228,36 @@ def extract_curve_neighborhoods(curve, step, supporting_points_count, max_offset
 
         sampled_neighborhoods.append(sampled_neighborhood)
 
-        # full_indices = curve_sampling.sample_curve_point_neighborhood(
-        #     curve=curve,
-        #     supporting_points_count=supporting_points_count,
-        #     center_point_index=index,
-        #     max_offset=supporting_points_count)
-        #
-        # full_neighborhood = {
-        #     'indices': [full_indices],
-        #     'samples': [curve[full_indices]],
-        # }
-        #
-        # full_neighborhoods.append(full_neighborhood)
-
     return {
         'sampled_neighborhoods': sampled_neighborhoods,
-        # 'full_neighborhoods': full_neighborhoods,
         'curve': curve
     }
 
 
-def extract_curve_neighborhoods_from_curve_sections(curve_sections, supporting_points_count):
-    for curve_section1, curve_section2 in zip(curve_sections, curve_sections[1:]):
-        indices = curve_sampling.sample_curve_point_neighborhood_indices_from_curve_sections(
+def extract_curve_neighborhoods_from_curve_sections(curve, curve_sections, supporting_points_count):
+    sampled_neighborhoods = []
+    sampled_sections = curve_sections['sampled_sections']
+    sampled_sections1 = [sampled_sections[-1]] + sampled_sections
+    sampled_sections2 = sampled_sections + [sampled_sections[0]]
+    for curve_section1, curve_section2 in zip(sampled_sections1, sampled_sections2):
+        sampled_indices = curve_sampling.sample_curve_point_neighborhood_indices_from_curve_sections(
             curve=None,
-            section1_indices=curve_section1['indices'],
-            section2_indices=curve_section2['indices'],
+            section1_indices=curve_section1['indices'][0],
+            section2_indices=curve_section2['indices'][0],
             supporting_points_count=supporting_points_count,
             max_offset=None)
 
-        h =  5
+        sampled_neighborhood = {
+            'indices': [sampled_indices],
+            'samples': [curve[sampled_indices]]
+        }
+
+        sampled_neighborhoods.append(sampled_neighborhood)
+
+    return {
+        'sampled_neighborhoods': sampled_neighborhoods,
+        'curve': curve
+    }
 
 
 def calculate_curvature_by_index(curve, transform_type, modifier=None):
@@ -337,14 +336,26 @@ def predict_arclength_by_index(model, curve_sections):
     return predicted_arclength
 
 
-def generate_curve_records(arclength_model, sync_steps, curvature_model, curves, transform_type, comparision_curves_count, arclength_step, curvature_step, section_supporting_points_count, neighborhood_supporting_points_count, neighborhood_max_offset):
+def generate_curve_records(arclength_model, curvature_model, curves, sync_metrics, transform_type, comparision_curves_count, arclength_section_length, curvature_step, section_supporting_points_count, neighborhood_supporting_points_count, neighborhood_max_offset):
     curve_records = []
     factors = []
+    arclength_step = arclength_section_length - 1
 
-    if sync_steps is True:
+    if sync_metrics is True:
         curvature_step = arclength_step
 
     for curve_index, curve in enumerate(curves):
+
+        actual_indices_count = arclength_section_length * int((curve.shape[0] + 1) / arclength_section_length)
+        actual_indices = numpy.linspace(
+            start=0,
+            stop=curve.shape[0]-1,
+            num=actual_indices_count,
+            endpoint=True,
+            dtype=int)
+
+        curve = curve[actual_indices]
+
         comparision_curves = [curve_processing.center_curve(curve=curve)]
         for i in range(comparision_curves_count):
             if transform_type == 'euclidean':
@@ -365,15 +376,17 @@ def generate_curve_records(arclength_model, sync_steps, curvature_model, curves,
                 step=arclength_step,
                 supporting_points_count=section_supporting_points_count)
 
-            extract_curve_neighborhoods_from_curve_sections(
-                curve_sections=curve_sections,
-                supporting_points_count=neighborhood_supporting_points_count)
-
-            curve_neighborhoods = extract_curve_neighborhoods(
-                curve=comparision_curve,
-                step=curvature_step,
-                supporting_points_count=neighborhood_supporting_points_count,
-                max_offset=neighborhood_max_offset)
+            if sync_metrics is True:
+                curve_neighborhoods = extract_curve_neighborhoods_from_curve_sections(
+                    curve=comparision_curve,
+                    curve_sections=curve_sections,
+                    supporting_points_count=neighborhood_supporting_points_count)
+            else:
+                curve_neighborhoods = extract_curve_neighborhoods(
+                    curve=comparision_curve,
+                    step=curvature_step,
+                    supporting_points_count=neighborhood_supporting_points_count,
+                    max_offset=neighborhood_max_offset)
 
             true_arclength = calculate_arclength_by_index(
                 curve_sections=curve_sections,
@@ -422,11 +435,6 @@ def generate_curve_records(arclength_model, sync_steps, curvature_model, curves,
 
     return curve_records
 
-    # return {
-    #     'curve_arclength_records': curve_arclength_records,
-    #     'curve_curvature_records': curve_curvature_records
-    # }
-
 
 def plot_curve_signature_comparision(curve_record, curve_colors):
     fig, axes = plt.subplots(2, 1, figsize=(20,20))
@@ -451,7 +459,7 @@ def plot_curve_signature_comparision(curve_record, curve_colors):
         arclength_comparision = comparision['arclength_comparision']
         curvature_comparision = comparision['curvature_comparision']
         predicted_arclength = arclength_comparision['predicted_arclength'][:, 1, 0]
-        predicted_arclength = numpy.concatenate((numpy.array([0]), predicted_arclength))
+        # predicted_arclength = numpy.concatenate((numpy.array([0]), predicted_arclength))
         predicted_curvature = curvature_comparision['predicted_curvature'][:, 1]
         plot_graph(ax=axes[1], x=predicted_arclength, y=predicted_curvature, color=curve_colors[i], linewidth=3)
 
@@ -568,10 +576,6 @@ def plot_curve_arclength_comparision(curve_record, true_arclength_colors, predic
 
         display(HTML(style.render()))
 
-    # predicted_arclength1 = curve_arclength_record[0]['predicted_arclength']
-    # predicted_arclength2 = curve_arclength_record[1]['predicted_arclength']
-    # display(HTML((numpy.mean(predicted_arclength1[1:, 1, 3] - predicted_arclength2[1:, 1, 3])))
-
     predicted_arclength1 = comparisions[0]['arclength_comparision']['predicted_arclength']
     predicted_arclength2 = comparisions[1]['arclength_comparision']['predicted_arclength']
 
@@ -580,13 +584,7 @@ def plot_curve_arclength_comparision(curve_record, true_arclength_colors, predic
     }
 
     df = pandas.DataFrame(data=d)
-
-    # style = df.style.set_properties(**{'background-color': true_arclength_colors[i]}, subset=list(d.keys())[:4])
-    # style = style.set_properties(**{'background-color': predicted_arclength_colors[i]}, subset=list(d.keys())[4:8])
-    # style = style.set_properties(**{'color': 'white', 'border-color': 'black', 'border-style': 'solid', 'border-width': '1px'})
-
     display(HTML(df.style.render()))
-
 
     axes[2].set_xlabel('Index', fontsize=18)
     axes[2].set_ylabel(r'$\kappa^{\frac{1}{3}}$', fontsize=18)
@@ -624,69 +622,3 @@ def plot_curve_signature_comparisions(curve_records, curve_colors):
         plot_curve_signature_comparision(
             curve_record=curve_record,
             curve_colors=curve_colors)
-
-# def plot_sectioned_curve(axes_list, axis_index, evaluated_curves_arclength, sample_colors, curve_color='orange', anchor_color='blue', first_anchor_color='black'):
-#     for axes_index, evaluated_curve_arclength in enumerate(evaluated_curves_arclength):
-#         axes = axes_list[axes_index]
-#         ax = axes[axis_index]
-#         for i, evaluated_comparision_curve_arclength in enumerate(evaluated_curve_arclength):
-#             curve_sections = evaluated_comparision_curve_arclength['curve_sections']
-#             curve = curve_sections['curve']
-#             for j, sampled_section in enumerate(curve_sections['sampled_sections']):
-#                 sample = sampled_section['samples'][0]
-#                 ax.set_xlabel('X Coordinate', fontsize=18)
-#                 ax.set_ylabel('Y Coordinate', fontsize=18)
-#                 plot_curve(ax=ax, curve=curve, color=curve_color, linewidth=3)
-#                 plot_sample(ax=ax, sample=sample, point_size=10, color=sample_colors[i], zorder=150)
-#                 plot_sample(ax=ax, sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=70, alpha=1, color=anchor_color, zorder=200)
-#                 if j == 0:
-#                     plot_sample(ax=ax, sample=numpy.array([[sample[0,0] ,sample[0, 1]]]), point_size=70, alpha=1, color=first_anchor_color, zorder=300)
-#         plt.show()
-#
-#
-# def plot_arclength_by_index(axes_list, axis_index, evaluated_curves_arclength, true_arclength_colors, predicted_arclength_colors):
-#     for axes_index, evaluated_curve_arclength in enumerate(evaluated_curves_arclength):
-#         true_arclength_legend_labels = []
-#         predicted_arclength_legend_labels = []
-#         axes = axes_list[axes_index]
-#         ax = axes[axis_index]
-#         ax.set_xlabel('Index', fontsize=18)
-#         ax.set_ylabel('Arc-Length', fontsize=18)
-#         ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-#         for i, evaluated_comparision_curve_arclength in enumerate(evaluated_curve_arclength):
-#             true_arclength = evaluated_comparision_curve_arclength['true_arclength']
-#             predicted_arclength = evaluated_comparision_curve_arclength['predicted_arclength']
-#
-#             plot_sample(ax=ax, sample=true_arclength[:, :, 0], point_size=40, color=true_arclength_colors[i], zorder=250)
-#             plot_curve(ax=ax, curve=true_arclength[:, :, 0], linewidth=2, color=true_arclength_colors[i], zorder=150)
-#             true_arclength_legend_labels.append(f'True Arclength (Curve #{i + 1})')
-#
-#             plot_sample(ax=ax, sample=predicted_arclength[:, :, 0], point_size=40, color=predicted_arclength_colors[i], zorder=250)
-#             plot_curve(ax=ax, curve=predicted_arclength[:, :, 0], linewidth=2, color=predicted_arclength_colors[i], zorder=150)
-#             predicted_arclength_legend_labels.append(f'Predicted Arclength (Curve #{i + 1})')
-#
-#             d = {
-#                 'True [i, i+1]': true_arclength[1:, 1, 1],
-#                 'True [i+1, i+2]': true_arclength[1:, 1, 2],
-#                 'True [i, i+2]': true_arclength[1:, 1, 3],
-#                 'True [i, i+1] + [i+1, i+2]': true_arclength[1:, 1, 1] + true_arclength[1:, 1, 2],
-#                 'Pred [i, i+1]': predicted_arclength[1:, 1, 1],
-#                 'Pred [i+1, i+2]': predicted_arclength[1:, 1, 2],
-#                 'Pred [i, i+2]': predicted_arclength[1:, 1, 3],
-#                 'Pred [i, i+1] + [i+1, i+2]': predicted_arclength[1:, 1, 1] + predicted_arclength[1:, 1, 2]
-#             }
-#
-#             df = pandas.DataFrame(data=d)
-#
-#             style = df.style.set_properties(**{'background-color': '#AA0000'}, subset=list(d.keys())[:4])
-#             style = style.set_properties(**{'background-color': '#0000AA'}, subset=list(d.keys())[4:8])
-#             style = style.set_properties(**{'color': 'white', 'border-color': 'black','border-style' :'solid' ,'border-width': '1px'})
-#
-#             display(HTML(style.render()))
-#
-#         true_arclength_legend_lines = [matplotlib.lines.Line2D([0], [0], color=color, linewidth=3) for color in true_arclength_colors]
-#         predicted_arclength_legend_lines = [matplotlib.lines.Line2D([0], [0], color=color, linewidth=3) for color in predicted_arclength_colors]
-#         legend_labels = true_arclength_legend_labels + predicted_arclength_legend_labels
-#         legend_lines = true_arclength_legend_lines + predicted_arclength_legend_lines
-#         ax.legend(legend_lines, legend_labels, prop={'size': 20})
-#         plt.show()

@@ -24,7 +24,7 @@ def sample_curve_point_neighborhood_indices_from_curve_sections(curve, section1_
     rng = numpy.random.default_rng()
     indices = numpy.concatenate((section1_indices, section2_indices[1:]))
     center_point_index = section1_indices.shape[0] - 1
-    max_offset = indices.shape[0]
+    max_offset = supporting_points_count
 
     indices_pool_low = numpy.arange(start=center_point_index - max_offset, stop=center_point_index)
     indices_pool_high = numpy.arange(start=center_point_index + 1, stop=center_point_index + max_offset + 1)
