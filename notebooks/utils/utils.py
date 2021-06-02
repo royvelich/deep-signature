@@ -346,15 +346,15 @@ def generate_curve_records(arclength_model, curvature_model, curves, sync_metric
 
     for curve_index, curve in enumerate(curves):
 
-        actual_indices_count = arclength_section_length * int((curve.shape[0] + 1) / arclength_section_length)
-        actual_indices = numpy.linspace(
-            start=0,
-            stop=curve.shape[0]-1,
-            num=actual_indices_count,
-            endpoint=True,
-            dtype=int)
-
-        curve = curve[actual_indices]
+        # actual_indices_count = arclength_section_length * int((curve.shape[0] + 1) / arclength_section_length)
+        # actual_indices = numpy.linspace(
+        #     start=0,
+        #     stop=curve.shape[0]-1,
+        #     num=actual_indices_count,
+        #     endpoint=True,
+        #     dtype=int)
+        #
+        # curve = curve[actual_indices]
 
         comparision_curves = [curve_processing.center_curve(curve=curve)]
         for i in range(comparision_curves_count):

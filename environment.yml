@@ -1,11 +1,14 @@
 name: deep-signature
 channels:
+  - nvidia
   - pytorch
   - defaults
   - conda-forge
 dependencies:
+  - cudatoolkit=11.1
   - python
   - pytorch
+  - torchaudio
   - torchvision
   - ipython
   - numpy

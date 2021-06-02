@@ -11,8 +11,8 @@ from common import utils as common_utils
 
 if __name__ == '__main__':
     epochs = 2000
-    batch_size = 9000
-    learning_rate = 5e-4
+    batch_size = 200000
+    learning_rate = 1e-4
     validation_split = .05
 
     torch.set_default_dtype(torch.float64)
