@@ -8,7 +8,7 @@ from timeit import default_timer as timer
 # torch
 import torch
 from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.data.sampler import SubsetRandomSampler, SequentialSampler
 
 
 class ModelTrainer:
@@ -35,8 +35,8 @@ class ModelTrainer:
         # train_sampler = SequentialSampler(train_indices)
         # validation_sampler = SequentialSampler(validation_indices)
 
-        train_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler, drop_last=True)
-        validation_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=validation_sampler, drop_last=True)
+        train_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler, drop_last=False, num_workers=0)
+        validation_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=validation_sampler, drop_last=False, num_workers=0)
 
         ModelTrainer._print_training_configuration('Epochs', epochs)
         ModelTrainer._print_training_configuration('Batch size', batch_size)
@@ -76,11 +76,13 @@ class ModelTrainer:
         best_validation_average_loss = None
         train_loss_array = numpy.array([])
         validation_loss_array = numpy.array([])
-        for epoch_index in range(epochs):
-            print(f'    - Training Epoch #{epoch_index}:')
+        epoch_index = 0
+        # for epoch_index in range(epochs):
+        while True:
+            print(f'    - Training Epoch #{epoch_index+1}:')
             train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
             train_loss_array = numpy.append(train_loss_array, [numpy.mean(train_loss)])
-            print(f'    - Validation Epoch #{epoch_index}:')
+            print(f'    - Validation Epoch #{epoch_index+1}:')
             validation_loss = self._validation_epoch(epoch_index=epoch_index, data_loader=validation_data_loader)
             validation_loss_array = numpy.append(validation_loss_array, [numpy.mean(validation_loss)])
 
@@ -110,6 +112,8 @@ class ModelTrainer:
 
             numpy.save(file=results_file_path, arr=results, allow_pickle=True)
 
+            epoch_index = epoch_index + 1
+
         return results
 
     def _train_epoch(self, epoch_index, data_loader):
@@ -122,11 +126,20 @@ class ModelTrainer:
             return ModelTrainer._epoch(epoch_index=epoch_index, data_loader=data_loader, process_batch_fn=self._validation_batch)
 
     def _train_batch(self, batch_data):
-        self._optimizer.zero_grad()
-        loss = self._evaluate_loss(batch_data=batch_data)
-        loss.backward()
-        self._optimizer.step()
-        return loss.item()
+        def closure():
+            self._optimizer.zero_grad()
+            loss = self._evaluate_loss(batch_data=batch_data)
+            loss.backward()
+            return loss
+
+        final_loss = self._optimizer.step(closure)
+        return final_loss.item()
+
+        # self._optimizer.zero_grad()
+        # loss = self._evaluate_loss(batch_data=batch_data)
+        # loss.backward()
+        # self._optimizer.step()
+        # return loss.item()
 
     def _validation_batch(self, batch_data):
         loss = self._evaluate_loss(batch_data=batch_data)
@@ -168,4 +181,4 @@ class ModelTrainer:
 
     @staticmethod
     def _print_batch_loss(epoch_index, batch_index, batch_loss, average_batch_loss, fill, align, index_width, loss_width, batch_count, batch_duration):
-        print(f'        - [Epoch {epoch_index:{fill}{align}{index_width}} | Batch {batch_index:{fill}{align}{index_width}} / {batch_count}]: Batch Loss = {batch_loss:{fill}{align}{loss_width}}, Avg. Batch Loss = {average_batch_loss:{fill}{align}{loss_width}}, Batch Duration: {batch_duration} sec.')
+        print(f'        - [Epoch {epoch_index+1:{fill}{align}{index_width}} | Batch {batch_index+1:{fill}{align}{index_width}} / {batch_count}]: Batch Loss = {batch_loss:{fill}{align}{loss_width}}, Avg. Batch Loss = {average_batch_loss:{fill}{align}{loss_width}}, Batch Duration: {batch_duration} sec.')

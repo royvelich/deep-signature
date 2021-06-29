@@ -33,6 +33,9 @@ import matplotlib.lines
 
 
 # https://stackoverflow.com/questions/36074455/python-matplotlib-with-a-line-color-gradient-and-colorbar
+from deep_signature.stats import discrete_distribution
+
+
 def colorline(ax, x, y, z=None, cmap='copper', norm=plt.Normalize(0.0, 1.0), linewidth=3, alpha=1.0):
     """
     http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
@@ -210,16 +213,17 @@ def extract_curve_sections(curve, step, supporting_points_count):
     }
 
 
-def extract_curve_neighborhoods(curve, step, supporting_points_count, max_offset):
-    indices = list(range(curve.shape[0]))[::step]
+def extract_curve_neighborhoods(curve, dist, sampling_points_count, supporting_points_count, anchor_indices):
     sampled_neighborhoods = []
-
-    for index in indices:
-        sampled_indices = curve_sampling.sample_curve_point_neighborhood_indices(
+    for anchor_index in anchor_indices:
+        sampled_indices = curve_sampling.sample_curve_section_indices_with_dist(
             curve=curve,
-            supporting_points_count=supporting_points_count,
-            center_point_index=index,
-            max_offset=max_offset)
+            center_point_index=anchor_index,
+            dist=dist,
+            sampling_points_count=sampling_points_count,
+            supporting_points_count=supporting_points_count)
+
+        # print(sampled_indices)
 
         sampled_neighborhood = {
             'indices': [sampled_indices],
@@ -263,10 +267,13 @@ def extract_curve_neighborhoods_from_curve_sections(curve, curve_sections, suppo
 def calculate_curvature_by_index(curve, transform_type, modifier=None):
     true_curvature = numpy.zeros([curve.shape[0], 2])
     true_curvature[:, 0] = numpy.arange(curve.shape[0])
-    if transform_type == 'equiaffine':
-        true_curvature[:, 1] = curve_processing.calculate_equiaffine_curvature(curve=curve)
-    elif transform_type == 'euclidean':
+
+    if transform_type == 'euclidean':
         true_curvature[:, 1] = curve_processing.calculate_euclidean_curvature(curve=curve)
+    elif transform_type == 'equiaffine':
+        true_curvature[:, 1] = curve_processing.calculate_equiaffine_curvature(curve=curve)
+    elif transform_type == 'affine':
+        true_curvature[:, 1] = 0
 
     return true_curvature
 
@@ -311,6 +318,8 @@ def calculate_arclength_by_index(curve_sections, transform_type, modifier=None):
                     true_arclength[point_index, 1, j] = curve_processing.calculate_equiaffine_arclength(curve=sample)[-1]
                 else:
                     true_arclength[point_index, 1, j] = curve_processing.calculate_equiaffine_arclength_by_euclidean_metrics(curve=sample)[-1]
+            elif transform_type == 'affine':
+                true_arclength[point_index, 1, j] = 0
 
             if accumulate is True:
                 true_arclength[point_index, 1, j] = true_arclength[point_index, 1, j] + true_arclength[i, 1, j]
@@ -359,9 +368,11 @@ def generate_curve_records(arclength_model, curvature_model, curves, sync_metric
         comparision_curves = [curve_processing.center_curve(curve=curve)]
         for i in range(comparision_curves_count):
             if transform_type == 'euclidean':
-                transform = euclidean_transform.random_euclidean_transform_2d()
+                transform = euclidean_transform.generate_random_euclidean_transform_2d()
             elif transform_type == 'equiaffine':
-                transform = affine_transform.random_equiaffine_transform_2d()
+                transform = affine_transform.generate_random_equiaffine_transform_2d()
+            elif transform_type == 'affine':
+                transform = affine_transform.generate_random_affine_transform_2d()
             transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
             comparision_curves.append(curve_processing.center_curve(curve=transformed_curve))
 
@@ -370,7 +381,18 @@ def generate_curve_records(arclength_model, curvature_model, curves, sync_metric
             'comparisions': []
         }
 
+        anchors_ratio = 0.1
+        sampling_ratio = 0.2
+        anchor_indices = numpy.linspace(start=0, stop=curve.shape[0], num=int(anchors_ratio * curve.shape[0]), endpoint=False, dtype=int)
         for i, comparision_curve in enumerate(comparision_curves):
+            comparision_curve_points_count = comparision_curve.shape[0]
+            sampling_points_count = int(sampling_ratio * comparision_curve_points_count)
+            max_density = 1 / sampling_points_count
+            dist = discrete_distribution.random_discrete_dist(bins=comparision_curve_points_count, multimodality=60, max_density=1, count=1)[0]
+
+            # print(f'len(dist): {len(dist)}')
+            # print(f'comparision_curve_points_count: {comparision_curve_points_count}')
+
             curve_sections = extract_curve_sections(
                 curve=comparision_curve,
                 step=arclength_step,
@@ -384,9 +406,10 @@ def generate_curve_records(arclength_model, curvature_model, curves, sync_metric
             else:
                 curve_neighborhoods = extract_curve_neighborhoods(
                     curve=comparision_curve,
-                    step=curvature_step,
+                    dist=dist,
+                    sampling_points_count=sampling_points_count,
                     supporting_points_count=neighborhood_supporting_points_count,
-                    max_offset=neighborhood_max_offset)
+                    anchor_indices=anchor_indices)
 
             true_arclength = calculate_arclength_by_index(
                 curve_sections=curve_sections,
@@ -404,6 +427,10 @@ def generate_curve_records(arclength_model, curvature_model, curves, sync_metric
                 model=curvature_model,
                 curve_neighborhoods=curve_neighborhoods)
 
+            sampled_indices = discrete_distribution.sample_discrete_dist2(dist=dist, sampling_points_count=sampling_points_count)
+            sampled_curve = comparision_curve[sampled_indices]
+            anchors = comparision_curve[anchor_indices]
+
             arclength_comparision = {
                 'curve_sections': curve_sections,
                 'true_arclength': true_arclength,
@@ -419,6 +446,9 @@ def generate_curve_records(arclength_model, curvature_model, curves, sync_metric
 
             curve_record['comparisions'].append({
                 'curve': comparision_curve,
+                'sampled_curve': sampled_curve,
+                'anchors': anchors,
+                'dist': dist,
                 'arclength_comparision': arclength_comparision,
                 'curvature_comparision': curvature_comparision
             })
@@ -467,7 +497,7 @@ def plot_curve_signature_comparision(curve_record, curve_colors):
 
 
 def plot_curve_curvature_comparision(curve_record, curve_colors):
-    fig, axes = plt.subplots(3, 1, figsize=(20,20))
+    fig, axes = plt.subplots(7, 1, figsize=(20, 40))
     fig.patch.set_facecolor('white')
     for axis in axes:
         for label in (axis.get_xticklabels() + axis.get_yticklabels()):
@@ -481,20 +511,52 @@ def plot_curve_curvature_comparision(curve_record, curve_colors):
         curve = comparision['curve']
         plot_curve(ax=axes[0], curve=curve, color=curve_colors[i], linewidth=3)
 
-    axes[1].set_xlabel('Index', fontsize=18)
-    axes[1].set_ylabel('True Curvature', fontsize=18)
-    axes[1].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    axes[1].axis('equal')
+    axes[1].set_xlabel('X Coordinate', fontsize=18)
+    axes[1].set_ylabel('Y Coordinate', fontsize=18)
 
-    axes[2].set_xlabel('Index', fontsize=18)
-    axes[2].set_ylabel('Predicted Curvature', fontsize=18)
-    axes[2].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    # for i, comparision in enumerate(curve_record['comparisions']):
+    #     sampled_curve = comparision['sampled_curve']
+    #     plot_sample(ax=axes[1], sample=sampled_curve, color=curve_colors[i], zorder=1, point_size=2, alpha=1)
+
+    sampled_curve = curve_record['comparisions'][0]['sampled_curve']
+    plot_sample(ax=axes[1], sample=sampled_curve, color=curve_colors[0], zorder=1, point_size=2, alpha=1)
+    # plot_sample(ax=axes[1], sample=curve_record['comparisions'][0]['anchors'], color='blue', zorder=2, point_size=25, alpha=1)
+
+    axes[2].axis('equal')
+    axes[2].set_xlabel('X Coordinate', fontsize=18)
+    axes[2].set_ylabel('Y Coordinate', fontsize=18)
+
+    sampled_curve = curve_record['comparisions'][1]['sampled_curve']
+    plot_sample(ax=axes[2], sample=sampled_curve, color=curve_colors[1], zorder=1, point_size=2, alpha=1)
+    # plot_sample(ax=axes[2], sample=curve_record['comparisions'][1]['anchors'], color='blue', zorder=2, point_size=25, alpha=1)
+
+    axes[3].set_xlabel('Index', fontsize=18)
+    axes[3].set_ylabel('Probability', fontsize=18)
+    axes[3].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    dist = curve_record['comparisions'][0]['dist']
+    plot_dist(ax=axes[3], dist=dist)
+
+    axes[4].set_xlabel('Index', fontsize=18)
+    axes[4].set_ylabel('Probability', fontsize=18)
+    axes[4].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    dist = curve_record['comparisions'][1]['dist']
+    plot_dist(ax=axes[4], dist=dist)
+
+    axes[5].set_xlabel('Index', fontsize=18)
+    axes[5].set_ylabel('True Curvature', fontsize=18)
+    axes[5].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+
+    axes[6].set_xlabel('Index', fontsize=18)
+    axes[6].set_ylabel('Predicted Curvature', fontsize=18)
+    axes[6].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
     for i, comparision in enumerate(curve_record['comparisions']):
         curvature_comparision = comparision['curvature_comparision']
         true_curvature = curvature_comparision['true_curvature']
         predicted_curvature = curvature_comparision['predicted_curvature']
-        plot_curvature(ax=axes[1], curvature=true_curvature[:, 1], color=curve_colors[i])
-        plot_curvature(ax=axes[2], curvature=predicted_curvature[:, 1], color=curve_colors[i])
+        plot_curvature(ax=axes[5], curvature=true_curvature[:, 1], color=curve_colors[i])
+        plot_curvature(ax=axes[6], curvature=predicted_curvature[:, 1], color=curve_colors[i])
 
     plt.show()
 

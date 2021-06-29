@@ -53,8 +53,8 @@ def random_normal_discrete_dist(bins, count=1):
         loc=truncnorm_loc,
         scale=truncnorm_scale)
 
-    scale = numpy.maximum(truncated_normal.rvs(count) * bins * 0.3, bins * 0.03)
-    # scale = truncated_normal.rvs(count) * bins * 0.3
+    # scale = numpy.maximum(truncated_normal.rvs(count) * bins * 0.3, bins * 0.03)
+    scale = truncated_normal.rvs(count) * bins * 0.1
     loc = [0] * count
     dist = normal_discrete_dist(bins, loc, scale)
 
@@ -81,8 +81,8 @@ def random_discrete_dist(bins, multimodality, max_density, count=1):
         dists = dists / dist_sum[:, None]
 
         dists_max_density = numpy.max(dists, axis=1)
-        dists_min_density = numpy.min(dists, axis=1)
-        dists_ratio_density = (dists_max_density - dists_min_density) / max_density
+        # dists_min_density = numpy.min(dists, axis=1)
+        # dists_ratio_density = (dists_max_density - dists_min_density) / max_density
         # dists_validity_flags = numpy.logical_and(dists_max_density <= max_density, dists_ratio_density > 0.1)
         dists_validity_flags = dists_max_density <= max_density
         current_valid_dists = dists[numpy.where(dists_validity_flags == True)]
@@ -117,4 +117,35 @@ def sample_discrete_dist(dist, sampling_points_count):
     # if numpy.abs(density_threshold - accumulated_density) < 1e-10:
     #     sampled_indices.append(i)
 
-    return sampled_indices
+    return numpy.array(sampled_indices)
+
+
+def sample_discrete_dist2(dist, sampling_points_count):
+    density_threshold = 1.0 / sampling_points_count
+    accumulated_density = 0
+    sampled_indices = []
+    missed_indices = []
+    for i in range(len(dist)):
+        accumulated_density = accumulated_density + dist[i]
+        if accumulated_density >= density_threshold:
+            sampled_indices.append(i)
+            accumulated_density = accumulated_density - density_threshold
+        else:
+            missed_indices.append({
+                'index': i,
+                'delta': density_threshold - accumulated_density
+            })
+
+    missing_indices_count = sampling_points_count - len(sampled_indices)
+    if missing_indices_count > 0:
+        missed_indices = sorted(missed_indices, key=lambda x: x['delta'], reverse=True)
+        for i in range(missing_indices_count):
+            # print(missed_indices[i]['delta'])
+            sampled_indices.append(missed_indices[i]['index'])
+
+    # print(f'density_threshold: {density_threshold}')
+    # print(f'accumulated_density: {accumulated_density}')
+    # print(f'bla: {accumulated_density / density_threshold}')
+    # print(f'sampling_points_count: {sampling_points_count}')
+    # print(f'len(sampled_indices): {len(sampled_indices)}')
+    return numpy.array(sampled_indices)

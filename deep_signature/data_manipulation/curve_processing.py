@@ -152,7 +152,7 @@ def translate_curve(curve, offset):
 
 
 def rotate_curve(curve, radians):
-    rotation_transform = euclidean_transform.rotation_2d(radians)
+    rotation_transform = euclidean_transform.generate_rotation_transform_2d(radians)
     transformed_curve = curve.dot(rotation_transform)
     return transformed_curve
 
@@ -176,7 +176,7 @@ def match_curve_sample_tangents(curve_sample1, curve_sample2, index1, index2):
     distance = numpy.dot(tangent1, normal2)
     cosine = numpy.dot(tangent1, tangent2)
     radians = numpy.arccos(cosine)
-    rotation_transform = euclidean_transform.rotation_2d(-numpy.sign(distance) * numpy.abs(radians))
+    rotation_transform = euclidean_transform.generate_rotation_transform_2d(-numpy.sign(distance) * numpy.abs(radians))
 
     return curve_sample1.dot(rotation_transform), curve_sample2
 

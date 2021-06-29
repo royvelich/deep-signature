@@ -30,10 +30,11 @@ def create_data_generator(dir_path, fine=False, limit=None):
                 yield data_object
 
 
-def par_proc(map_func, reduce_func, iterable, label, chunksize=None):
-    print('    - Creating pool... ', end='')
-    pool = multiprocessing.Pool()
-    print('Done.')
+def par_proc(map_func, reduce_func, iterable, label, pool=None, chunksize=None):
+    if pool is None:
+        print('    - Creating pool... ', end='')
+        pool = multiprocessing.Pool()
+        print('Done.')
 
     if chunksize is None:
         chunksize = int(len(iterable) / multiprocessing.cpu_count())

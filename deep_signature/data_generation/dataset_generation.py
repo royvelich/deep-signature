@@ -9,6 +9,7 @@ import numpy
 
 # deep_signature
 from deep_signature.data_manipulation import curve_sampling, curve_processing
+from deep_signature.stats import discrete_distribution
 from deep_signature.data_generation.curve_generation import CurvesGenerator
 from deep_signature.utils import utils
 from deep_signature.linalg import euclidean_transform, affine_transform
@@ -38,7 +39,27 @@ class TuplesDatasetGenerator:
         return numpy.load(file=os.path.normpath(os.path.join(dir_path, f'{cls._file_name}.npy')), allow_pickle=True)
 
     @classmethod
-    def generate_tuples(cls, dir_path, curves_dir_path, chunksize, **kwargs):
+    def generate_tuples(cls, pool, curves, curves_dir_path, chunksize, **kwargs):
+        tuples = []
+        # curves = CurvesGenerator.load_curves(curves_dir_path)
+        iterable = cls._zip_iterable(curves=curves, **kwargs)
+
+        def reduce_func(tuple):
+            if tuple is not None:
+                tuples.append(tuple)
+
+        utils.par_proc(
+            map_func=cls._map_func,
+            reduce_func=reduce_func,
+            iterable=iterable,
+            label=cls._label,
+            pool=pool,
+            chunksize=chunksize)
+
+        return tuples
+
+    @classmethod
+    def save_tuples(cls, pool, dir_path, curves_dir_path, chunksize, **kwargs):
         tuples = []
         curves = CurvesGenerator.load_curves(curves_dir_path)
         iterable = cls._zip_iterable(curves=curves, **kwargs)
@@ -51,9 +72,9 @@ class TuplesDatasetGenerator:
             map_func=cls._map_func,
             reduce_func=reduce_func,
             iterable=iterable,
-            chunksize=chunksize,
-            label=cls._label
-        )
+            label=cls._label,
+            pool=pool,
+            chunksize=chunksize)
 
         pathlib.Path(dir_path).mkdir(parents=True, exist_ok=True)
         numpy.save(file=os.path.normpath(os.path.join(dir_path, f'{cls._file_name}.npy')), arr=numpy.array(tuples, dtype=object))
@@ -63,28 +84,18 @@ class TuplesDatasetGenerator:
         return cls._generate_tuple(**kwargs)
 
     @classmethod
-    def _zip_iterable(cls, curves, sections_density, **kwargs):
+    def _zip_iterable(cls, curves, tuples_count, **kwargs):
         center_point_indices_pack = []
         curve_indices_pack = []
 
-        for i, curve in enumerate(curves):
-            sections_count = int(curve.shape[0] * sections_density)
-            center_point_indices = numpy.linspace(
-                start=0,
-                stop=curve.shape[0],
-                num=sections_count,
-                endpoint=False,
-                dtype=int)
+        rng = numpy.random.default_rng()
+        indices_pool = numpy.arange(start=0, stop=len(curves))
+        indices = rng.choice(a=indices_pool, size=tuples_count, replace=False)
+        curves_pack = [curves] * tuples_count
 
-            curve_indices_pack.extend([i] * sections_count)
-            center_point_indices_pack.extend(center_point_indices)
-
-        items_count = len(curve_indices_pack)
-        curves_pack = [curves] * items_count
-
-        names, data = cls._generate_zip_data(items_count, **kwargs)
-        data = [curves_pack, curve_indices_pack, center_point_indices_pack] + data
-        names = ['curves', 'curve_index', 'center_point_index'] + names
+        # names, data = cls._generate_zip_data(items_count, **kwargs)
+        data = [curves_pack, indices, center_point_indices_pack]
+        names = ['curves', 'curve_index']
         zipped_data = zip(*data)
         iterable = [dict(zip(names, values)) for values in zipped_data]
         return iterable
@@ -101,13 +112,19 @@ class TuplesDatasetGenerator:
 class EuclideanTransform:
     @staticmethod
     def _generate_curve_transform():
-        return euclidean_transform.identity_2d()
+        return euclidean_transform.generate_random_euclidean_transform_2d()
 
 
 class EquiaffineTransform:
     @staticmethod
     def _generate_curve_transform():
-        return affine_transform.random_equiaffine_transform_2d()
+        return affine_transform.generate_random_equiaffine_transform_2d()
+
+
+class AffineTransform:
+    @staticmethod
+    def _generate_curve_transform():
+        return affine_transform.generate_random_affine_transform_2d()
 
 
 class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
@@ -115,91 +132,61 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
     _label = 'tuplets'
 
     @classmethod
-    def _generate_tuple(cls, curves, curve_index, center_point_index, negative_examples_count, supporting_points_count, max_offset):
+    def generate_tuple(cls, curves, curve_index, sampling_ratio, multimodality, offset_length, supporting_points_count):
         input = []
         tuplet = {
             'input': input
         }
 
-        curve = curves[curve_index]
+        dist_index = 0
+        curve = curve_processing.center_curve(curve=curves[curve_index])
+        curve_points_count = curve.shape[0]
+        sampling_points_count = int(sampling_ratio * curve_points_count)
+        max_density = 1 / sampling_points_count
+        discrete_distribution_pack = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=multimodality, max_density=1, count=4)
+        center_point_index = int(numpy.random.randint(curve.shape[0], size=1))
         for i in range(2):
-            sample = curve_sampling.sample_curve_point_neighborhood(
-                curve=curve,
-                center_point_index=center_point_index,
-                supporting_points_count=supporting_points_count,
-                max_offset=max_offset)
+            transformed_curve = curve
             if i == 1:
                 transform = cls._generate_curve_transform()
-                sample = curve_processing.transform_curve(curve=sample, transform=transform)
+                transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+
+            sample = curve_sampling.sample_curve_section_with_dist(
+                curve=transformed_curve,
+                center_point_index=center_point_index,
+                dist=discrete_distribution_pack[dist_index],
+                sampling_points_count=sampling_points_count,
+                supporting_points_count=supporting_points_count)
+
             sample = curve_processing.normalize_curve(curve=sample)
             input.append(sample)
+            dist_index = dist_index + 1
 
         flipped_anchor = numpy.flip(m=input[0], axis=0).copy()
         sample = curve_processing.normalize_curve(curve=flipped_anchor)
         input.append(sample)
 
-        rng = numpy.random.default_rng()
-        indices_pool = numpy.arange(start=0, stop=len(curves))
-        indices_pool = numpy.delete(indices_pool, curve_index)
-        indices = rng.choice(a=indices_pool, size=negative_examples_count, replace=False)
-        for index in indices:
-            current_curve = curves[index]
-            sample = curve_sampling.sample_curve_point_neighborhood(
-                curve=current_curve,
-                center_point_index=int(numpy.random.randint(current_curve.shape[0])),
-                supporting_points_count=supporting_points_count,
-                max_offset=max_offset)
+        for i in range(2):
+            while True:
+                center_point_index_offset = int(numpy.random.randint(offset_length, size=1)) - int(offset_length/2)
+                if center_point_index_offset != 0:
+                    break
+
+            transform = cls._generate_curve_transform()
+            transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+
+            sample = curve_sampling.sample_curve_section_with_dist(
+                curve=transformed_curve,
+                center_point_index=numpy.mod(center_point_index + center_point_index_offset, transformed_curve.shape[0]),
+                dist=discrete_distribution_pack[dist_index],
+                sampling_points_count=sampling_points_count,
+                supporting_points_count=supporting_points_count)
+
             sample = curve_processing.normalize_curve(curve=sample)
             input.append(sample)
+            dist_index = dist_index + 1
 
         return tuplet
-
-
-
-
-
-
-
-
-        # input = []
-        # tuplet = {
-        #     'input': input
-        # }
-        #
-        # curve = curves[curve_index]
-        # samples_count = 4
-        # for i in range(samples_count):
-        #     sample = curve_sampling.sample_curve_point_neighborhood(
-        #         curve=curve,
-        #         center_point_index=center_point_index,
-        #         supporting_points_count=supporting_points_count,
-        #         max_offset=max_offset)
-        #
-        #     transform = cls._generate_curve_transform()
-        #     sample = curve_processing.transform_curve(curve=sample, transform=transform)
-        #     sample = curve_processing.normalize_curve(curve=sample)
-        #     input.append(sample)
-        #
-        # for i in range(samples_count):
-        #     flipped_sample = numpy.flip(m=input[i], axis=0).copy()
-        #     sample = curve_processing.normalize_curve(curve=flipped_sample)
-        #     input.append(sample)
-        #
-        # rng = numpy.random.default_rng()
-        # indices_pool = numpy.arange(start=0, stop=len(curves))
-        # indices_pool = numpy.delete(indices_pool, curve_index)
-        # indices = rng.choice(a=indices_pool, size=samples_count, replace=False)
-        # for index in indices:
-        #     current_curve = curves[index]
-        #     sample = curve_sampling.sample_curve_point_neighborhood(
-        #         curve=current_curve,
-        #         center_point_index=int(numpy.random.randint(current_curve.shape[0])),
-        #         supporting_points_count=supporting_points_count,
-        #         max_offset=max_offset)
-        #     sample = curve_processing.normalize_curve(curve=sample)
-        #     input.append(sample)
-        #
-        # return tuplet
 
     @staticmethod
     def _generate_zip_data(items_count, negative_examples_count, supporting_points_count, max_offset=None):
@@ -216,6 +203,10 @@ class EuclideanCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator
 
 
 class EquiaffineCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator, EquiaffineTransform):
+    pass
+
+
+class AffineCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator, AffineTransform):
     pass
 
 

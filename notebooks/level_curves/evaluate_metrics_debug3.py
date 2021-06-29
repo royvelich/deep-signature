@@ -248,9 +248,9 @@ for curve_index, curve in enumerate(curves):
 
     # transform curve
     if transform_type == 'euclidean':
-        transform = euclidean_transform.random_euclidean_transform_2d()
+        transform = euclidean_transform.generate_random_euclidean_transform_2d()
     elif transform_type == 'equiaffine':
-        transform = affine_transform.random_equiaffine_transform_2d()
+        transform = affine_transform.generate_random_equiaffine_transform_2d()
 
     transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
 
