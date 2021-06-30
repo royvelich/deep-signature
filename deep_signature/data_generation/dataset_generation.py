@@ -143,7 +143,7 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
         curve_points_count = curve.shape[0]
         sampling_points_count = int(sampling_ratio * curve_points_count)
         max_density = 1 / sampling_points_count
-        discrete_distribution_pack = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=multimodality, max_density=1, count=4)
+        discrete_distribution_pack = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=multimodality, max_density=1, count=2)
         center_point_index = int(numpy.random.randint(curve.shape[0], size=1))
         for i in range(2):
             transformed_curve = curve
@@ -166,25 +166,27 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
         sample = curve_processing.normalize_curve(curve=flipped_anchor)
         input.append(sample)
 
-        for i in range(2):
-            while True:
-                center_point_index_offset = int(numpy.random.randint(offset_length, size=1)) - int(offset_length/2)
-                if center_point_index_offset != 0:
-                    break
-
-            transform = cls._generate_curve_transform()
-            transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
-
-            sample = curve_sampling.sample_curve_section_with_dist(
-                curve=transformed_curve,
-                center_point_index=numpy.mod(center_point_index + center_point_index_offset, transformed_curve.shape[0]),
-                dist=discrete_distribution_pack[dist_index],
-                sampling_points_count=sampling_points_count,
-                supporting_points_count=supporting_points_count)
-
-            sample = curve_processing.normalize_curve(curve=sample)
-            input.append(sample)
-            dist_index = dist_index + 1
+        # for i in range(2):
+        #     while True:
+        #         center_point_index_offset = int(numpy.random.randint(offset_length, size=1)) - int(offset_length/2)
+        #         if center_point_index_offset != 0:
+        #             break
+        #         # if numpy.abs(center_point_index_offset) > 5:
+        #         #     break
+        #
+        #     transform = cls._generate_curve_transform()
+        #     transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+        #
+        #     sample = curve_sampling.sample_curve_section_with_dist(
+        #         curve=transformed_curve,
+        #         center_point_index=numpy.mod(center_point_index + center_point_index_offset, transformed_curve.shape[0]),
+        #         dist=discrete_distribution_pack[dist_index],
+        #         sampling_points_count=sampling_points_count,
+        #         supporting_points_count=supporting_points_count)
+        #
+        #     sample = curve_processing.normalize_curve(curve=sample)
+        #     input.append(sample)
+        #     dist_index = dist_index + 1
 
         return tuplet
 

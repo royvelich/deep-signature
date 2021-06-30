@@ -12,16 +12,16 @@ from common import utils as common_utils
 
 if __name__ == '__main__':
     epochs = 10000
-    batch_size = 30000
+    batch_size = 12000
     buffer_size = batch_size
-    dataset_size = batch_size*10
-    learning_rate = 1e-1
+    dataset_size = batch_size*4
+    learning_rate = 0.1
     validation_split = .1
     supporting_points_count = 3
     sample_points = 2 * supporting_points_count + 1
     sampling_ratio = 0.3
     multimodality = 50
-    offset_length = 40
+    offset_length = 60
 
     torch.set_default_dtype(torch.float64)
 
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     # results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
     # model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
-    optimizer = torch.optim.LBFGS(model.parameters(), lr=learning_rate, line_search_fn='strong_wolfe', history_size=600)
+    optimizer = torch.optim.LBFGS(model.parameters(), lr=learning_rate, line_search_fn='strong_wolfe', history_size=200)
     curvature_loss_fn = TupletLoss()
     model_trainer = ModelTrainer(model=model, loss_functions=[curvature_loss_fn], optimizer=optimizer)
     model_trainer.fit(

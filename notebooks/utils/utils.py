@@ -381,8 +381,8 @@ def generate_curve_records(arclength_model, curvature_model, curves, sync_metric
             'comparisions': []
         }
 
-        anchors_ratio = 0.1
-        sampling_ratio = 0.2
+        anchors_ratio = 1
+        sampling_ratio = 1
         anchor_indices = numpy.linspace(start=0, stop=curve.shape[0], num=int(anchors_ratio * curve.shape[0]), endpoint=False, dtype=int)
         for i, comparision_curve in enumerate(comparision_curves):
             comparision_curve_points_count = comparision_curve.shape[0]
