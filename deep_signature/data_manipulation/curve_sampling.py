@@ -154,7 +154,7 @@ def sample_curve_section_indices_with_dist(curve, center_point_index, dist, samp
     indices_high = sampled_indices[numpy.mod(indices_pool_high, sampled_indices_count)]
     indices = numpy.concatenate((indices_low, [center_point_index], indices_high))
 
-    print(indices)
+    # print(indices)
 
     return indices
 

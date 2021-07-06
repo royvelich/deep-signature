@@ -151,6 +151,6 @@ def sample_discrete_dist2(dist, sampling_points_count):
 
     sampled_indices.sort()
 
-    print(sampled_indices)
+    # print(sampled_indices)
 
     return numpy.array(sampled_indices)
