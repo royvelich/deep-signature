@@ -57,8 +57,7 @@ def colorline(ax, x, y, z=None, cmap='copper', norm=plt.Normalize(0.0, 1.0), lin
     z = numpy.asarray(z)
 
     segments = make_segments(x, y)
-    lc = mcoll.LineCollection(segments, array=z, cmap=cmap, norm=norm,
-                              linewidth=linewidth, alpha=alpha)
+    lc = mcoll.LineCollection(segments, array=z, cmap=cmap, norm=norm, linewidth=linewidth, alpha=alpha)
 
     # ax = plt.gca()
     ax.add_collection(lc)
@@ -118,9 +117,31 @@ def plot_curve(ax, curve, linewidth=2, color='red', alpha=1, zorder=1):
 
 
 def plot_curvature(ax, curvature, color='red', linewidth=2, alpha=1):
-    x = range(curvature.shape[0])
+    x = numpy.array(range(curvature.shape[0]))
     y = curvature
+
+    ax.set_xlim(x.min(), x.max())
+    ax.set_ylim(y.min(), y.max())
+
     ax.plot(x, y, color=color, linewidth=linewidth, alpha=alpha)
+
+
+def plot_curvature_with_cmap(ax, curvature, curve, indices, linewidth=2, alpha=1, cmap='hsv'):
+    x = numpy.array(range(curvature.shape[0]))
+    y = curvature
+
+    c = numpy.linspace(0.0, 1.0, curve.shape[0])
+    z = c[indices]
+
+    # print(curvature.shape[0])
+    # print(indices.shape[0])
+    # print(x.shape[0])
+    # print(z.shape[0])
+
+    ax.set_xlim(x.min(), x.max())
+    ax.set_ylim(y.min(), y.max())
+
+    colorline(ax=ax, x=x, y=y, z=z, cmap='hsv')
 
 
 def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1):
@@ -381,8 +402,8 @@ def generate_curve_records(arclength_model, curvature_model, curves, sync_metric
             'comparisions': []
         }
 
-        anchors_ratio = 1
-        sampling_ratio = 1
+        anchors_ratio = 0.1
+        sampling_ratio = 0.2
         anchor_indices = numpy.linspace(start=0, stop=curve.shape[0], num=int(anchors_ratio * curve.shape[0]), endpoint=False, dtype=int)
         for i, comparision_curve in enumerate(comparision_curves):
             comparision_curve_points_count = comparision_curve.shape[0]
@@ -447,6 +468,8 @@ def generate_curve_records(arclength_model, curvature_model, curves, sync_metric
             curve_record['comparisions'].append({
                 'curve': comparision_curve,
                 'sampled_curve': sampled_curve,
+                'sampled_indices': sampled_indices,
+                'anchor_indices': anchor_indices,
                 'anchors': anchors,
                 'dist': dist,
                 'arclength_comparision': arclength_comparision,
@@ -497,66 +520,140 @@ def plot_curve_signature_comparision(curve_record, curve_colors):
 
 
 def plot_curve_curvature_comparision(curve_record, curve_colors):
-    fig, axes = plt.subplots(7, 1, figsize=(20, 40))
+    axis_index = 0
+    fontsize = 25
+
+    fig, axes = plt.subplots(15, 1, figsize=(30, 90))
     fig.patch.set_facecolor('white')
     for axis in axes:
         for label in (axis.get_xticklabels() + axis.get_yticklabels()):
-            label.set_fontsize(10)
+            label.set_fontsize(fontsize)
 
-    axes[0].axis('equal')
-    axes[0].set_xlabel('X Coordinate', fontsize=18)
-    axes[0].set_ylabel('Y Coordinate', fontsize=18)
+    # ---------------------
+    # PLOT CURVES TOGETHER
+    # ---------------------
+    axes[axis_index].axis('equal')
+    axes[axis_index].set_xlabel('X Coordinate', fontsize=fontsize)
+    axes[axis_index].set_ylabel('Y Coordinate', fontsize=fontsize)
 
     for i, comparision in enumerate(curve_record['comparisions']):
         curve = comparision['curve']
-        plot_curve(ax=axes[0], curve=curve, color=curve_colors[i], linewidth=3)
+        plot_curve(ax=axes[axis_index], curve=curve, color=curve_colors[i], linewidth=3)
 
-    axes[1].axis('equal')
-    axes[1].set_xlabel('X Coordinate', fontsize=18)
-    axes[1].set_ylabel('Y Coordinate', fontsize=18)
+    axis_index = axis_index + 1
 
-    # for i, comparision in enumerate(curve_record['comparisions']):
-    #     sampled_curve = comparision['sampled_curve']
-    #     plot_sample(ax=axes[1], sample=sampled_curve, color=curve_colors[i], zorder=1, point_size=2, alpha=1)
+    # ------------------------
+    # PLOT CURVES INDIVIDUALLY
+    # ------------------------
 
-    sampled_curve = curve_record['comparisions'][0]['sampled_curve']
-    plot_sample(ax=axes[1], sample=sampled_curve, color=curve_colors[0], zorder=1, point_size=2, alpha=1)
-    # plot_sample(ax=axes[1], sample=curve_record['comparisions'][0]['anchors'], color='blue', zorder=2, point_size=25, alpha=1)
+    for i, comparision in enumerate(curve_record['comparisions']):
+        # --------------
+        # CONSTANT COLOR
+        # --------------
 
-    axes[2].axis('equal')
-    axes[2].set_xlabel('X Coordinate', fontsize=18)
-    axes[2].set_ylabel('Y Coordinate', fontsize=18)
+        axes[axis_index].axis('equal')
+        axes[axis_index].set_xlabel('X Coordinate', fontsize=fontsize)
+        axes[axis_index].set_ylabel('Y Coordinate', fontsize=fontsize)
 
-    sampled_curve = curve_record['comparisions'][1]['sampled_curve']
-    plot_sample(ax=axes[2], sample=sampled_curve, color=curve_colors[1], zorder=1, point_size=2, alpha=1)
-    # plot_sample(ax=axes[2], sample=curve_record['comparisions'][1]['anchors'], color='blue', zorder=2, point_size=25, alpha=1)
+        # for i, comparision in enumerate(curve_record['comparisions']):
+        #     sampled_curve = comparision['sampled_curve']
+        #     plot_sample(ax=axes[1], sample=sampled_curve, color=curve_colors[i], zorder=1, point_size=2, alpha=1)
 
-    axes[3].set_xlabel('Index', fontsize=18)
-    axes[3].set_ylabel('Probability', fontsize=18)
-    axes[3].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-    dist = curve_record['comparisions'][0]['dist']
-    plot_dist(ax=axes[3], dist=dist)
+        sampled_curve = comparision['sampled_curve']
+        plot_sample(ax=axes[axis_index], sample=sampled_curve, color=curve_colors[i], zorder=1, point_size=2, alpha=1)
+        # plot_sample(ax=axes[1], sample=curve_record['comparisions'][0]['anchors'], color='blue', zorder=2, point_size=25, alpha=1)
 
-    axes[4].set_xlabel('Index', fontsize=18)
-    axes[4].set_ylabel('Probability', fontsize=18)
-    axes[4].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-    dist = curve_record['comparisions'][1]['dist']
-    plot_dist(ax=axes[4], dist=dist)
+        axis_index = axis_index + 1
 
-    axes[5].set_xlabel('Index', fontsize=18)
-    axes[5].set_ylabel('True Curvature', fontsize=18)
-    axes[5].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+        # ---------
+        # COLOR MAP
+        # ---------
 
-    axes[6].set_xlabel('Index', fontsize=18)
-    axes[6].set_ylabel('Predicted Curvature', fontsize=18)
-    axes[6].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+        axes[axis_index].axis('equal')
+        axes[axis_index].set_xlabel('X Coordinate', fontsize=fontsize)
+        axes[axis_index].set_ylabel('Y Coordinate', fontsize=fontsize)
+
+        sampled_curve = comparision['sampled_curve']
+        sampled_indices = comparision['sampled_indices']
+
+        # print(sampled_indices)
+
+        curve = comparision['curve']
+        plot_curve_sample(ax=axes[axis_index], curve=curve, curve_sample=sampled_curve, indices=sampled_indices, zorder=1, point_size=10, alpha=1, cmap='hsv')
+
+        axis_index = axis_index + 1
+
+    # ------------------
+    # PLOT PROBABILITIES
+    # ------------------
+    for i, comparision in enumerate(curve_record['comparisions']):
+        axes[axis_index].set_xlabel('Index', fontsize=fontsize)
+        axes[axis_index].set_ylabel('Probability', fontsize=fontsize)
+        axes[axis_index].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+        dist = comparision['dist']
+        plot_dist(ax=axes[axis_index], dist=dist)
+        axis_index = axis_index + 1
+
+    # ----------------
+    # PLOT CURVATURES
+    # ----------------
+    for i, comparision in enumerate(curve_record['comparisions']):
+        anchor_indices = comparision['anchor_indices']
+        curve = comparision['curve']
+        curvature_comparision = comparision['curvature_comparision']
+        true_curvature = curvature_comparision['true_curvature']
+        predicted_curvature = curvature_comparision['predicted_curvature']
+
+        axes[axis_index].set_xlabel('Index', fontsize=fontsize)
+        axes[axis_index].set_ylabel('True Curvature', fontsize=fontsize)
+        axes[axis_index].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+        plot_curvature(ax=axes[axis_index], curvature=true_curvature[:, 1], color=curve_colors[i])
+
+        axis_index = axis_index + 1
+
+        axes[axis_index].set_xlabel('Index', fontsize=fontsize)
+        axes[axis_index].set_ylabel('Predicted Curvature', fontsize=fontsize)
+        axes[axis_index].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+        plot_curvature(ax=axes[axis_index], curvature=predicted_curvature[:, 1], color=curve_colors[i])
+
+        axis_index = axis_index + 1
+
+        axes[axis_index].set_xlabel('Index', fontsize=fontsize)
+        axes[axis_index].set_ylabel('Predicted Curvature', fontsize=fontsize)
+        axes[axis_index].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+        plot_curvature_with_cmap(ax=axes[axis_index], curvature=predicted_curvature[:, 1], curve=curve, indices=anchor_indices, linewidth=2, alpha=1, cmap='hsv')
+
+        axis_index = axis_index + 1
+
+    # -----------------------------
+    # PLOT TRUE CURVATURES TOGETHER
+    # -----------------------------
+
+    axes[axis_index].set_xlabel('Index', fontsize=fontsize)
+    axes[axis_index].set_ylabel('True Curvature', fontsize=fontsize)
+    axes[axis_index].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
     for i, comparision in enumerate(curve_record['comparisions']):
         curvature_comparision = comparision['curvature_comparision']
         true_curvature = curvature_comparision['true_curvature']
+        plot_curvature(ax=axes[axis_index], curvature=true_curvature[:, 1], color=curve_colors[i])
+
+    axis_index = axis_index + 1
+
+    # ----------------------------------
+    # PLOT PREDICTED CURVATURES TOGETHER
+    # ----------------------------------
+
+    axes[axis_index].set_xlabel('Index', fontsize=fontsize)
+    axes[axis_index].set_ylabel('Predicted Curvature', fontsize=fontsize)
+    axes[axis_index].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+
+    for i, comparision in enumerate(curve_record['comparisions']):
+        curvature_comparision = comparision['curvature_comparision']
         predicted_curvature = curvature_comparision['predicted_curvature']
-        plot_curvature(ax=axes[5], curvature=true_curvature[:, 1], color=curve_colors[i])
-        plot_curvature(ax=axes[6], curvature=predicted_curvature[:, 1], color=curve_colors[i])
+        plot_curvature(ax=axes[axis_index], curvature=predicted_curvature[:, 1], color=curve_colors[i])
+
+    axis_index = axis_index + 1
 
     plt.show()
 

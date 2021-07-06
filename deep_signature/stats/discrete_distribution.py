@@ -148,4 +148,9 @@ def sample_discrete_dist2(dist, sampling_points_count):
     # print(f'bla: {accumulated_density / density_threshold}')
     # print(f'sampling_points_count: {sampling_points_count}')
     # print(f'len(sampled_indices): {len(sampled_indices)}')
+
+    sampled_indices.sort()
+
+    print(sampled_indices)
+
     return numpy.array(sampled_indices)
