@@ -25,4 +25,5 @@ dependencies:
   - tqdm
   - opencv
   - freetype
+  - plotly
   - pip
