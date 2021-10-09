@@ -111,7 +111,7 @@ def sample_curve_section2(curve, supporting_points_count, start_point_index, end
     return curve[indices]
 
 
-def sample_curve_section_indices_with_dist(curve, center_point_index, dist, sampling_points_count, supporting_points_count):
+def sample_curve_section_indices_with_dist(center_point_index, dist, sampling_points_count, supporting_points_count):
     def concatenate_indices1(index):
         indices_pool_low = numpy.arange(start=index - supporting_points_count, stop=index)
         indices_pool_high = numpy.arange(start=index + 1, stop=index + supporting_points_count + 1)
@@ -154,17 +154,51 @@ def sample_curve_section_indices_with_dist(curve, center_point_index, dist, samp
     indices_high = sampled_indices[numpy.mod(indices_pool_high, sampled_indices_count)]
     indices = numpy.concatenate((indices_low, [center_point_index], indices_high))
 
-    # print(indices)
-
     return indices
 
 
 def sample_curve_section_with_dist(curve, center_point_index, dist, sampling_points_count, supporting_points_count):
     indices = sample_curve_section_indices_with_dist(
-        curve=curve,
         center_point_index=center_point_index,
         dist=dist,
         sampling_points_count=sampling_points_count,
         supporting_points_count=supporting_points_count)
+
+    return curve[indices]
+
+
+def sample_curve_section_indices_with_dist2(starting_point_index, dist, sampling_points_count, section_points_count):
+    def generate_indices(index):
+        indices_pool= numpy.arange(start=index, stop=index + (section_points_count - 1))
+        return indices_pool
+
+    sampled_indices = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
+    sampled_indices_count = sampled_indices.shape[0]
+    for i in range(-1, sampled_indices_count):
+        index1 = sampled_indices[numpy.mod(i - 1, sampled_indices_count)]
+        index2 = sampled_indices[numpy.mod(i, sampled_indices_count)]
+        if (index1 <= starting_point_index <= index2) or ((index1 > index2) and (index1 <= starting_point_index)):
+
+            if index1 > index2:
+                h = 5
+
+            if starting_point_index == index2:
+                indices_pool = generate_indices(index=i+1)
+            else:
+                indices_pool = generate_indices(index=i)
+            break
+
+    indices_pool = sampled_indices[numpy.mod(indices_pool, sampled_indices_count)]
+    indices = numpy.concatenate(([starting_point_index], indices_pool))
+
+    return indices
+
+
+def sample_curve_section_with_dist2(curve, starting_point_index, dist, sampling_points_count, section_points_count):
+    indices = sample_curve_section_indices_with_dist2(
+        starting_point_index=starting_point_index,
+        dist=dist,
+        sampling_points_count=sampling_points_count,
+        section_points_count=section_points_count)
 
     return curve[indices]

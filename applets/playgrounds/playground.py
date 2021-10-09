@@ -91,6 +91,9 @@ def strided_indexing_roll(a, r):
 
 if __name__ == '__main__':
 
+    bla1 = list(range(-1, 5))
+    bla2 = list(range(5))
+
     bla = numpy.linspace(start=0, stop=150, num=20, endpoint=False, dtype=int)
     bla2 = numpy.arange(start=0, stop=100, step=20)
 

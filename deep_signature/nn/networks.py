@@ -108,12 +108,34 @@ class DeepSignatureCurvatureNet(torch.nn.Module):
 class DeepSignatureArcLengthNet(torch.nn.Module):
     def __init__(self, sample_points):
         super(DeepSignatureArcLengthNet, self).__init__()
-        self._regressor = DeepSignatureArcLengthNet._create_regressor(in_features=2 * sample_points)
+        self._regressor1 = DeepSignatureArcLengthNet._create_regressor(in_features=2*sample_points)
+        self._regressor2 = DeepSignatureArcLengthNet._create_regressor(in_features=2*(sample_points + 1))
 
-    def forward(self, input):
-        features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
-        output = self._regressor(features).reshape([input.shape[0], input.shape[1], 1])
-        return output.abs()
+    @staticmethod
+    def _reshape_features(inputs):
+        features_list = []
+        for input in inputs:
+            features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
+            features_list.append(features)
+        return features_list
+
+    @staticmethod
+    def _process_features(regressor, inputs, features_list):
+        outputs = []
+        for input, features in zip(inputs, features_list):
+            output = regressor(features).reshape([input.shape[0], input.shape[1], 1]).abs()
+            outputs.append(output)
+        return torch.cat(outputs, dim=0)
+
+    def forward(self, input1, input2, input3, input4):
+        inputs1 = [input1, input3]
+        inputs2 = [input2, input4]
+        features_list1 = DeepSignatureArcLengthNet._reshape_features(inputs=inputs1)
+        features_list2 = DeepSignatureArcLengthNet._reshape_features(inputs=inputs2)
+        output1 = DeepSignatureArcLengthNet._process_features(regressor=self._regressor1, inputs=inputs1, features_list=features_list1)
+        output2 = DeepSignatureArcLengthNet._process_features(regressor=self._regressor2, inputs=inputs2, features_list=features_list2)
+
+        return torch.cat([output1, output2], dim=0)
 
     @staticmethod
     def _create_regressor(in_features):
@@ -137,8 +159,8 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         if use_batch_norm:
             linear_modules.append(torch.nn.BatchNorm1d(out_features))
 
-        linear_modules.append(torch.nn.GELU())
-        # linear_modules.append(Sine())
+        # linear_modules.append(torch.nn.GELU())
+        linear_modules.append(Sine())
 
         if p is not None:
             linear_modules.append(torch.nn.Dropout(p))

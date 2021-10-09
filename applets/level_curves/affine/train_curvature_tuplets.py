@@ -12,16 +12,17 @@ from common import utils as common_utils
 
 if __name__ == '__main__':
     epochs = 10000
-    batch_size = 150000
+    batch_size = 10000
     buffer_size = batch_size
-    dataset_size = batch_size*2
+    dataset_size = batch_size*5
     learning_rate = 1
-    validation_split = .1
+    validation_split = .2
     supporting_points_count = 3
     sample_points = 2 * supporting_points_count + 1
     sampling_ratio = 0.3
     multimodality = 50
     offset_length = 50
+    num_workers= 15
 
     torch.set_default_dtype(torch.float64)
 
@@ -30,10 +31,10 @@ if __name__ == '__main__':
         dir_path=settings.level_curves_dir_path_train,
         sampling_ratio=sampling_ratio,
         multimodality=multimodality,
-        offset_length=offset_length,
-        supporting_points_count=supporting_points_count,
         buffer_size=buffer_size,
-        num_workers=18)
+        num_workers=num_workers,
+        supporting_points_count=supporting_points_count,
+        offset_length=offset_length)
 
     dataset.start()
 

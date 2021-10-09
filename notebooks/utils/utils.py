@@ -389,7 +389,6 @@ def extract_curve_neighborhoods(curve, dist, sampling_points_count, supporting_p
     sampled_neighborhoods = []
     for anchor_index in anchor_indices:
         sampled_indices = curve_sampling.sample_curve_section_indices_with_dist(
-            curve=curve,
             center_point_index=anchor_index,
             dist=dist,
             sampling_points_count=sampling_points_count,
