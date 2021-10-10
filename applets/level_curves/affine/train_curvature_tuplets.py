@@ -12,7 +12,7 @@ from common import utils as common_utils
 
 if __name__ == '__main__':
     epochs = 10000
-    batch_size = 10000
+    batch_size = 150000
     buffer_size = batch_size
     dataset_size = batch_size*5
     learning_rate = 1
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     sampling_ratio = 0.3
     multimodality = 50
     offset_length = 50
-    num_workers= 15
+    num_workers= 18
 
     torch.set_default_dtype(torch.float64)
 

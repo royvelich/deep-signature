@@ -151,11 +151,11 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
                 transform = cls._generate_curve_transform()
                 transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
 
-            sample = curve_sampling.sample_curve_section_with_dist(
+            indices_pool = discrete_distribution.sample_discrete_dist(dist=discrete_distribution_pack[dist_index], sampling_points_count=sampling_points_count)
+            sample = curve_sampling.sample_curve_neighborhood(
                 curve=transformed_curve,
                 center_point_index=center_point_index,
-                dist=discrete_distribution_pack[dist_index],
-                sampling_points_count=sampling_points_count,
+                indices_pool=indices_pool,
                 supporting_points_count=supporting_points_count)
 
             sample = curve_processing.normalize_curve(curve=sample)
@@ -175,11 +175,11 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
             transform = cls._generate_curve_transform()
             transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
 
-            sample = curve_sampling.sample_curve_section_with_dist(
+            indices_pool = discrete_distribution.sample_discrete_dist(dist=discrete_distribution_pack[dist_index], sampling_points_count=sampling_points_count)
+            sample = curve_sampling.sample_curve_neighborhood(
                 curve=transformed_curve,
                 center_point_index=numpy.mod(center_point_index + center_point_index_offset, transformed_curve.shape[0]),
-                dist=discrete_distribution_pack[dist_index],
-                sampling_points_count=sampling_points_count,
+                indices_pool=indices_pool,
                 supporting_points_count=supporting_points_count)
 
             sample = curve_processing.normalize_curve(curve=sample)
@@ -214,28 +214,6 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
     _file_name = 'tuplets'
     _label = 'tuplets'
 
-    @staticmethod
-    def _sample_curve_section(curve, supporting_points_count, start_point_index, end_point_index):
-        sample = curve_sampling.sample_curve_section(
-            curve=curve,
-            supporting_points_count=supporting_points_count,
-            start_point_index=start_point_index,
-            end_point_index=end_point_index)
-
-        sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
-        return sample
-
-    @classmethod
-    def _generate_sample(cls, curve, index, sampled_indices, section_points_count, add_point=False):
-        actual_section_points_count = section_points_count if add_point is False else section_points_count + 1
-        index1 = index
-        index2 = index + actual_section_points_count
-        indices = list(range(index1, index2))
-        sample_indices = sampled_indices[indices]
-        sample = curve[sample_indices]
-        sample = curve_processing.normalize_curve(curve=sample)
-        return sample
-
     @classmethod
     def generate_tuple(cls, curves, sampling_ratio, multimodality, section_points_count):
         factors = []
@@ -256,7 +234,8 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         }
 
         dist_index = 0
-        starting_point_index = int(numpy.random.randint(curve.shape[0], size=1))
+        point_type = 'start'
+        point_index = int(numpy.random.randint(curve.shape[0], size=1))
         transform = cls._generate_curve_transform()
         curve = curve_processing.center_curve(curve=curves[curve_index])
         transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
@@ -264,18 +243,22 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         curve_points_count = curve.shape[0]
         sampling_points_count = int(sampling_ratio * curve_points_count)
         discrete_distribution_pack = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=multimodality, max_density=1, count=1)
+        indices_pool = discrete_distribution.sample_discrete_dist(dist=discrete_distribution_pack[dist_index], sampling_points_count=sampling_points_count)
 
-        sampled_indices = curve_sampling.sample_curve_section_indices_with_dist2(
-            starting_point_index=starting_point_index,
-            dist=discrete_distribution_pack[dist_index],
-            sampling_points_count=sampling_points_count,
-            section_points_count=2*section_points_count - 1)
+        for offset in range(section_points_count):
+            curve_indices1, curve_indices2 = curve_sampling.sample_overlapping_curve_sections_indices(
+                point_index=point_index,
+                point_type=point_type,
+                indices_pool=indices_pool,
+                section_points_count=section_points_count,
+                offset=offset)
 
-        for index in range(section_points_count-1):
-            input1.append(cls._generate_sample(curve=curve, index=index, sampled_indices=sampled_indices, section_points_count=section_points_count, add_point=False))
-            input2.append(cls._generate_sample(curve=curve, index=index, sampled_indices=sampled_indices, section_points_count=section_points_count, add_point=True))
-            input3.append(cls._generate_sample(curve=transformed_curve, index=index, sampled_indices=sampled_indices, section_points_count=section_points_count, add_point=False))
-            input4.append(cls._generate_sample(curve=transformed_curve, index=index, sampled_indices=sampled_indices, section_points_count=section_points_count, add_point=True))
+            input1.append(curve_processing.normalize_curve(curve=curve[curve_indices1]))
+            input2.append(curve_processing.normalize_curve(curve=transformed_curve[curve_indices1]))
+
+            if offset < section_points_count - 1:
+                input3.append(curve_processing.normalize_curve(curve=curve[curve_indices2]))
+                input4.append(curve_processing.normalize_curve(curve=transformed_curve[curve_indices2]))
 
         return tuplet
 

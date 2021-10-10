@@ -1,6 +1,7 @@
 # python peripherals
 import os
 import multiprocessing
+import bisect
 
 # numpy
 import numpy
@@ -47,3 +48,8 @@ def par_proc(map_func, reduce_func, iterable, label, pool=None, chunksize=None):
         reduce_func(processed_data)
         print(format_string.format(label, (i + 1) / iterable_length), end='')
     print()
+
+
+def insert_sorted(a, b):
+    ii = numpy.searchsorted(a, b)
+    return numpy.unique(numpy.insert(a, ii, b))

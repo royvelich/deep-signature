@@ -103,26 +103,34 @@ class ArcLengthLoss(torch.nn.Module):
         super(ArcLengthLoss, self).__init__()
 
     def forward(self, output, batch_data):
-        length = int(output.shape[0] / 4)
-        orig_curve = output[:length, :, :].squeeze(dim=2)
-        trans_curve = output[length:2*length, :, :].squeeze(dim=2)
-        orig_curve_add = output[2*length:3*length, :, :].squeeze(dim=2)
-        trans_curve_add = output[3*length:4*length, :, :].squeeze(dim=2)
+        # barrier_dim0 = int(output.shape[0] / 2)
+        # barrier_dim1 = int((output.shape[1] - 1) / 2)
+        # orig_curve =        output[:barrier_dim0,                   :barrier_dim1,                  :].squeeze(dim=2)
+        # trans_curve =       output[ barrier_dim0:2*barrier_dim0,     barrier_dim1:2*barrier_dim1,   :].squeeze(dim=2)
+        # orig_curve_add =    output[:barrier_dim0,                    (barrier_dim1 + 1):,           :].squeeze(dim=2)
+        # trans_curve_add =   output[ barrier_dim0:2*barrier_dim0,     (barrier_dim1 + 1):,           :].squeeze(dim=2)
+        # orig_curve_last =   output[:barrier_dim0,                    barrier_dim1,                  :].squeeze(dim=1)
+        # trans_curve_last =  output[ barrier_dim0:2*barrier_dim0,     barrier_dim1,                  :].squeeze(dim=1)
 
-        orig_curve_last = output[:length, output.shape[1]-1, :].squeeze(dim=1)
-        trans_curve_last = output[length:2*length, output.shape[1]-1, :].squeeze(dim=1)
+        orig_curve =        output[0][:, :-1, :].squeeze(dim=2)
+        trans_curve =       output[1][:, :-1, :].squeeze(dim=2)
+        orig_curve_add =    output[2].squeeze(dim=2)
+        trans_curve_add =   output[3].squeeze(dim=2)
+        orig_curve_last =   output[0][:, -1, :].squeeze(dim=1)
+        trans_curve_last =  output[1][:, -1, :].squeeze(dim=1)
 
         orig_diff = orig_curve_add - orig_curve
         trans_diff = trans_curve_add - trans_curve
         orig_sum = orig_diff.sum(dim=1)
         trans_sum = trans_diff.sum(dim=1)
         length_diff1 = (orig_sum - trans_sum).abs().exp().mean()
-        length_diff2 = (orig_sum - orig_curve_last).abs().exp().mean()
-        length_diff3 = (orig_sum - trans_curve_last).abs().exp().mean()
-        length_diff4 = (trans_sum - orig_curve_last).abs().exp().mean()
-        length_diff5 = (trans_sum - trans_curve_last).abs().exp().mean()
-        loss1 = (length_diff1 + length_diff2 + length_diff3 + length_diff4 + length_diff5).log()
-        # loss1 = (length_diff2 + length_diff3 + length_diff4 + length_diff5).log()
+        # length_diff2 = (orig_sum - orig_curve_last).abs().exp().mean()
+        # length_diff3 = (orig_sum - trans_curve_last).abs().exp().mean()
+        # length_diff4 = (trans_sum - orig_curve_last).abs().exp().mean()
+        # length_diff5 = (trans_sum - trans_curve_last).abs().exp().mean()
+        # loss1 = (length_diff2).log()
+        loss1 = (length_diff1).log()
+        # loss1 = (length_diff3).log()
 
         # orig_diff = orig_curve_add - orig_curve
         # trans_diff = trans_curve_add - trans_curve

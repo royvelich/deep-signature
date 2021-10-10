@@ -69,9 +69,9 @@ from common import utils as common_utils
 
 
 if __name__ == '__main__':
-    learning_rate = .1
+    learning_rate = 1
     validation_split = .2
-    epochs = 10000
+    epochs = 10000000
     batch_size = 500
     buffer_size = batch_size
     dataset_size = batch_size * 5
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     multimodality = 50
     offset_length = 50
     num_workers = 1
-    section_points_count = 12
+    section_points_count = 10
 
     torch.set_default_dtype(torch.float64)
 
@@ -103,7 +103,8 @@ if __name__ == '__main__':
     # results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
     # model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
-    optimizer = torch.optim.LBFGS(model.parameters(), lr=learning_rate, line_search_fn='strong_wolfe', history_size=800)
+    optimizer = torch.optim.LBFGS(model.parameters(), lr=learning_rate, line_search_fn='strong_wolfe', history_size=300)
+    # optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     loss_fn = ArcLengthLoss()
     model_trainer = ModelTrainer(model=model, loss_functions=[loss_fn], optimizer=optimizer)
     model_trainer.fit(

@@ -14,6 +14,7 @@ import os
 from deep_signature.linalg import affine_transform
 from deep_signature.linalg import euclidean_transform
 from deep_signature.data_manipulation import curve_processing
+import bisect
 
 
 # https://stackoverflow.com/questions/36074455/python-matplotlib-with-a-line-color-gradient-and-colorbar
@@ -89,7 +90,23 @@ def strided_indexing_roll(a, r):
     return view_as_windows(a_ext,(1,n))[numpy.arange(len(r)), (n-r)%n,0]
 
 
+def insert_sorted(arr, items):
+    arr = arr.copy()
+    for item in items:
+        if item not in arr:
+            bisect.insort(arr, item)
+
+    return arr
+
+
 if __name__ == '__main__':
+
+    a = [1, 2, 4, 5]
+    bla = numpy.array(a)
+    da = numpy.where(bla==4)
+
+    a2 = insert_sorted(a, [2,3])
+    print(a)
 
     bla1 = list(range(-1, 5))
     bla2 = list(range(5))

@@ -100,27 +100,27 @@ def random_discrete_dist(bins, multimodality, max_density, count=1):
     return valid_dists
 
 
+# def sample_discrete_dist(dist, sampling_points_count):
+#     density_threshold = 1.0 / sampling_points_count
+#     accumulated_density = 0
+#     sampled_indices = []
+#     for i in range(len(dist)):
+#         if accumulated_density >= (density_threshold * len(sampled_indices)):
+#             sampled_indices.append(i)
+#
+#         accumulated_density = accumulated_density + dist[i]
+#
+#         # if accumulated_density >= density_threshold:
+#         #     sampled_indices.append(i)
+#         #     accumulated_density = accumulated_density - density_threshold
+#
+#     # if numpy.abs(density_threshold - accumulated_density) < 1e-10:
+#     #     sampled_indices.append(i)
+#
+#     return numpy.array(sampled_indices)
+
+
 def sample_discrete_dist(dist, sampling_points_count):
-    density_threshold = 1.0 / sampling_points_count
-    accumulated_density = 0
-    sampled_indices = []
-    for i in range(len(dist)):
-        if accumulated_density >= (density_threshold * len(sampled_indices)):
-            sampled_indices.append(i)
-
-        accumulated_density = accumulated_density + dist[i]
-
-        # if accumulated_density >= density_threshold:
-        #     sampled_indices.append(i)
-        #     accumulated_density = accumulated_density - density_threshold
-
-    # if numpy.abs(density_threshold - accumulated_density) < 1e-10:
-    #     sampled_indices.append(i)
-
-    return numpy.array(sampled_indices)
-
-
-def sample_discrete_dist2(dist, sampling_points_count):
     density_threshold = 1.0 / sampling_points_count
     accumulated_density = 0
     sampled_indices = []
