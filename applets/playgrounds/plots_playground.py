@@ -80,7 +80,7 @@ elif transform_type == 'affine':
 
 # constants
 limit = 5
-arclength_sample_points = 12
+arclength_sample_points = 40
 curvature_supporting_points_count = 3
 curvature_max_offset = 6
 curvature_sample_points = 2 * curvature_supporting_points_count + 1

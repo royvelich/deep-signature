@@ -1,3 +1,6 @@
+# python peripherals
+import random
+
 # scipy
 import scipy.io
 import scipy.stats as ss
@@ -344,10 +347,11 @@ def extract_curve_sections(curve,  dist, sampling_points_count, section_points_c
             section_points_count=section_points_count,
             offset=offset)
 
+        curve_indices2 = numpy.delete(curve_indices2, 20)
         curve_sample1 = curve[curve_indices1]
         curve_sample2 = curve[curve_indices2]
-        curve_sample1 = curve_processing.normalize_curve(curve=curve_sample1)
-        curve_sample2 = curve_processing.normalize_curve(curve=curve_sample2)
+        curve_sample1 = curve_processing.normalize_curve(curve=curve_sample1, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
+        curve_sample2 = curve_processing.normalize_curve(curve=curve_sample2, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
 
         sampled_sections.append({
             'sample1_indices': curve_indices1,
@@ -367,10 +371,11 @@ def extract_curve_sections(curve,  dist, sampling_points_count, section_points_c
             indices_pool=modified_indices_pool,
             section_points_count=section_points_count)
 
+        curve_indices2 = numpy.delete(curve_indices2, 20)
         curve_sample1 = curve[curve_indices1]
         curve_sample2 = curve[curve_indices2]
-        curve_sample1 = curve_processing.normalize_curve(curve=curve_sample1)
-        curve_sample2 = curve_processing.normalize_curve(curve=curve_sample2)
+        curve_sample1 = curve_processing.normalize_curve(curve=curve_sample1, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
+        curve_sample2 = curve_processing.normalize_curve(curve=curve_sample2, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
 
         sampled_sections_anchors.append({
             'sample1_indices': curve_indices1,
@@ -597,8 +602,10 @@ def predict_arclength_by_index(model, curve_sections):
         index = sampled_section['index']
         sample1_torch = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample1).double(), dim=0), dim=0).cuda()
         sample2_torch = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2).double(), dim=0), dim=0).cuda()
-        evaluation1 = model.evaluate_regressor1(input=sample1_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
-        evaluation2 = model.evaluate_regressor2(input=sample2_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
+        # evaluation1 = model.evaluate_regressor1(input=sample1_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
+        # evaluation2 = model.evaluate_regressor2(input=sample2_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
+        evaluation1 = model(input=sample1_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
+        evaluation2 = model(input=sample2_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
         arclength_element = evaluation2 - evaluation1
         predicted_arclength[i+1] = predicted_arclength[i] + arclength_element
         predicted_arclength_dict[index] = predicted_arclength[i+1]
@@ -611,14 +618,37 @@ def predict_arclength_by_index(model, curve_sections):
         index = sampled_section_anchors['index']
         sample1_torch = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample1).double(), dim=0), dim=0).cuda()
         sample2_torch = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2).double(), dim=0), dim=0).cuda()
-        evaluation1 = model.evaluate_regressor1(input=sample1_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
-        evaluation2 = model.evaluate_regressor2(input=sample2_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
+        # evaluation1 = model.evaluate_regressor1(input=sample1_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
+        # evaluation2 = model.evaluate_regressor2(input=sample2_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
+        evaluation1 = model(input=sample1_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
+        evaluation2 = model(input=sample2_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
         arclength_element = evaluation2 - evaluation1
         arclength = arclength_element + predicted_arclength_dict[index]
         predicted_arclength_anchors[entry_index, 0] = entry_index
         predicted_arclength_anchors[entry_index, 1] = arclength
 
     return predicted_arclength_anchors
+
+def predict_arclength_by_index_new(model, curve, dist, sampling_points_count, section_points_count, anchor_indices):
+    indices_pool = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
+    meta_indices = list(range(indices_pool.shape[0]))[::section_points_count]
+    predicted_arclength = numpy.zeros([len(meta_indices), 2])
+    i = 1
+    for index1, index2 in zip(meta_indices, meta_indices[1:]):
+        current_meta_indices = numpy.array(list(range(index1, index2)))
+        indices = indices_pool[current_meta_indices]
+        sample = curve[indices]
+        sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
+        sample_torch = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample).double(), dim=0), dim=0).cuda()
+        evaluation = model(input=sample_torch).squeeze(dim=0).squeeze(dim=0).cpu().detach().numpy()
+        arclength = evaluation + predicted_arclength[i-1, 1]
+        predicted_arclength[i, 0] = i
+        predicted_arclength[i, 1] = arclength
+        i = i + 1
+
+    return predicted_arclength
+
+
 
     # sampled_sections_anchors[i] = {
     #     'sample1_indices': curve_indices1,
@@ -675,11 +705,12 @@ def generate_curve_records(arclength_model, curvature_model, curves, transform_t
         anchors_ratio = 0.1
         sampling_ratio = 0.2
         anchor_indices = numpy.linspace(start=0, stop=curve.shape[0], num=int(anchors_ratio * curve.shape[0]), endpoint=False, dtype=int)
+        dist = discrete_distribution.random_discrete_dist(bins=comparison_curves[0].shape[0], multimodality=60, max_density=1, count=1)[0]
         for i, comparison_curve in enumerate(comparison_curves):
             comparison_curve_points_count = comparison_curve.shape[0]
             sampling_points_count = int(sampling_ratio * comparison_curve_points_count)
             max_density = 1 / sampling_points_count
-            dist = discrete_distribution.random_discrete_dist(bins=comparison_curve_points_count, multimodality=60, max_density=1, count=1)[0]
+            # dist = discrete_distribution.random_discrete_dist(bins=comparison_curve_points_count, multimodality=60, max_density=1, count=1)[0]
 
             # print(f'len(dist): {len(dist)}')
             # print(f'comparison_curve_points_count: {comparison_curve_points_count}')
@@ -705,9 +736,17 @@ def generate_curve_records(arclength_model, curvature_model, curves, transform_t
             #     curve_sections=curve_sections,
             #     transform_type=transform_type)
 
-            predicted_arclength = predict_arclength_by_index(
+            # predicted_arclength = predict_arclength_by_index(
+            #     model=arclength_model,
+            #     curve_sections=curve_sections)
+
+            predicted_arclength = predict_arclength_by_index_new(
                 model=arclength_model,
-                curve_sections=curve_sections)
+                curve=comparison_curve,
+                dist=dist,
+                sampling_points_count=sampling_points_count,
+                section_points_count=section_points_count,
+                anchor_indices=anchor_indices)
 
             true_curvature = calculate_curvature_by_index(
                 curve=curve,

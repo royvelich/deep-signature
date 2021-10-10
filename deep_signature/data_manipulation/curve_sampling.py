@@ -214,3 +214,37 @@ def sample_overlapping_curve_sections(curve, point_index, point_type, indices_po
     indices1, indices2 = sample_overlapping_curve_sections_indices(point_index=point_index, point_type=point_type, indices_pool=indices_pool, section_points_count=section_points_count, offset=offset)
 
     return curve[indices1], curve[indices2]
+
+
+def sample_curve_section_indices_old(curve, supporting_points_count, start_point_index, end_point_index):
+    rng = numpy.random.default_rng()
+    curve_points_count = curve.shape[0]
+
+    if start_point_index > end_point_index:
+        start_point_index = -(curve_points_count - start_point_index)
+        # end_point_index = -end_point_index
+
+    indices_pool = numpy.linspace(
+        start=start_point_index,
+        stop=end_point_index,
+        num=int(numpy.abs(end_point_index - start_point_index) + 1),
+        endpoint=True,
+        dtype=int)
+
+    inner_indices_pool = indices_pool[1:-1]
+    indices = numpy.mod(numpy.sort(rng.choice(a=inner_indices_pool, size=supporting_points_count - 2, replace=False)), curve_points_count)
+    indices = numpy.concatenate((
+        numpy.mod(numpy.array([indices_pool[0]]), curve_points_count),
+        indices,
+        numpy.mod(numpy.array([indices_pool[-1]]), curve_points_count)))
+
+    return indices
+
+
+def sample_curve_section_old(curve, supporting_points_count, start_point_index, end_point_index):
+    indices = sample_curve_section_indices_old(
+        curve=curve,
+        supporting_points_count=supporting_points_count,
+        start_point_index=start_point_index,
+        end_point_index=end_point_index)
+    return curve[indices]
