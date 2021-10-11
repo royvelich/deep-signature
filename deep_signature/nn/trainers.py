@@ -148,9 +148,9 @@ class ModelTrainer:
     def _evaluate_loss(self, batch_data):
         # keys = [k for k, v in batch_data.items() if k.startswith('input')]
         # keys.sort()
-        input_data = [v for k, v in batch_data.items() if k.startswith('input')]
+        # input_data = [v for k, v in batch_data.items() if k.startswith('input')]
         # output = self._model(batch_data['input'])
-        output = self._model(*input_data)
+        output = self._model(batch_data)
         v = torch.tensor(0).cuda().double()
         for loss_function in self._loss_functions:
             v = v + loss_function(output=output, batch_data=batch_data)

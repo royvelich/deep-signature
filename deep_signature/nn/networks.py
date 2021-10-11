@@ -123,46 +123,44 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
     def _process_features(regressor, inputs, features_list):
         outputs = []
         for input, features in zip(inputs, features_list):
-            output = regressor(features).reshape([input.shape[0], input.shape[1], 1]).abs()
+            output = regressor(features).abs().reshape([input.shape[0], input.shape[1], 1])
             outputs.append(output)
         return torch.cat(outputs, dim=0)
 
-    @staticmethod
     def _process_input(regressor, input):
-        features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
-        output = regressor(features).reshape([input.shape[0], input.shape[1], 1]).abs()
-        return output
+        for [short, long] in input:
+            features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
+            output = regressor(features).abs().reshape([input.shape[0], input.shape[1], 1])
+            return output
 
-    def forward(self, input1, input2, input3, input4):
-        # inputs1 = [input1, input2]
-        # inputs2 = [input3, input4]
-        # features_list1 = DeepSignatureArcLengthNet._reshape_features(inputs=inputs1)
-        # features_list2 = DeepSignatureArcLengthNet._reshape_features(inputs=inputs2)
-        # output1 = DeepSignatureArcLengthNet._process_features(regressor=self._regressor1, inputs=inputs1, features_list=features_list1)
-        # output2 = DeepSignatureArcLengthNet._process_features(regressor=self._regressor2, inputs=inputs2, features_list=features_list2)
-        #
-        # return torch.cat([output1, output2], dim=1)
-        output1 = DeepSignatureArcLengthNet._process_input(regressor=self._regressor1, input=input1)
-        output2 = DeepSignatureArcLengthNet._process_input(regressor=self._regressor1, input=input2)
-        output3 = DeepSignatureArcLengthNet._process_input(regressor=self._regressor2, input=input3)
-        output4 = DeepSignatureArcLengthNet._process_input(regressor=self._regressor2, input=input4)
-        return [output1, output2, output3, output4]
+    def forward(self, input):
+        output = []
+        keys = list(input.keys())
+        for short_key, long_key in zip(keys[0::2], keys[1::2]):
+            short = input[short_key]
+            long = input[long_key]
+            features_short = short.reshape([short.shape[0] * short.shape[1], short.shape[2] * short.shape[3]])
+            features_long = long.reshape([long.shape[0] * long.shape[1], long.shape[2] * long.shape[3]])
+            output_short = self._regressor1(features_short).abs().reshape([short.shape[0], short.shape[1], 1])
+            output_long = self._regressor2(features_long).abs().reshape([long.shape[0], long.shape[1], 1])
+            output.append([output_short, output_long])
+        return output
 
     def evaluate_regressor1(self, input):
         features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
-        output = self._regressor1(features).reshape([input.shape[0], input.shape[1], 1])
+        output = self._regressor1(features).abs().reshape([input.shape[0], input.shape[1], 1])
         return output
 
     def evaluate_regressor2(self, input):
         features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
-        output = self._regressor2(features).reshape([input.shape[0], input.shape[1], 1])
+        output = self._regressor2(features).abs().reshape([input.shape[0], input.shape[1], 1])
         return output
 
     @staticmethod
     def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
-        out_features = 100
+        out_features = 50
         p = None
         while out_features > 10:
             linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True))
