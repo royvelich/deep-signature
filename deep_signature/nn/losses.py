@@ -88,30 +88,42 @@ class ArcLengthLoss(torch.nn.Module):
     def forward(self, output, batch_data):
         losses = []
         first = True
-        for [short, long] in output:
-            short_sample = short[:, :-2, :].squeeze(dim=2)
-            long_sample = long.squeeze(dim=2)
-            short_sample_first = short[:, 0, :].squeeze(dim=1)
-            short_sample_last = short[:, -2, :].squeeze(dim=1)
-            short_sample_stretch = short[:, -1, :].squeeze(dim=1)
+        for [orig_short, orig_long, trans_short, trans_long] in output:
+            orig_short_sample = orig_short[:, :-2, :].squeeze(dim=2)
+            orig_long_sample = orig_long.squeeze(dim=2)
+            orig_short_sample_first = orig_short[:, 0, :].squeeze(dim=1)
+            orig_short_sample_last = orig_short[:, -2, :].squeeze(dim=1)
+            orig_short_sample_stretch = orig_short[:, -1, :].squeeze(dim=1)
 
-            length_diff = long_sample - short_sample
-            length_diff_sum = length_diff.sum(dim=1)
+            trans_short_sample = trans_short[:, :-2, :].squeeze(dim=2)
+            trans_long_sample = trans_long.squeeze(dim=2)
+            trans_short_sample_first = trans_short[:, 0, :].squeeze(dim=1)
+            trans_short_sample_last = trans_short[:, -2, :].squeeze(dim=1)
+            trans_short_sample_stretch = trans_short[:, -1, :].squeeze(dim=1)
 
-            loss1 = (length_diff_sum - short_sample_last).abs().exp().mean().log()
-            loss2 = (short_sample - long_sample).exp().mean(dim=1).mean(dim=0)
-            loss3 = (short_sample_first - short_sample_last + short_sample_stretch).abs().exp().mean().log()
+            orig_length_diff = orig_long_sample - orig_short_sample
+            orig_length_diff_sum = orig_length_diff.sum(dim=1)
+
+            trans_length_diff = trans_long_sample - trans_short_sample
+            trans_length_diff_sum = trans_length_diff.sum(dim=1)
+
+            # loss1 = (orig_length_diff_sum - orig_short_sample_last).abs().exp().mean().log()
+            # loss1 = (orig_length_diff_sum - trans_length_diff_sum).abs().exp().mean().log()
+            loss2 = ((orig_short_sample - trans_short_sample) + (orig_long_sample - trans_long_sample)).abs().exp().mean().log()
+            loss3 = ((orig_short_sample - orig_long_sample) + (trans_short_sample - trans_long_sample)).exp().mean(dim=1).mean(dim=0)
+            # loss3 = (orig_short_sample_first + orig_short_sample_last - orig_short_sample_stretch).abs().exp().mean().log()
             if first is True:
-                acc_loss1 = loss1
+                # acc_loss1 = loss1
                 acc_loss2 = loss2
                 acc_loss3 = loss3
                 first = False
             else:
-                acc_loss1 = acc_loss1 + loss1
+                # acc_loss1 = acc_loss1 + loss1
                 acc_loss2 = acc_loss2 + loss2
                 acc_loss3 = acc_loss3 + loss3
 
-        return acc_loss1 + acc_loss2
+        return acc_loss2 + acc_loss3
+        # return acc_loss1 + acc_loss2 + acc_loss3
 
 
 class NegativeLoss(torch.nn.Module):

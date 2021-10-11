@@ -235,15 +235,19 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         modified_indices_pool = utils.insert_sorted(indices_pool, numpy.array([point_index]))
         point_meta_index = numpy.where(modified_indices_pool == point_index)[0]
 
-        for j in range(5):
-            short = []
-            long = []
+        for j in range(10):
+            orig_short = []
+            orig_long = []
+            trans_short = []
+            trans_long = []
 
             current_point_meta_index = int(numpy.mod(point_meta_index + j, modified_indices_pool.shape[0]))
             current_point_index = modified_indices_pool[current_point_meta_index]
 
-            tuplet[f'short{j}'] = short
-            tuplet[f'long{j}'] = long
+            tuplet[f'orig_short{j}'] = orig_short
+            tuplet[f'orig_long{j}'] = orig_long
+            tuplet[f'trans_short{j}'] = trans_short
+            tuplet[f'trans_long{j}'] = trans_long
             for offset in range(section_points_count):
                 curve_indices1, curve_indices2 = curve_sampling.sample_overlapping_curve_sections_indices(
                     point_index=current_point_index,
@@ -252,10 +256,12 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
                     section_points_count=section_points_count,
                     offset=offset)
 
-                short.append(curve_processing.normalize_curve(curve=transformed_curve[curve_indices1]))
+                orig_short.append(curve_processing.normalize_curve(curve=curve[curve_indices1]))
+                trans_short.append(curve_processing.normalize_curve(curve=transformed_curve[curve_indices1]))
 
                 if offset < section_points_count - 1:
-                    long.append(curve_processing.normalize_curve(curve=transformed_curve[curve_indices2]))
+                    orig_long.append(curve_processing.normalize_curve(curve=curve[curve_indices2]))
+                    trans_long.append(curve_processing.normalize_curve(curve=transformed_curve[curve_indices2]))
 
             curve_indices1, curve_indices2 = curve_sampling.sample_overlapping_curve_sections_indices(
                 point_index=current_point_index,
@@ -267,8 +273,8 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             curve_indices1_cut = curve_indices1[1:-1]
             meta_indices = numpy.sort(numpy.random.choice(curve_indices1_cut.shape[0], section_points_count-2, replace=False))
             curve_indices = numpy.concatenate(([curve_indices1[0]],curve_indices1_cut[meta_indices],[curve_indices1[-1]]))
-            short.append(curve_processing.normalize_curve(curve=transformed_curve[curve_indices]))
-
+            orig_short.append(curve_processing.normalize_curve(curve=curve[curve_indices]))
+            trans_short.append(curve_processing.normalize_curve(curve=transformed_curve[curve_indices]))
         return tuplet
 
     @staticmethod

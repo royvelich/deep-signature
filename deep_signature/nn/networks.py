@@ -136,14 +136,23 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
     def forward(self, input):
         output = []
         keys = list(input.keys())
-        for short_key, long_key in zip(keys[0::2], keys[1::2]):
-            short = input[short_key]
-            long = input[long_key]
-            features_short = short.reshape([short.shape[0] * short.shape[1], short.shape[2] * short.shape[3]])
-            features_long = long.reshape([long.shape[0] * long.shape[1], long.shape[2] * long.shape[3]])
-            output_short = self._regressor1(features_short).abs().reshape([short.shape[0], short.shape[1], 1])
-            output_long = self._regressor2(features_long).abs().reshape([long.shape[0], long.shape[1], 1])
-            output.append([output_short, output_long])
+        for orig_short_key, orig_long_key, trans_short_key, trans_long_key in zip(keys[0::4], keys[1::4], keys[2::4], keys[3::4]):
+            orig_short = input[orig_short_key]
+            orig_long = input[orig_long_key]
+            trans_short = input[trans_short_key]
+            trans_long = input[trans_long_key]
+
+            features_orig_short = orig_short.reshape([orig_short.shape[0] * orig_short.shape[1], orig_short.shape[2] * orig_short.shape[3]])
+            features_orig_long = orig_long.reshape([orig_long.shape[0] * orig_long.shape[1], orig_long.shape[2] * orig_long.shape[3]])
+            output_orig_short = self._regressor1(features_orig_short).abs().reshape([orig_short.shape[0], orig_short.shape[1], 1])
+            output_orig_long = self._regressor2(features_orig_long).abs().reshape([orig_long.shape[0], orig_long.shape[1], 1])
+
+            features_trans_short = trans_short.reshape([trans_short.shape[0] * trans_short.shape[1], trans_short.shape[2] * trans_short.shape[3]])
+            features_trans_long = trans_long.reshape([trans_long.shape[0] * trans_long.shape[1], trans_long.shape[2] * trans_long.shape[3]])
+            output_trans_short = self._regressor1(features_trans_short).abs().reshape([trans_short.shape[0], trans_short.shape[1], 1])
+            output_trans_long = self._regressor2(features_trans_long).abs().reshape([trans_long.shape[0], trans_long.shape[1], 1])
+
+            output.append([output_orig_short, output_orig_long, output_trans_short, output_trans_long])
         return output
 
     def evaluate_regressor1(self, input):
@@ -160,7 +169,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
     def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
-        out_features = 50
+        out_features = 100
         p = None
         while out_features > 10:
             linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True))
