@@ -79,8 +79,9 @@ elif transform_type == 'affine':
 
 
 # constants
-limit = 2
-arclength_sample_points = 40
+limit = 20
+arclength_sample_points=20
+step=80
 curvature_supporting_points_count = 3
 curvature_max_offset = 6
 curvature_sample_points = 2 * curvature_supporting_points_count + 1
@@ -135,7 +136,7 @@ curve_records = notebook_utils.generate_curve_records(
     curves=curves,
     transform_type=transform_type,
     comparison_curves_count=comparison_curves_count,
-    step=arclength_sample_points,
+    step=step,
     section_points_count=arclength_sample_points)
 
 

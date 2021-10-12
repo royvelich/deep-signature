@@ -11,10 +11,10 @@ from common import utils as common_utils
 
 
 if __name__ == '__main__':
-    learning_rate = .1
+    learning_rate = 1
     validation_split = .2
     epochs = 10000000
-    batch_size = 1000
+    batch_size = 3000
     buffer_size = batch_size
     dataset_size = batch_size * 5
     sampling_ratio = 0.3
@@ -22,9 +22,9 @@ if __name__ == '__main__':
     offset_length = 50
     num_workers = 1
     section_points_count = 10
-    supporting_points_count = 10
+    supporting_points_count = 20
     min_offset = supporting_points_count
-    max_offset = 2*supporting_points_count
+    max_offset = 6*supporting_points_count
 
     torch.set_default_dtype(torch.float64)
 
