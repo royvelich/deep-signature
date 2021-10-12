@@ -296,6 +296,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
     def _sample_curve_section(curve, supporting_points_count, start_point_index, end_point_index):
         sample = curve_sampling.sample_curve_section_old(
             curve=curve,
+            # dist=dist,
             supporting_points_count=supporting_points_count,
             start_point_index=start_point_index,
             end_point_index=end_point_index)
@@ -308,7 +309,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         return sample
 
     @classmethod
-    def generate_tuple(cls, curves, supporting_points_count, min_offset, max_offset):
+    def generate_tuple(cls, curves, multimodality, supporting_points_count, min_offset, max_offset):
         input = []
         factors = []
 
@@ -322,13 +323,15 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             'factors': factors
         }
 
+        # discrete_distribution_pack = discrete_distribution.random_discrete_dist(bins=curve.shape[0], multimodality=multimodality, max_density=1, count=10)
+
         raw_offset = numpy.random.randint(max_offset, size=4)
         offset = numpy.maximum(raw_offset, [min_offset] * 4)
         index1 = center_point_index
-        index2 = numpy.mod(index1 + offset[0], curve.shape[0])
-        index3 = numpy.mod(index2 + offset[1], curve.shape[0])
-        index4 = numpy.mod(index3 + offset[2], curve.shape[0])
-        index5 = numpy.mod(index4 + offset[3], curve.shape[0])
+        index2 = int(numpy.mod(index1 + offset[0], curve.shape[0]))
+        index3 = int(numpy.mod(index2 + offset[1], curve.shape[0]))
+        index4 = int(numpy.mod(index3 + offset[2], curve.shape[0]))
+        index5 = int(numpy.mod(index4 + offset[3], curve.shape[0]))
 
         transform = cls._generate_curve_transform()
         transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
@@ -343,6 +346,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve1,
+            # dist=discrete_distribution_pack[0],
             supporting_points_count=supporting_points_count,
             start_point_index=index1,
             end_point_index=index3)
@@ -350,6 +354,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve1,
+            # dist=discrete_distribution_pack[1],
             supporting_points_count=supporting_points_count,
             start_point_index=index2,
             end_point_index=index4)
@@ -357,6 +362,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve1,
+            # dist=discrete_distribution_pack[2],
             supporting_points_count=supporting_points_count,
             start_point_index=index3,
             end_point_index=index5)
@@ -364,6 +370,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve1,
+            # dist=discrete_distribution_pack[3],
             supporting_points_count=supporting_points_count,
             start_point_index=index1,
             end_point_index=index4)
@@ -371,6 +378,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve1,
+            # dist=discrete_distribution_pack[4],
             supporting_points_count=supporting_points_count,
             start_point_index=index2,
             end_point_index=index5)
@@ -378,6 +386,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve1,
+            # dist=discrete_distribution_pack[5],
             supporting_points_count=supporting_points_count,
             start_point_index=index1,
             end_point_index=index5)
@@ -385,6 +394,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve2,
+            # dist=discrete_distribution_pack[6],
             supporting_points_count=supporting_points_count,
             start_point_index=index1,
             end_point_index=index2)
@@ -392,6 +402,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve2,
+            # dist=discrete_distribution_pack[7],
             supporting_points_count=supporting_points_count,
             start_point_index=index2,
             end_point_index=index3)
@@ -399,6 +410,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve2,
+            # dist=discrete_distribution_pack[8],
             supporting_points_count=supporting_points_count,
             start_point_index=index3,
             end_point_index=index4)
@@ -406,6 +418,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
             curve=curve2,
+            # dist=discrete_distribution_pack[9],
             supporting_points_count=supporting_points_count,
             start_point_index=index4,
             end_point_index=index5)

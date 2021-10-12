@@ -79,7 +79,7 @@ elif transform_type == 'affine':
 
 
 # constants
-limit = 5
+limit = 2
 arclength_sample_points = 40
 curvature_supporting_points_count = 3
 curvature_max_offset = 6
@@ -95,11 +95,11 @@ device = torch.device('cuda')
 
 # package settings
 torch.set_default_dtype(torch.float64)
-# numpy.random.seed(60)
+numpy.random.seed(60)
 
 # create models
 arclength_model = DeepSignatureArcLengthNet(sample_points=arclength_sample_points).cuda()
-curvature_model = DeepSignatureCurvatureNet(sample_points=curvature_sample_points).cuda()
+# curvature_model = DeepSignatureCurvatureNet(sample_points=curvature_sample_points).cuda()
 
 # load arclength model state
 latest_subdir = common_utils.get_latest_subdirectory(level_curves_arclength_tuplets_results_dir_path)
@@ -109,10 +109,10 @@ arclength_model.load_state_dict(torch.load(results['model_file_path'], map_locat
 arclength_model.eval()
 
 # load curvature model state
-latest_subdir = common_utils.get_latest_subdirectory(level_curves_curvature_tuplets_results_dir_path)
-results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-curvature_model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
-curvature_model.eval()
+# latest_subdir = common_utils.get_latest_subdirectory(level_curves_curvature_tuplets_results_dir_path)
+# results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+# curvature_model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
+# curvature_model.eval()
 
 # load curves (+ shuffle)
 curves = LevelCurvesGenerator.load_curves(dir_path=settings.level_curves_dir_path_train)
@@ -132,9 +132,15 @@ curve_colors = ['#AA0000', '#00AA00']
 
 curve_records = notebook_utils.generate_curve_records(
     arclength_model=arclength_model,
-    curvature_model=curvature_model,
     curves=curves,
     transform_type=transform_type,
     comparison_curves_count=comparison_curves_count,
-    section_points_count=arclength_sample_points,
-    neighborhood_supporting_points_count=curvature_supporting_points_count)
+    step=arclength_sample_points,
+    section_points_count=arclength_sample_points)
+
+
+notebook_utils.plot_curve_arclength_records(
+    curve_records=curve_records,
+    true_arclength_colors=true_arclength_colors,
+    predicted_arclength_colors=predicted_arclength_colors,
+    sample_colors=sample_colors)

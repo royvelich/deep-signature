@@ -99,12 +99,13 @@ class EuclideanTuple:
                 offset_length=offset_length)
 
     @staticmethod
-    def _generate_arclength_tuple(curves, sampling_ratio, multimodality, section_points_count):
-        return dataset_generation.EuclideanArclengthTupletsDatasetGenerator.generate_tuple(
-            curves=curves,
-            sampling_ratio=sampling_ratio,
-            multimodality=multimodality,
-            section_points_count=section_points_count)
+    def _generate_arclength_tuple(curves, multimodality, supporting_points_count, min_offset, max_offset):
+        return dataset_generation.EuclideanArcLengthTupletsDatasetGenerator.generate_tuple(
+                curves=curves,
+                multimodality=multimodality,
+                supporting_points_count=supporting_points_count,
+                min_offset=min_offset,
+                max_offset=max_offset)
 
 
 class EquiaffineTuple:
@@ -126,9 +127,10 @@ class EquiaffineTuple:
     #         section_points_count=section_points_count)
 
     @staticmethod
-    def _generate_arclength_tuple(curves, supporting_points_count, min_offset, max_offset):
+    def _generate_arclength_tuple(curves, multimodality, supporting_points_count, min_offset, max_offset):
         return dataset_generation.EquiaffineArcLengthTupletsDatasetGenerator.generate_tuple(
                 curves=curves,
+                multimodality=multimodality,
                 supporting_points_count=supporting_points_count,
                 min_offset=min_offset,
                 max_offset=max_offset)
@@ -153,9 +155,10 @@ class AffineTuple:
     #             section_points_count=section_points_count)
 
     @staticmethod
-    def _generate_arclength_tuple(curves, supporting_points_count, min_offset, max_offset):
+    def _generate_arclength_tuple(curves, multimodality, supporting_points_count, min_offset, max_offset):
         return dataset_generation.AffineArcLengthTupletsDatasetGenerator.generate_tuple(
                 curves=curves,
+                multimodality=multimodality,
                 supporting_points_count=supporting_points_count,
                 min_offset=min_offset,
                 max_offset=max_offset)
@@ -276,6 +279,7 @@ class DeepSignatureArclengthTupletsOnlineDataset(DeepSignatureTupletsOnlineDatas
         while True:
             q.put(cls._generate_arclength_tuple(
                 curves=curves,
+                multimodality=multimodality,
                 supporting_points_count=supporting_points_count,
                 min_offset=min_offset,
                 max_offset=max_offset))
