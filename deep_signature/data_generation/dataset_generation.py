@@ -305,7 +305,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         # if flip_sample is True:
         #     sample = numpy.flip(m=sample, axis=0).copy()
 
-        sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
+        sample = curve_processing.normalize_curve(curve=sample)
         return sample
 
     @classmethod

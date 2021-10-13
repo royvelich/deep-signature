@@ -450,7 +450,7 @@ def predict_arclength_by_index(model, curve_sections):
     for i, sampled_section in enumerate(sampled_sections):
         point_index = i + 1
         for j, (indices, sample, accumulate) in enumerate(zip(sampled_section['indices'], sampled_section['samples'], sampled_section['accumulate'])):
-            sample = curve_processing.normalize_curve(curve=sample, force_ccw=False, force_end_point=True, index1=0, index2=1, center_index=0)
+            sample = curve_processing.normalize_curve(curve=sample)
             arclength_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample).double(), dim=0), dim=0).cuda()
             with torch.no_grad():
                 predicted_arclength[point_index, 0, j] = point_index

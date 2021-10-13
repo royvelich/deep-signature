@@ -225,7 +225,7 @@ def sample_curve_section_indices_old(curve, supporting_points_count, start_point
         # end_point_index = -end_point_index
 
     bins = int(numpy.abs(end_point_index - start_point_index) + 1) - 2
-    dist = discrete_distribution.random_discrete_dist(bins=bins, multimodality=60, max_density=1, count=1)[0]
+    dist = discrete_distribution.random_discrete_dist(bins=bins, multimodality=20, max_density=1, count=1)[0]
     meta_indices = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=supporting_points_count-2)
     indices_pool = numpy.mod(numpy.array(list(range(start_point_index+1, end_point_index))), curve.shape[0])
 
