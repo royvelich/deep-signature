@@ -141,7 +141,10 @@ def sample_discrete_dist(dist, sampling_points_count):
         missed_indices = sorted(missed_indices, key=lambda x: x['delta'], reverse=True)
         for i in range(missing_indices_count):
             # print(missed_indices[i]['delta'])
-            sampled_indices.append(missed_indices[i]['index'])
+            try:
+                sampled_indices.append(missed_indices[i]['index'])
+            except:
+                bla = 5
 
     # print(f'density_threshold: {density_threshold}')
     # print(f'accumulated_density: {accumulated_density}')
