@@ -727,6 +727,138 @@ def plot_curve_curvature_comparison(curve_record, curve_colors):
     fig.show()
 
 
+def plot_curve_curvature_comparison2(curve_record, curve_colors):
+    fig, axes = plt.subplots(2, 1, figsize=(20,20))
+    fig.patch.set_facecolor('white')
+    for axis in axes:
+        for label in (axis.get_xticklabels() + axis.get_yticklabels()):
+            label.set_fontsize(10)
+
+    axes[0].axis('equal')
+    axes[0].set_xlabel('X Coordinate', fontsize=18)
+    axes[0].set_ylabel('Y Coordinate', fontsize=18)
+
+    for i, comparision in enumerate(curve_record['comparisons']):
+        curve = comparision['curve']
+        plot_curve(ax=axes[0], curve=curve, color=curve_colors[i], linewidth=3)
+
+
+    # axis_index = 0
+    # fontsize = 25
+    # axes_count = 15
+    # line_width = 2
+    #
+    # # ---------------------
+    # # PLOT CURVES TOGETHER
+    # # ---------------------
+    # fig = make_subplots(rows=1, cols=1)
+    #
+    # for i, comparison in enumerate(curve_record['comparisons']):
+    #     curve = comparison['curve']
+    #     plot_curve_plotly(fig=fig, row=1, col=1, curve=curve, line_width=line_width, line_color=curve_colors[i])
+    #
+    # fig.update_yaxes(
+    #     scaleanchor="x",
+    #     scaleratio=1,
+    # )
+    #
+    # fig.show()
+
+    # # -------------------------------
+    # # PLOT CURVE SAMPLES SIDE BY SIDE
+    # # -------------------------------
+    # fig = make_subplots(rows=1, cols=len(curve_record['comparisons']))
+    #
+    # for i, comparison in enumerate(curve_record['comparisons']):
+    #     sampled_curve = comparison['sampled_curve']
+    #     curve = comparison['curve']
+    #
+    #     plot_curve_sample_plotly(fig=fig, row=1, col=i+1, name=f'Sampled Curve {i+1}', curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=3)
+    #
+    #     fig.update_yaxes(
+    #         scaleanchor=f'x{i+1}',
+    #         scaleratio=1,
+    #         row=1,
+    #         col=i+1)
+    #
+    # fig.show()
+
+    # # ----------------------------------------------------------------
+    # # PLOT CURVE SAMPLES, ANCHORS AND PREDICTED CURVATURE SIDE BY SIDE
+    # # ----------------------------------------------------------------
+    #
+    # button_offset = 0.1
+    # buttonX = 0.1
+    # buttonY = 1.3
+    # buttons_count = 2
+    # left_width = 0.25
+    # for i, comparison in enumerate(curve_record['comparisons']):
+    #     fig = make_subplots(rows=1, cols=2, column_widths=[left_width, 1 - left_width])
+    #     sampled_curve = comparison['sampled_curve']
+    #     anchors = comparison['anchors']
+    #     anchor_indices = comparison['anchor_indices']
+    #     curve = comparison['curve']
+    #     curvature_comparison = comparison['curvature_comparison']
+    #     predicted_curvature = curvature_comparison['predicted_curvature']
+    #
+    #     plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Sampled Curve", curve=curve, curve_sample=sampled_curve, color='grey')
+    #     plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Anchors", curve=curve, curve_sample=anchors, color=anchor_indices, point_size=3)
+    #     plot_curvature_with_cmap_plotly(fig=fig, row=1, col=2, name="Predicted Curvature at Anchors", curve=curve, curvature=predicted_curvature[:, 1], indices=anchor_indices, line_color='grey', line_width=2, point_size=10, color_scale='hsv')
+    #
+    #     # https://stackoverflow.com/questions/65941253/plotly-how-to-toggle-traces-with-a-button-similar-to-clicking-them-in-legend
+    #     update_menus = [{} for _ in range(buttons_count)]
+    #     button_labels = ['Toggle Samples', 'Toggle Anchors']
+    #     for j in range(buttons_count):
+    #         button = dict(method='restyle',
+    #                        label=button_labels[j],
+    #                        visible=True,
+    #                        args=[{'visible': True}, [j]],
+    #                        args2=[{'visible': False}, [j]])
+    #
+    #         update_menus[j]['buttons'] = [button]
+    #         update_menus[j]['showactive'] = False
+    #         update_menus[j]['y'] = buttonY
+    #         update_menus[j]['x'] = buttonX + j * button_offset
+    #         update_menus[j]['type'] = 'buttons'
+    #
+    #     fig.update_layout(
+    #         showlegend=True,
+    #         updatemenus=update_menus)
+    #
+    #     fig.update_yaxes(
+    #         scaleanchor="x",
+    #         scaleratio=1,
+    #         row=1,
+    #         col=1)
+    #
+    #     fig.update_layout(
+    #         legend=dict(
+    #             orientation="v",
+    #             yanchor="bottom",
+    #             xanchor="right"))
+    #
+    #     fig.show()
+
+    # ----------------------------------
+    # PLOT PREDICTED CURVATURES TOGETHER
+    # ----------------------------------
+    # fig = make_subplots(rows=1, cols=1)
+
+    axes[1].axis('equal')
+    axes[1].set_xlabel('Index', fontsize=18)
+    axes[1].set_ylabel('Curvature', fontsize=18)
+
+    for i, comparison in enumerate(curve_record['comparisons']):
+        curvature_comparison = comparison['curvature_comparison']
+        predicted_curvature = curvature_comparison['predicted_curvature']
+
+        plot_curvature(ax=axes[1], curvature=predicted_curvature[:, 1], color=curve_colors[i])
+
+        # plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Predicted Curvature at Anchors {i+1}', curvature=predicted_curvature[:, 1], line_width=line_width, line_color=curve_colors[i])
+
+    fig.show()
+
+
 def plot_curve_arclength_records(curve_records, true_arclength_colors, predicted_arclength_colors, sample_colors, curve_color='orange', anchor_color='blue', first_anchor_color='black', second_anchor_color='pink'):
     for i, curve_record in enumerate(curve_records):
         display(HTML(f'<H1>Curve {i + 1} - Arc-Length Comparison</H1>'))
