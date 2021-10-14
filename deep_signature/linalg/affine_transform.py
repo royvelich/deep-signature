@@ -11,7 +11,8 @@ def _validate_eigen_values_ratio(A, min_eig_value_ratio, max_eig_value_ratio, mi
     return ((min_eig_value <= w[0] <= max_eig_value) and (min_eig_value <= w[1] <= max_eig_value)) and ((r > min_eig_value_ratio) and (r < max_eig_value_ratio))
 
 
-def generate_random_equiaffine_transform_2d(max_scale=1, min_eig_value_ratio=3, max_eig_value_ratio=8, min_eig_value=0.1, max_eig_value=8):
+# def generate_random_equiaffine_transform_2d(max_scale=1, min_eig_value_ratio=3, max_eig_value_ratio=8, min_eig_value=0.1, max_eig_value=8):
+def generate_random_equiaffine_transform_2d(max_scale=1, min_eig_value_ratio=2, max_eig_value_ratio=8, min_eig_value=0.1, max_eig_value=8):
     while True:
         scale = numpy.random.uniform(low=0, high=max_scale, size=2)
         coeffs = numpy.random.random(size=2)

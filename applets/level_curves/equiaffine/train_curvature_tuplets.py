@@ -14,14 +14,15 @@ if __name__ == '__main__':
     epochs = 10000
     batch_size = 150000
     buffer_size = batch_size
-    dataset_size = batch_size*2
-    learning_rate = 1e-3
-    validation_split = .1
+    dataset_size = batch_size*5
+    learning_rate = 1
+    validation_split = .2
     supporting_points_count = 3
     sample_points = 2 * supporting_points_count + 1
     sampling_ratio = 0.3
     multimodality = 50
-    offset_length = 40
+    offset_length = 50
+    num_workers = 18
 
     torch.set_default_dtype(torch.float64)
 
@@ -30,10 +31,10 @@ if __name__ == '__main__':
         dir_path=settings.level_curves_dir_path_train,
         sampling_ratio=sampling_ratio,
         multimodality=multimodality,
-        offset_length=offset_length,
-        supporting_points_count=supporting_points_count,
         buffer_size=buffer_size,
-        num_workers=18)
+        num_workers=num_workers,
+        supporting_points_count=supporting_points_count,
+        offset_length=offset_length)
 
     dataset.start()
 
@@ -41,11 +42,11 @@ if __name__ == '__main__':
     print(model)
 
     # device = torch.device('cuda')
-    # latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_equiaffine_curvature_tuplets_results_dir_path)
+    # latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_affine_curvature_tuplets_results_dir_path)
     # results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
     # model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.LBFGS(model.parameters(), lr=learning_rate, line_search_fn='strong_wolfe', history_size=800)
     curvature_loss_fn = TupletLoss()
     model_trainer = ModelTrainer(model=model, loss_functions=[curvature_loss_fn], optimizer=optimizer)
     model_trainer.fit(
