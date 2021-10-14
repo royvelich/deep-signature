@@ -727,8 +727,9 @@ def plot_curve_curvature_comparison(curve_record, curve_colors):
     fig.show()
 
 
-def plot_curve_arclength_records(curve_records, true_arclength_colors, predicted_arclength_colors, sample_colors, curve_color='orange', anchor_color='blue', first_anchor_color='black'):
-    for curve_record in curve_records:
+def plot_curve_arclength_records(curve_records, true_arclength_colors, predicted_arclength_colors, sample_colors, curve_color='orange', anchor_color='blue', first_anchor_color='black', second_anchor_color='pink'):
+    for i, curve_record in enumerate(curve_records):
+        display(HTML(f'<H1>Curve {i + 1} - Arc-Length Comparison</H1>'))
         plot_curve_arclength_record(
             curve_arclength_record=curve_record,
             true_arclength_colors=true_arclength_colors,
@@ -736,11 +737,12 @@ def plot_curve_arclength_records(curve_records, true_arclength_colors, predicted
             sample_colors=sample_colors,
             curve_color=curve_color,
             anchor_color=anchor_color,
-            first_anchor_color=first_anchor_color)
+            first_anchor_color=first_anchor_color,
+            second_anchor_color=second_anchor_color)
 
 
-def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, predicted_arclength_colors, sample_colors, curve_color, anchor_color, first_anchor_color):
-    fig, axes = plt.subplots(3, 1, figsize=(20,20))
+def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, predicted_arclength_colors, sample_colors, curve_color, anchor_color, first_anchor_color, second_anchor_color):
+    fig, axes = plt.subplots(2, 1, figsize=(20,20))
     fig.patch.set_facecolor('white')
     for axis in axes:
         for label in (axis.get_xticklabels() + axis.get_yticklabels()):
@@ -752,14 +754,17 @@ def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, p
         curve_sections = curve_arclength['curve_sections']
         curve = curve_sections['curve']
         for j, sampled_section in enumerate(curve_sections['sampled_sections']):
+            point_size_regular = 7
+            point_size_anchor = 50
             sample = sampled_section['samples'][0]
             axes[0].set_xlabel('X Coordinate', fontsize=18)
             axes[0].set_ylabel('Y Coordinate', fontsize=18)
             plot_curve(ax=axes[0], curve=curve, color=curve_color, linewidth=3)
-            plot_sample(ax=axes[0], sample=sample, point_size=10, color=sample_colors[i], zorder=150)
-            plot_sample(ax=axes[0], sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=70, alpha=1, color=anchor_color, zorder=200)
+            plot_sample(ax=axes[0], sample=sample, point_size=point_size_regular, color=sample_colors[i], zorder=150)
+            plot_sample(ax=axes[0], sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=point_size_anchor, alpha=1, color=anchor_color, zorder=200)
             if j == 0:
-                plot_sample(ax=axes[0], sample=numpy.array([[sample[0,0] ,sample[0, 1]]]), point_size=70, alpha=1, color=first_anchor_color, zorder=300)
+                plot_sample(ax=axes[0], sample=numpy.array([[sample[0, 0] ,sample[0, 1]]]), point_size=point_size_anchor, alpha=1, color=first_anchor_color, zorder=300)
+                plot_sample(ax=axes[0], sample=numpy.array([[sample[-1, 0] ,sample[-1, 1]]]), point_size=point_size_anchor, alpha=1, color=second_anchor_color, zorder=300)
 
     axes[1].set_xlabel('Index', fontsize=18)
     axes[1].set_ylabel('Arc-Length', fontsize=18)
@@ -837,16 +842,21 @@ def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, p
     plt.show()
 
 
-def plot_curve_signature_comparisons(curve_records, curve_colors):
+def plot_curve_signature_comparisons(curve_records, curve_colors, sample_colors, curve_color='orange', anchor_color='blue', first_anchor_color='black', second_anchor_color='pink'):
     for i, curve_record in enumerate(curve_records):
         display(HTML(f'<H1>Curve {i+1} - Signature Comparison</H1>'))
         plot_curve_signature_comparision(
             curve_record=curve_record,
-            curve_colors=curve_colors)
+            curve_colors=curve_colors,
+            sample_colors=sample_colors,
+            curve_color=curve_color,
+            anchor_color=anchor_color,
+            first_anchor_color=first_anchor_color,
+            second_anchor_color=second_anchor_color)
 
 
-def plot_curve_signature_comparision(curve_record, curve_colors):
-    fig, axes = plt.subplots(2, 1, figsize=(20,20))
+def plot_curve_signature_comparision(curve_record, curve_colors, sample_colors, curve_color, anchor_color, first_anchor_color, second_anchor_color):
+    fig, axes = plt.subplots(3, 1, figsize=(20,20))
     fig.patch.set_facecolor('white')
     for axis in axes:
         for label in (axis.get_xticklabels() + axis.get_yticklabels()):
@@ -860,9 +870,27 @@ def plot_curve_signature_comparision(curve_record, curve_colors):
         curve = comparision['curve']
         plot_curve(ax=axes[0], curve=curve, color=curve_colors[i], linewidth=3)
 
-    axes[1].set_xlabel('Arc-Length', fontsize=18)
-    axes[1].set_ylabel('Curvature', fontsize=18)
-    axes[1].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    axes[1].axis('equal')
+    for i, curve_comparison in enumerate(curve_record['comparisons']):
+        curve_arclength = curve_comparison['arclength_comparison']
+        curve_sections = curve_arclength['curve_sections']
+        curve = curve_sections['curve']
+        for j, sampled_section in enumerate(curve_sections['sampled_sections']):
+            point_size_regular = 7
+            point_size_anchor = 50
+            sample = sampled_section['samples'][0]
+            axes[1].set_xlabel('X Coordinate', fontsize=18)
+            axes[1].set_ylabel('Y Coordinate', fontsize=18)
+            plot_curve(ax=axes[1], curve=curve, color=curve_color, linewidth=3)
+            plot_sample(ax=axes[1], sample=sample, point_size=point_size_regular, color=sample_colors[i], zorder=150)
+            plot_sample(ax=axes[1], sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=point_size_anchor, alpha=1, color=anchor_color, zorder=200)
+            if j == 0:
+                plot_sample(ax=axes[1], sample=numpy.array([[sample[0, 0] ,sample[0, 1]]]), point_size=point_size_anchor, alpha=1, color=first_anchor_color, zorder=300)
+                plot_sample(ax=axes[1], sample=numpy.array([[sample[-1, 0] ,sample[-1, 1]]]), point_size=point_size_anchor, alpha=1, color=second_anchor_color, zorder=300)
+
+    axes[2].set_xlabel('Arc-Length', fontsize=18)
+    axes[2].set_ylabel('Curvature', fontsize=18)
+    axes[2].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
     for i, comparision in enumerate(curve_record['comparisons']):
         arclength_comparison = comparision['arclength_comparison']
@@ -870,6 +898,6 @@ def plot_curve_signature_comparision(curve_record, curve_colors):
         predicted_arclength = arclength_comparison['predicted_arclength'][:, 1, 0]
         # predicted_arclength = numpy.concatenate((numpy.array([0]), predicted_arclength))
         predicted_curvature = curvature_comparison['predicted_curvature_signature'][:, 1]
-        plot_graph(ax=axes[1], x=predicted_arclength, y=predicted_curvature, color=curve_colors[i], linewidth=3)
+        plot_graph(ax=axes[2], x=predicted_arclength, y=predicted_curvature, color=curve_colors[i], linewidth=3)
 
     plt.show()
