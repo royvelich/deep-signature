@@ -29,6 +29,7 @@ class CurvesGenerator:
         def reduce_func(curve):
             if curve is not None:
                 curves.append(curve)
+                print(f'Curves Count: {len(curves)}')
 
         utils.par_proc(
             map_func=cls._map_func,
@@ -38,7 +39,7 @@ class CurvesGenerator:
             label=cls._label
         )
 
-        curves = curves[:curves_count]
+        # curves = curves[:curves_count]
         pathlib.Path(dir_path).mkdir(parents=True, exist_ok=True)
         numpy.save(file=os.path.normpath(os.path.join(dir_path, f'curves.npy')), arr=numpy.array(curves, dtype=object))
 
@@ -123,6 +124,12 @@ class LevelCurvesGenerator(CurvesGenerator):
                 continue
 
             if flat_points_ratio > max_flat_points_ratio:
+                continue
+
+            kappa_equiaffine = curve_processing.calculate_equiaffine_curvature(curve)
+            kappa_equiaffine_cleaned = kappa_equiaffine[~numpy.isnan(kappa_equiaffine)]
+            equiaffine_std = numpy.std(kappa_equiaffine_cleaned)
+            if equiaffine_std < 0.05:
                 continue
 
             return curve

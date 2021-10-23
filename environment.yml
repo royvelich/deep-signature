@@ -26,4 +26,5 @@ dependencies:
   - opencv
   - freetype
   - plotly
+  - ipykernel
   - pip

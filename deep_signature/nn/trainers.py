@@ -1,6 +1,7 @@
 # python peripherals
 import os
 import numpy
+import itertools
 from datetime import datetime
 from pathlib import Path
 from timeit import default_timer as timer
@@ -19,24 +20,34 @@ class ModelTrainer:
         self._device = device
         self._model.to(device)
 
-    def fit(self, dataset, epochs, batch_size, results_base_dir_path, epoch_handler=None, validation_split=0.2, shuffle_dataset=True):
-        dataset_size = len(dataset)
-        indices = list(range(dataset_size))
-        split = int(numpy.floor(validation_split * dataset_size))
+    def fit(self, train_dataset, validation_dataset, epochs, batch_size, results_base_dir_path, epoch_handler=None, validation_split=None, shuffle_dataset=True):
+        dataset_size = None
+        train_dataset_size = None
+        validation_dataset_size = None
+        if validation_split is not None:
+            dataset_size = len(train_dataset)
+            indices = list(range(dataset_size))
+            split = int(numpy.floor(validation_split * dataset_size))
+            train_indices, validation_indices = indices[split:], indices[:split]
+            actual_train_dataset = train_dataset
+            actual_validation_dataset = train_dataset
+        else:
+            train_dataset_size = len(train_dataset)
+            validation_dataset_size = len(validation_dataset)
+            train_indices = list(range(train_dataset_size))
+            validation_indices = list(range(validation_dataset_size))
+            actual_train_dataset = train_dataset
+            actual_validation_dataset = validation_dataset
 
         if shuffle_dataset is True:
-            numpy.random.shuffle(indices)
+            train_sampler = SubsetRandomSampler(train_indices)
+            validation_sampler = SubsetRandomSampler(validation_indices)
+        else:
+            train_sampler = SequentialSampler(train_indices)
+            validation_sampler = SequentialSampler(validation_indices)
 
-        train_indices, validation_indices = indices[split:], indices[:split]
-
-        train_sampler = SubsetRandomSampler(train_indices)
-        validation_sampler = SubsetRandomSampler(validation_indices)
-
-        # train_sampler = SequentialSampler(train_indices)
-        # validation_sampler = SequentialSampler(validation_indices)
-
-        train_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler, drop_last=False, num_workers=0)
-        validation_data_loader = DataLoader(dataset, batch_size=batch_size, sampler=validation_sampler, drop_last=False, num_workers=0)
+        train_data_loader = DataLoader(actual_train_dataset, batch_size=batch_size, sampler=train_sampler, drop_last=False, num_workers=0)
+        validation_data_loader = DataLoader(actual_validation_dataset, batch_size=batch_size, sampler=validation_sampler, drop_last=False, num_workers=0)
 
         ModelTrainer._print_training_configuration('Epochs', epochs)
         ModelTrainer._print_training_configuration('Batch size', batch_size)
@@ -69,16 +80,19 @@ class ModelTrainer:
             text_file.write(f'batch_size: {batch_size}\n')
             text_file.write(f'epochs: {epochs}\n')
             text_file.write(f'results_dir_path: {results_dir_path}\n')
-            text_file.write(f'validation_split: {validation_split}\n')
-            text_file.write(f'dataset_size: {dataset_size}\n')
+            if validation_split is not None:
+                text_file.write(f'validation_split: {validation_split}\n')
+                text_file.write(f'dataset_size: {dataset_size}\n')
+            else:
+                text_file.write(f'train_dataset_size: {train_dataset_size}\n')
+                text_file.write(f'validation_dataset_size: {validation_dataset_size}\n')
 
         print(f' - Start Training:')
+        results = None
         best_validation_average_loss = None
         train_loss_array = numpy.array([])
         validation_loss_array = numpy.array([])
-        epoch_index = 0
-        # for epoch_index in range(epochs):
-        while True:
+        for epoch_index in itertools.count():
             print(f'    - Training Epoch #{epoch_index+1}:')
             train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
             train_loss_array = numpy.append(train_loss_array, [numpy.mean(train_loss)])
@@ -112,7 +126,8 @@ class ModelTrainer:
 
             numpy.save(file=results_file_path, arr=results, allow_pickle=True)
 
-            epoch_index = epoch_index + 1
+            if epoch_index + 1 == epochs:
+                break
 
         return results
 

@@ -139,17 +139,17 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
         }
 
         dist_index = 0
-        curve_index = int(numpy.random.randint(curves.shape[0], size=1)),
+        curve_index = int(numpy.random.randint(curves.shape[0], size=1))
         curve = curve_processing.center_curve(curve=curves[curve_index])
         curve_points_count = curve.shape[0]
         sampling_points_count = int(sampling_ratio * curve_points_count)
         discrete_distribution_pack = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=multimodality, max_density=1, count=11)
         center_point_index = int(numpy.random.randint(curve.shape[0], size=1))
         for i in range(2):
-            transformed_curve = curve
-            if i == 1:
-                transform = cls._generate_curve_transform()
-                transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+            # transformed_curve = curve
+            # if i == 1:
+            transform = cls._generate_curve_transform()
+            transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
 
             indices_pool = discrete_distribution.sample_discrete_dist(dist=discrete_distribution_pack[dist_index], sampling_points_count=sampling_points_count)
             sample = curve_sampling.sample_curve_neighborhood(
