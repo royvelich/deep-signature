@@ -26,6 +26,7 @@ if __name__ == '__main__':
     multimodality = 50
     offset_length = 50
     num_workers = 18
+    negative_examples_count = 1
 
     torch.set_default_dtype(torch.float64)
 
@@ -38,7 +39,8 @@ if __name__ == '__main__':
         buffer_size=train_buffer_size,
         num_workers=num_workers,
         supporting_points_count=supporting_points_count,
-        offset_length=offset_length)
+        offset_length=offset_length,
+        negative_examples_count=negative_examples_count)
 
     validation_dataset = DeepSignatureEquiaffineCurvatureTupletsOnlineDataset(
         dataset_size=validation_dataset_size,
@@ -49,7 +51,8 @@ if __name__ == '__main__':
         buffer_size=validation_buffer_size,
         num_workers=5,
         supporting_points_count=supporting_points_count,
-        offset_length=offset_length)
+        offset_length=offset_length,
+        negative_examples_count=negative_examples_count)
 
     validation_dataset.start()
     validation_dataset.stop()

@@ -90,13 +90,14 @@ class DeepSignatureTupletsDataset(Dataset):
 
 class EuclideanTuple:
     @staticmethod
-    def _generate_curvature_tuple(curves, sampling_ratio, multimodality, supporting_points_count, offset_length):
+    def _generate_curvature_tuple(curves, sampling_ratio, multimodality, supporting_points_count, offset_length, negative_examples_count):
         return dataset_generation.EuclideanCurvatureTupletsDatasetGenerator.generate_tuple(
                 curves=curves,
                 sampling_ratio=sampling_ratio,
                 multimodality=multimodality,
                 supporting_points_count=supporting_points_count,
-                offset_length=offset_length)
+                offset_length=offset_length,
+                negative_examples_count=negative_examples_count)
 
     @staticmethod
     def _generate_arclength_tuple(curves, multimodality, supporting_points_count, min_offset, max_offset):
@@ -110,13 +111,14 @@ class EuclideanTuple:
 
 class EquiaffineTuple:
     @staticmethod
-    def _generate_curvature_tuple(curves, sampling_ratio, multimodality, supporting_points_count, offset_length):
+    def _generate_curvature_tuple(curves, sampling_ratio, multimodality, supporting_points_count, offset_length, negative_examples_count):
         return dataset_generation.EquiaffineCurvatureTupletsDatasetGenerator.generate_tuple(
                 curves=curves,
                 sampling_ratio=sampling_ratio,
                 multimodality=multimodality,
                 supporting_points_count=supporting_points_count,
-                offset_length=offset_length)
+                offset_length=offset_length,
+                negative_examples_count=negative_examples_count)
 
     # @staticmethod
     # def _generate_arclength_tuple(curves, sampling_ratio, multimodality, section_points_count):
@@ -138,13 +140,14 @@ class EquiaffineTuple:
 
 class AffineTuple:
     @staticmethod
-    def _generate_curvature_tuple(curves, sampling_ratio, multimodality, supporting_points_count, offset_length):
+    def _generate_curvature_tuple(curves, sampling_ratio, multimodality, supporting_points_count, offset_length, negative_examples_count):
         return dataset_generation.AffineCurvatureTupletsDatasetGenerator.generate_tuple(
                 curves=curves,
                 sampling_ratio=sampling_ratio,
                 multimodality=multimodality,
                 supporting_points_count=supporting_points_count,
-                offset_length=offset_length)
+                offset_length=offset_length,
+                negative_examples_count=negative_examples_count)
 
     # @staticmethod
     # def _generate_arclength_tuple(curves, sampling_ratio, multimodality, section_points_count):
@@ -218,7 +221,7 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
 
 
 class DeepSignatureCurvatureTupletsOnlineDataset(DeepSignatureTupletsOnlineDataset):
-    def __init__(self, dataset_size, dir_path, sampling_ratio, multimodality, replace, buffer_size, num_workers, supporting_points_count, offset_length):
+    def __init__(self, dataset_size, dir_path, sampling_ratio, multimodality, replace, buffer_size, num_workers, supporting_points_count, offset_length, negative_examples_count):
         DeepSignatureTupletsOnlineDataset.__init__(
             self,
             dataset_size=dataset_size,
@@ -235,15 +238,19 @@ class DeepSignatureCurvatureTupletsOnlineDataset(DeepSignatureTupletsOnlineDatas
         self._offset_length = offset_length
         self._args.append(offset_length)
 
+        self._negative_examples_count = negative_examples_count
+        self._args.append(negative_examples_count)
+
     @classmethod
-    def _map_func(cls, curves, sampling_ratio, multimodality, q, supporting_points_count, offset_length):
+    def _map_func(cls, curves, sampling_ratio, multimodality, q, supporting_points_count, offset_length, negative_examples_count):
         while True:
             q.put(cls._generate_curvature_tuple(
                 curves=curves,
                 sampling_ratio=sampling_ratio,
                 multimodality=multimodality,
                 supporting_points_count=supporting_points_count,
-                offset_length=offset_length))
+                offset_length=offset_length,
+                negative_examples_count=negative_examples_count))
 
 
 class DeepSignatureEuclideanCurvatureTupletsOnlineDataset(DeepSignatureCurvatureTupletsOnlineDataset, EuclideanTuple):
