@@ -20,7 +20,7 @@ class ModelTrainer:
         self._device = device
         self._model.to(device)
 
-    def fit(self, train_dataset, validation_dataset, epochs, batch_size, results_base_dir_path, epoch_handler=None, validation_split=None, shuffle_dataset=True):
+    def fit(self, train_dataset, validation_dataset, epochs, train_batch_size, validation_batch_size, results_base_dir_path, epoch_handler=None, validation_split=None, shuffle_dataset=True):
         dataset_size = None
         train_dataset_size = None
         validation_dataset_size = None
@@ -46,15 +46,18 @@ class ModelTrainer:
             train_sampler = SequentialSampler(train_indices)
             validation_sampler = SequentialSampler(validation_indices)
 
-        train_data_loader = DataLoader(actual_train_dataset, batch_size=batch_size, sampler=train_sampler, drop_last=False, num_workers=0)
-        validation_data_loader = DataLoader(actual_validation_dataset, batch_size=batch_size, sampler=validation_sampler, drop_last=False, num_workers=0)
+        train_data_loader = DataLoader(actual_train_dataset, batch_size=train_batch_size, sampler=train_sampler, drop_last=False, num_workers=0)
+        validation_data_loader = DataLoader(actual_validation_dataset, batch_size=validation_batch_size, sampler=validation_sampler, drop_last=False, num_workers=0)
 
-        ModelTrainer._print_training_configuration('Epochs', epochs)
-        ModelTrainer._print_training_configuration('Batch size', batch_size)
+        epochs_text = epochs if epochs is not None else 'infinite'
+
+        ModelTrainer._print_training_configuration('Epochs', epochs_text)
+        ModelTrainer._print_training_configuration('Train Batch size', train_batch_size)
+        ModelTrainer._print_training_configuration('Validation Batch size', validation_batch_size)
         ModelTrainer._print_training_configuration('Training dataset length', len(train_indices))
-        ModelTrainer._print_training_configuration('Training batches per epoch', int(numpy.ceil(len(train_indices) / batch_size)))
+        ModelTrainer._print_training_configuration('Training batches per epoch', int(numpy.ceil(len(train_indices) / train_batch_size)))
         ModelTrainer._print_training_configuration('Validation dataset length', len(validation_indices))
-        ModelTrainer._print_training_configuration('Validation batches per epoch', int(numpy.ceil(len(validation_indices) / batch_size)))
+        ModelTrainer._print_training_configuration('Validation batches per epoch', int(numpy.ceil(len(validation_indices) / validation_batch_size)))
 
         results_dir_path = os.path.normpath(os.path.join(results_base_dir_path, datetime.now().strftime('%Y-%m-%d-%H-%M-%S')))
         model_file_path = os.path.normpath(os.path.join(results_dir_path, 'model.pt'))
@@ -77,8 +80,9 @@ class ModelTrainer:
             text_file.write(str(self._optimizer))
 
         with open(trainer_data_file_path, "w") as text_file:
-            text_file.write(f'batch_size: {batch_size}\n')
-            text_file.write(f'epochs: {epochs}\n')
+            text_file.write(f'train_batch_size: {train_batch_size}\n')
+            text_file.write(f'validation_batch_size: {validation_batch_size}\n')
+            text_file.write(f'epochs: {epochs_text}\n')
             text_file.write(f'results_dir_path: {results_dir_path}\n')
             if validation_split is not None:
                 text_file.write(f'validation_split: {validation_split}\n')
@@ -118,15 +122,16 @@ class ModelTrainer:
             results = {
                 'train_loss_array': train_loss_array,
                 'validation_loss_array': validation_loss_array,
-                'epochs': epochs,
-                'batch_size': batch_size,
+                'epochs': epochs_text,
+                'train_batch_size': train_batch_size,
+                'validation_batch_size': validation_batch_size,
                 'model_file_path': model_file_path,
                 'results_file_path': results_file_path
             }
 
             numpy.save(file=results_file_path, arr=results, allow_pickle=True)
 
-            if epoch_index + 1 == epochs:
+            if (epochs is not None) and (epoch_index + 1 == epochs):
                 break
 
         return results

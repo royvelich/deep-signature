@@ -212,6 +212,10 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
                 if len(self._items) == self._buffer_size:
                     break
 
+    def stop(self):
+        for i, worker in enumerate(self._workers):
+            worker.terminate()
+
 
 class DeepSignatureCurvatureTupletsOnlineDataset(DeepSignatureTupletsOnlineDataset):
     def __init__(self, dataset_size, dir_path, sampling_ratio, multimodality, replace, buffer_size, num_workers, supporting_points_count, offset_length):

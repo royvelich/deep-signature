@@ -3,7 +3,8 @@ import os
 
 # general
 data_dir = "C:/deep-signature-data"
-images_dir_path = os.path.normpath(os.path.join(data_dir, "images"))
+images_dir_path_train = os.path.normpath(os.path.join(data_dir, "images/train"))
+images_dir_path_test = os.path.normpath(os.path.join(data_dir, "images/test"))
 
 # circles
 circles_dir_path_train = os.path.normpath(os.path.join(data_dir, "circles/curves/train"))

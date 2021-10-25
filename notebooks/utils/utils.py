@@ -395,7 +395,8 @@ def generate_curve_records(arclength_model, curvature_model, curves, transform_t
     factors = []
 
     for curve_index, curve in enumerate(curves):
-        comparison_curves = [curve_processing.center_curve(curve=curve)]
+        # comparison_curves = [curve_processing.center_curve(curve=curve)]
+        comparison_curves = []
         for i in range(comparison_curves_count):
             if transform_type == 'euclidean':
                 transform = euclidean_transform.generate_random_euclidean_transform_2d()
@@ -407,7 +408,7 @@ def generate_curve_records(arclength_model, curvature_model, curves, transform_t
             comparison_curves.append(curve_processing.center_curve(curve=transformed_curve))
 
         curve_record = {
-            'curve': curve,
+            'curve': curve_processing.center_curve(curve=curve),
             'comparisons': []
         }
 
@@ -626,6 +627,9 @@ def plot_curve_curvature_comparison(curve_record, curve_colors):
     # PLOT CURVES TOGETHER
     # ---------------------
     fig = make_subplots(rows=1, cols=1)
+
+    curve = curve_record['curve']
+    plot_curve_plotly(fig=fig, row=1, col=1, curve=curve, line_width=line_width, line_color=curve_colors[-1])
 
     for i, comparison in enumerate(curve_record['comparisons']):
         curve = comparison['curve']

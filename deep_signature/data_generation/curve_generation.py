@@ -152,8 +152,8 @@ class LevelCurvesGenerator(CurvesGenerator):
         contour_levels_count = len(contour_levels)
 
         max_curves_count = image_files_count * sigmas_count * contour_levels_count
-        if curves_count > max_curves_count:
-            raise ValueError('curves_count exceeds maximum')
+        # if curves_count > max_curves_count:
+        #     raise ValueError('curves_count exceeds maximum')
 
         argument_packs = []
         argument_packs.append([*image_file_paths] * (sigmas_count * contour_levels_count))

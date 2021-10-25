@@ -148,8 +148,13 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
         for i in range(2):
             # transformed_curve = curve
             # if i == 1:
-            transform = cls._generate_curve_transform()
-            transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+            # transform = cls._generate_curve_transform()
+            # transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+
+            transformed_curve = curve
+            if i == 1:
+                transform = cls._generate_curve_transform()
+                transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
 
             indices_pool = discrete_distribution.sample_discrete_dist(dist=discrete_distribution_pack[dist_index], sampling_points_count=sampling_points_count)
             sample = curve_sampling.sample_curve_neighborhood(
