@@ -4,6 +4,7 @@ import os
 # general
 data_dir = "C:/deep-signature-data"
 images_dir_path_train = os.path.normpath(os.path.join(data_dir, "images/train"))
+images_dir_path_validation = os.path.normpath(os.path.join(data_dir, "images/validation"))
 images_dir_path_test = os.path.normpath(os.path.join(data_dir, "images/test"))
 
 # circles
@@ -16,6 +17,7 @@ circles_triangle_tuplets_results_dir_path = os.path.normpath(os.path.join(data_d
 
 # level-curves
 level_curves_dir_path_train = os.path.normpath(os.path.join(data_dir, "level-curves/curves/train"))
+level_curves_dir_path_validation = os.path.normpath(os.path.join(data_dir, "level-curves/curves/validation"))
 level_curves_dir_path_test = os.path.normpath(os.path.join(data_dir, "level-curves/curves/test"))
 level_curves_euclidean_curvature_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/datasets/tuplets/curvature/euclidean"))
 level_curves_euclidean_curvature_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/curvature/euclidean"))
@@ -29,3 +31,48 @@ level_curves_equiaffine_arclength_tuplets_dir_path = os.path.normpath(os.path.jo
 level_curves_equiaffine_arclength_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/arclength/equiaffine"))
 level_curves_affine_arclength_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/datasets/tuplets/arclength/affine"))
 level_curves_affine_arclength_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/arclength/affine"))
+
+# curvature
+curvature_default_epochs = None
+curvature_default_train_buffer_size = 200000
+curvature_default_validation_buffer_size = 30000
+curvature_default_train_batch_size = curvature_default_train_buffer_size
+curvature_default_validation_batch_size = curvature_default_validation_buffer_size
+curvature_default_train_dataset_size = 3 * curvature_default_train_batch_size
+curvature_default_validation_dataset_size = curvature_default_validation_batch_size
+curvature_default_learning_rate = 1
+curvature_default_validation_split = None
+curvature_default_supporting_points_count = 3
+curvature_default_sample_points_count = 2 * curvature_default_supporting_points_count + 1
+curvature_default_sampling_ratio = 0.3
+curvature_default_multimodality = 50
+curvature_default_offset_length = 50
+curvature_default_num_workers_train = 15
+curvature_default_num_workers_validation = 5
+curvature_default_negative_examples_count = 1
+curvature_default_history_size = 1500
+
+# arclength
+arclength_default_learning_rate = 1
+arclength_default_validation_split = None
+arclength_default_epochs = None
+arclength_default_train_buffer_size = 5000
+arclength_default_validation_buffer_size = 2000
+arclength_default_train_batch_size = arclength_default_train_buffer_size
+arclength_default_validation_batch_size = arclength_default_validation_buffer_size
+arclength_default_train_dataset_size = 3 * arclength_default_train_batch_size
+arclength_default_validation_dataset_size = arclength_default_validation_batch_size
+arclength_default_sampling_ratio = 0.3
+arclength_default_multimodality = 50
+arclength_default_offset_length = 50
+arclength_default_num_workers = 1
+arclength_default_section_points_count = 10
+arclength_default_supporting_points_count = 20
+arclength_default_min_offset = arclength_default_supporting_points_count
+arclength_default_max_offset = 6 * arclength_default_supporting_points_count
+arclength_default_num_workers_train = 15
+arclength_default_num_workers_validation = 5
+arclength_default_history_size = 1500
+
+# signatures
+signature_step = 40

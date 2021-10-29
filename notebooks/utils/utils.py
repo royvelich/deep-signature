@@ -390,12 +390,9 @@ def predict_arclength_by_index(model, curve_sections):
 # --------------------------
 # RECORD GENERATION ROUTINES
 # --------------------------
-def generate_curve_records(arclength_model, curvature_model, curves, transform_type, comparison_curves_count, sampling_ratio, anchors_ratio, step, neighborhood_supporting_points_count, section_supporting_points_count):
+def generate_curve_records(arclength_model, curvature_model, curves, factor_extraction_curves, transform_type, comparison_curves_count, sampling_ratio, anchors_ratio, step, neighborhood_supporting_points_count, section_supporting_points_count):
     curve_records = []
-    factors = []
-
     for curve_index, curve in enumerate(curves):
-        # comparison_curves = [curve_processing.center_curve(curve=curve)]
         comparison_curves = []
         for i in range(comparison_curves_count):
             if transform_type == 'euclidean':
@@ -403,7 +400,7 @@ def generate_curve_records(arclength_model, curvature_model, curves, transform_t
             elif transform_type == 'equiaffine':
                 transform = affine_transform.generate_random_equiaffine_transform_2d()
             elif transform_type == 'affine':
-                transform = affine_transform.generate_random_affine_transform_2d(max_scale=1, min_eig_value_ratio=1, max_eig_value_ratio=1.3, min_eig_value=0.5, max_eig_value=2)
+                transform = affine_transform.generate_random_affine_transform_2d()
             transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
             comparison_curves.append(curve_processing.center_curve(curve=transformed_curve))
 
@@ -484,10 +481,27 @@ def generate_curve_records(arclength_model, curvature_model, curves, transform_t
                 'curvature_comparison': curvature_comparison
             })
 
-            factor = numpy.mean(true_arclength[1:, 1, 0] / predicted_arclength[1:, 1, 0])
-            factors.append(factor)
-
         curve_records.append(curve_record)
+
+    factors = []
+    for curve_index, curve in enumerate(factor_extraction_curves):
+        centered_curve = curve_processing.center_curve(curve=curve)
+
+        curve_sections = extract_curve_sections(
+            curve=centered_curve,
+            step=step,
+            sample_points=section_supporting_points_count)
+
+        true_arclength = calculate_arclength_by_index(
+            curve_sections=curve_sections,
+            transform_type=transform_type)
+
+        predicted_arclength = predict_arclength_by_index(
+            model=arclength_model,
+            curve_sections=curve_sections)
+
+        factor = numpy.mean(true_arclength[1:, 1, 0] / predicted_arclength[1:, 1, 0])
+        factors.append(factor)
 
     if transform_type != 'affine':
         factor = numpy.mean(numpy.array(factors))
@@ -603,6 +617,44 @@ def extract_curve_sections(curve, step, sample_points):
         'sampled_sections': sampled_sections,
         'full_sections': full_sections,
         'curve': curve
+    }
+
+
+# ----------------
+# METRICS ROUTINES
+# ----------------
+def calculate_signature_metrics(curve_records):
+    curvature_offsets = numpy.array([])
+    arclength_offsets = numpy.array([])
+    for i, curve_record in enumerate(curve_records):
+        comparisons = curve_record['comparisons']
+        arclength_comparison_ref = comparisons[0]['arclength_comparison']
+        curvature_comparison_ref = comparisons[0]['curvature_comparison']
+        predicted_arclength_ref = arclength_comparison_ref['predicted_arclength'][1:, 1, 0].squeeze()
+        predicted_curvature_signature_ref = curvature_comparison_ref['predicted_curvature_signature'][:, 1].squeeze()
+        for comparison in comparisons[1:]:
+            arclength_comparison = comparison['arclength_comparison']
+            curvature_comparison = comparison['curvature_comparison']
+            predicted_arclength = arclength_comparison['predicted_arclength'][1:, 1, 0].squeeze()
+            predicted_curvature_signature = curvature_comparison['predicted_curvature_signature'][:, 1].squeeze()
+            arclength_offset = (predicted_arclength - predicted_arclength_ref) / numpy.abs(predicted_arclength_ref)
+            curvature_offset = (predicted_curvature_signature - predicted_curvature_signature_ref) / numpy.abs(predicted_curvature_signature_ref)
+            # print(arclength_offsets.shape)
+            # print(arclength_offset.shape)
+            # print(arclength_offset[:, 1, 0].squeeze().shape)
+            # print(curvature_offset[:, 1].squeeze().shape)
+            arclength_offsets = numpy.concatenate((arclength_offsets, arclength_offset))
+            curvature_offsets = numpy.concatenate((curvature_offsets, curvature_offset))
+
+            # print(arclength_offsets)
+
+    return {
+        'arclength_offset_mean': numpy.mean(arclength_offsets),
+        'arclength_offset_std': numpy.std(arclength_offsets),
+        'curvature_offset_mean': numpy.mean(curvature_offsets),
+        'curvature_offset_std': numpy.std(curvature_offsets),
+        'curvature_offset_min': numpy.min(curvature_offsets),
+        'curvature_offset_max': numpy.max(curvature_offsets),
     }
 
 

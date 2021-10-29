@@ -25,10 +25,10 @@ def generate_random_equiaffine_transform_2d(max_scale=3, min_eig_value_ratio=1.3
             return A
 
 
-def generate_random_affine_transform_2d(max_scale=1, min_eig_value_ratio=3, max_eig_value_ratio=8, min_eig_value=0.1, max_eig_value=8):
+def generate_random_affine_transform_2d(max_scale=3, min_eig_value_ratio=1.3, max_eig_value_ratio=8, min_eig_value=0.1, max_eig_value=8):
     while True:
         A = numpy.random.uniform(low=0, high=max_scale, size=(2,2))
-        if _validate_eigen_values_ratio(A=A, min_eig_value_ratio=min_eig_value_ratio, max_eig_value_ratio=max_eig_value_ratio, min_eig_value=min_eig_value, max_eig_value=max_eig_value):
+        if _validate_eigen_values_ratio(A=A, min_eig_value_ratio=min_eig_value_ratio, max_eig_value_ratio=max_eig_value_ratio, min_eig_value=(1/max_eig_value), max_eig_value=max_eig_value):
             return A
 
 # # numpy

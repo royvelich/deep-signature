@@ -17,9 +17,9 @@ if __name__ == '__main__':
     # )
 
     curve_generation.LevelCurvesGenerator.generate_curves(
-        dir_path=settings.level_curves_dir_path_test,
+        dir_path=settings.level_curves_dir_path_validation,
         curves_count=10000,
-        images_base_dir_path=settings.images_dir_path_test,
+        images_base_dir_path=settings.images_dir_path_validation,
         sigmas=[2, 4, 8, 16, 32],
         contour_levels=[0.2, 0.5, 0.8],
         min_points=500,

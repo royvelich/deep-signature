@@ -25,7 +25,7 @@ if __name__ == '__main__':
     sampling_ratio = 0.3
     multimodality = 50
     offset_length = 50
-    num_workers = 18
+    num_workers = 15
     negative_examples_count = 1
 
     torch.set_default_dtype(torch.float64)

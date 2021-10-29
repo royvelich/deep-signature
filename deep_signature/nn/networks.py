@@ -47,7 +47,7 @@ class DeepSignatureCurvatureNet(torch.nn.Module):
     def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
-        out_features = 100
+        out_features = 150
         p = None
         first_layer = True
         while out_features > 10:
