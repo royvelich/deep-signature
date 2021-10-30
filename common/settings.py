@@ -33,12 +33,13 @@ level_curves_affine_arclength_tuplets_dir_path = os.path.normpath(os.path.join(d
 level_curves_affine_arclength_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/arclength/affine"))
 
 # curvature
+curvature_default_continue_training = False
 curvature_default_epochs = None
-curvature_default_train_buffer_size = 200000
-curvature_default_validation_buffer_size = 30000
+curvature_default_train_buffer_size = 300000
+curvature_default_validation_buffer_size = 40000
 curvature_default_train_batch_size = curvature_default_train_buffer_size
 curvature_default_validation_batch_size = curvature_default_validation_buffer_size
-curvature_default_train_dataset_size = 3 * curvature_default_train_batch_size
+curvature_default_train_dataset_size = curvature_default_train_batch_size
 curvature_default_validation_dataset_size = curvature_default_validation_batch_size
 curvature_default_learning_rate = 1
 curvature_default_validation_split = None
@@ -46,13 +47,14 @@ curvature_default_supporting_points_count = 3
 curvature_default_sample_points_count = 2 * curvature_default_supporting_points_count + 1
 curvature_default_sampling_ratio = 0.3
 curvature_default_multimodality = 50
-curvature_default_offset_length = 50
-curvature_default_num_workers_train = 15
+curvature_default_offset_length = 100
+curvature_default_num_workers_train = 10
 curvature_default_num_workers_validation = 5
-curvature_default_negative_examples_count = 1
+curvature_default_negative_examples_count = 2
 curvature_default_history_size = 1500
 
 # arclength
+arclength_default_continue_training = False
 arclength_default_learning_rate = 1
 arclength_default_validation_split = None
 arclength_default_epochs = None

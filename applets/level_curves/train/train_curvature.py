@@ -19,6 +19,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--group", dest="group")
     parser.add_argument("--epochs", dest="epochs", default=settings.curvature_default_epochs, type=int)
+    parser.add_argument("--continue_training", dest="continue_training", default=settings.curvature_default_continue_training, type=bool)
     parser.add_argument("--train_buffer_size", dest="train_buffer_size", default=settings.curvature_default_train_buffer_size, type=int)
     parser.add_argument("--validation_buffer_size", dest="validation_buffer_size", default=settings.curvature_default_validation_buffer_size, type=int)
     parser.add_argument("--train_batch_size", dest="train_batch_size", default=settings.curvature_default_train_batch_size, type=int)
@@ -99,10 +100,10 @@ if __name__ == '__main__':
     model = DeepSignatureCurvatureNet(sample_points=args.sample_points_count).cuda()
     print(model)
 
-    # device = torch.device('cuda')
-    # latest_subdir = common_utils.get_latest_subdirectory(settings.level_curves_affine_curvature_tuplets_results_dir_path)
-    # results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-    # model.load_state_dict(torch.load(results['model_file_path'], map_location=device))
+    if args.continue_training:
+        latest_subdir = common_utils.get_latest_subdirectory(results_base_dir_path)
+        results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+        model.load_state_dict(torch.load(results['model_file_path'], map_location=torch.device('cuda')))
 
     optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
     curvature_loss_fn = TupletLoss()
