@@ -29,6 +29,7 @@ from deep_signature.data_manipulation import curve_processing
 from deep_signature.linalg import euclidean_transform
 from deep_signature.linalg import affine_transform
 from deep_signature.utils import utils
+from common import settings
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -98,12 +99,13 @@ def plot_curve_sample_plotly(fig, row, col, name, curve, curve_sample, color, po
         col=col)
 
 
-def plot_curve_plotly(fig, row, col, curve, line_width=2, line_color='green'):
+def plot_curve_plotly(fig, row, col, curve, name, line_width=2, line_color='green'):
     x = curve[:, 0]
     y = curve[:, 1]
 
     fig.add_trace(
         trace=graph_objects.Scatter(
+            name=name,
             x=x,
             y=y,
             mode='lines+markers',
@@ -289,9 +291,10 @@ def plot_curvature_with_cmap(ax, curvature, curve, indices, linewidth=2, alpha=1
     return colorline(ax=ax, x=x, y=y, z=z, cmap='hsv')
 
 
-def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1):
-    x = sample[:, 0]
-    y = sample[:, 1]
+def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=None):
+    if sample is not None:
+        x = sample[:, 0]
+        y = sample[:, 1]
 
     return ax.scatter(
         x=x,
@@ -678,26 +681,34 @@ def plot_curve_curvature_comparison(curve_record, curve_colors):
     # ---------------------
     # PLOT CURVES TOGETHER
     # ---------------------
-    fig = make_subplots(rows=1, cols=1)
+    fig = make_subplots(rows=1, cols=2, subplot_titles=('<b>Reference Curve</b>', '<b>Transformed Curves vs. Reference Curve</b>'))
 
     curve = curve_record['curve']
-    plot_curve_plotly(fig=fig, row=1, col=1, curve=curve, line_width=line_width, line_color=curve_colors[-1])
+    plot_curve_plotly(fig=fig, row=1, col=1, curve=curve, name='Reference Curve', line_width=line_width, line_color=curve_colors[-1])
+    plot_curve_plotly(fig=fig, row=1, col=2, curve=curve, name='Reference Curve', line_width=line_width, line_color=curve_colors[-1])
 
     for i, comparison in enumerate(curve_record['comparisons']):
         curve = comparison['curve']
-        plot_curve_plotly(fig=fig, row=1, col=1, curve=curve, line_width=line_width, line_color=curve_colors[i])
+        plot_curve_plotly(fig=fig, row=1, col=2, curve=curve, name=f'Transformed Curve #{i+1}', line_width=line_width, line_color=curve_colors[i])
 
-    fig.update_yaxes(
-        scaleanchor="x",
-        scaleratio=1,
-    )
+        fig.update_yaxes(
+            scaleanchor=f'x{i+1}',
+            scaleratio=1,
+            row=1,
+            col=i+1)
+
+    fig.update_layout(
+        legend=dict(
+            orientation="v",
+            yanchor="bottom",
+            xanchor="right"))
 
     fig.show()
 
     # -------------------------------
     # PLOT CURVE SAMPLES SIDE BY SIDE
     # -------------------------------
-    fig = make_subplots(rows=1, cols=len(curve_record['comparisons']))
+    fig = make_subplots(rows=1, cols=len(curve_record['comparisons']), subplot_titles=('<b>Transformed & Sampled Curve #1</b>', '<b>Transformed & Sampled Curve #2</b>'))
 
     for i, comparison in enumerate(curve_record['comparisons']):
         sampled_curve = comparison['sampled_curve']
@@ -711,7 +722,53 @@ def plot_curve_curvature_comparison(curve_record, curve_colors):
             row=1,
             col=i+1)
 
+    fig.update_layout(
+        legend=dict(
+            orientation="v",
+            yanchor="bottom",
+            xanchor="right"))
+
     fig.show()
+
+    # ----------------------------------------------------------------------------------
+    # PLOT CURVE SAMPLES, ANCHORS AND PREDICTED CURVATURE SIDE BY SIDE (WITHOUT BUTTONS)
+    # ----------------------------------------------------------------------------------
+    left_width = 0.25
+    for i, comparison in enumerate(curve_record['comparisons']):
+        fig = make_subplots(rows=1, cols=3, column_widths=[left_width, left_width, 1 - (2*left_width)], subplot_titles=('<b>Sampled Curve</b>', '<b>Equally Spaced Anchors with Respect to Sampled Curve</b>',  '<b>Predicted Curvature at Anchors</b>'))
+        sampled_curve = comparison['sampled_curve']
+        anchors = comparison['anchors']
+        anchor_indices = comparison['anchor_indices']
+        curve = comparison['curve']
+        curvature_comparison = comparison['curvature_comparison']
+        predicted_curvature = curvature_comparison['predicted_curvature']
+
+        plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Sampled Curve", curve=curve, curve_sample=sampled_curve, color='grey', point_size=3)
+        plot_curve_sample_plotly(fig=fig, row=1, col=2, name="Anchors", curve=curve, curve_sample=anchors, color=anchor_indices, point_size=3)
+        plot_curvature_with_cmap_plotly(fig=fig, row=1, col=3, name="Predicted Curvature at Anchors", curve=curve, curvature=predicted_curvature[:, 1], indices=anchor_indices, line_color='grey', line_width=2, point_size=10, color_scale='hsv')
+
+        fig.update_yaxes(
+            scaleanchor="x",
+            scaleratio=1,
+            row=1,
+            col=1)
+
+        fig.update_yaxes(
+            scaleanchor="x",
+            scaleratio=1,
+            row=1,
+            col=2)
+
+        fig['layout']['xaxis3']['title'] = 'Anchor Point Index'
+        fig['layout']['yaxis3']['title'] = 'Predicted Curvature'
+
+        fig.update_layout(
+            legend=dict(
+                orientation="v",
+                yanchor="bottom",
+                xanchor="right"))
+
+        fig.show()
 
     # ----------------------------------------------------------------
     # PLOT CURVE SAMPLES, ANCHORS AND PREDICTED CURVATURE SIDE BY SIDE
@@ -772,13 +829,23 @@ def plot_curve_curvature_comparison(curve_record, curve_colors):
     # ----------------------------------
     # PLOT PREDICTED CURVATURES TOGETHER
     # ----------------------------------
-    fig = make_subplots(rows=1, cols=1)
+
+    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted Curvature at Anchors (Transformed Curve #1 vs. Transformed Curve #2)</b>',))
 
     for i, comparison in enumerate(curve_record['comparisons']):
         curvature_comparison = comparison['curvature_comparison']
         predicted_curvature = curvature_comparison['predicted_curvature']
 
-        plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Predicted Curvature at Anchors {i+1}', curvature=predicted_curvature[:, 1], line_width=line_width, line_color=curve_colors[i])
+        plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Predicted Curvature at Anchors #{i+1}', curvature=predicted_curvature[:, 1], line_width=line_width, line_color=curve_colors[i])
+
+    fig['layout']['xaxis']['title'] = 'Anchor Point Index'
+    fig['layout']['yaxis']['title'] = 'Predicted Curvature'
+
+    fig.update_layout(
+        legend=dict(
+            orientation="v",
+            yanchor="bottom",
+            xanchor="right"))
 
     fig.show()
 
@@ -915,48 +982,52 @@ def plot_curve_curvature_comparison2(curve_record, curve_colors):
     fig.show()
 
 
-def plot_curve_arclength_records(curve_records, true_arclength_colors, predicted_arclength_colors, sample_colors, curve_color='orange', anchor_color='blue', first_anchor_color='black', second_anchor_color='pink'):
+def plot_curve_arclength_records(curve_records, true_arclength_colors, predicted_arclength_colors, curve_colors, curve_color='orange', anchor_color='blue', first_anchor_color='cyan', second_anchor_color='magenta'):
     for i, curve_record in enumerate(curve_records):
         display(HTML(f'<H1>Curve {i + 1} - Arc-Length Comparison</H1>'))
         plot_curve_arclength_record(
             curve_arclength_record=curve_record,
             true_arclength_colors=true_arclength_colors,
             predicted_arclength_colors=predicted_arclength_colors,
-            sample_colors=sample_colors,
+            curve_colors=curve_colors,
             curve_color=curve_color,
             anchor_color=anchor_color,
             first_anchor_color=first_anchor_color,
             second_anchor_color=second_anchor_color)
 
 
-def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, predicted_arclength_colors, sample_colors, curve_color, anchor_color, first_anchor_color, second_anchor_color):
-    fig, axes = plt.subplots(2, 1, figsize=(20,20))
+def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, predicted_arclength_colors, curve_colors, curve_color, anchor_color, first_anchor_color, second_anchor_color):
+    fig, axes = plt.subplots(1, 2, figsize=settings.matplotlib_figsize)
     fig.patch.set_facecolor('white')
     for axis in axes:
+        axis.axis('equal')
         for label in (axis.get_xticklabels() + axis.get_yticklabels()):
-            label.set_fontsize(10)
+            label.set_fontsize(settings.matplotlib_axis_tick_label_fontsize)
 
-    axes[0].axis('equal')
     for i, curve_comparison in enumerate(curve_arclength_record['comparisons']):
         curve_arclength = curve_comparison['arclength_comparison']
         curve_sections = curve_arclength['curve_sections']
         curve = curve_sections['curve']
         for j, sampled_section in enumerate(curve_sections['sampled_sections']):
-            point_size_regular = 7
-            point_size_anchor = 50
             sample = sampled_section['samples'][0]
-            axes[0].set_xlabel('X Coordinate', fontsize=18)
-            axes[0].set_ylabel('Y Coordinate', fontsize=18)
-            plot_curve(ax=axes[0], curve=curve, color=curve_color, linewidth=3)
-            plot_sample(ax=axes[0], sample=sample, point_size=point_size_regular, color=sample_colors[i], zorder=150)
-            plot_sample(ax=axes[0], sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=point_size_anchor, alpha=1, color=anchor_color, zorder=200)
+            axes[i].set_xlabel('X Coordinate', fontsize=settings.matplotlib_axis_title_label_fontsize)
+            axes[i].set_ylabel('Y Coordinate', fontsize=settings.matplotlib_axis_title_label_fontsize)
+            # plot_curve(ax=axes[i], curve=curve, color=curve_color, linewidth=3)
+            plot_sample(ax=axes[i], sample=sample, point_size=settings.matplotlib_sample_point_size, color=curve_colors[i], zorder=150)
+            plot_sample(ax=axes[i], sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=settings.matplotlib_sample_anchor_size, alpha=1, color=curve_colors[-1], zorder=200)
             if j == 0:
-                plot_sample(ax=axes[0], sample=numpy.array([[sample[0, 0] ,sample[0, 1]]]), point_size=point_size_anchor, alpha=1, color=first_anchor_color, zorder=300)
-                plot_sample(ax=axes[0], sample=numpy.array([[sample[-1, 0] ,sample[-1, 1]]]), point_size=point_size_anchor, alpha=1, color=second_anchor_color, zorder=300)
+                plot_sample(ax=axes[i], sample=numpy.array([[sample[0, 0] ,sample[0, 1]]]), point_size=settings.matplotlib_sample_anchor_size, alpha=1, color=first_anchor_color, zorder=300)
+                plot_sample(ax=axes[i], sample=numpy.array([[sample[-1, 0] ,sample[-1, 1]]]), point_size=settings.matplotlib_sample_anchor_size, alpha=1, color=second_anchor_color, zorder=300)
 
-    axes[1].set_xlabel('Index', fontsize=18)
-    axes[1].set_ylabel('Arc-Length', fontsize=18)
-    axes[1].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+
+    fig, axis = plt.subplots(1, 1, figsize=settings.matplotlib_figsize)
+    fig.patch.set_facecolor('white')
+    for label in (axis.get_xticklabels() + axis.get_yticklabels()):
+        label.set_fontsize(settings.matplotlib_axis_tick_label_fontsize)
+
+    axis.set_xlabel('Anchor Point Index', fontsize=settings.matplotlib_axis_title_label_fontsize)
+    axis.set_ylabel('Predicted Arc-Length', fontsize=settings.matplotlib_axis_title_label_fontsize)
+    axis.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
     true_arclength_legend_labels = []
     predicted_arclength_legend_labels = []
     for i, curve_comparison in enumerate(curve_arclength_record['comparisons']):
@@ -964,68 +1035,68 @@ def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, p
         true_arclength = curve_arclength['true_arclength']
         predicted_arclength = curve_arclength['predicted_arclength']
 
-        plot_sample(ax=axes[1], sample=true_arclength[:, :, 0], point_size=40, color=true_arclength_colors[i], zorder=250)
-        plot_curve(ax=axes[1], curve=true_arclength[:, :, 0], linewidth=2, color=true_arclength_colors[i], zorder=150)
-        true_arclength_legend_labels.append(f'True Arclength (Curve #{i + 1})')
+        plot_sample(ax=axis, sample=true_arclength[:, :, 0], point_size=settings.matplotlib_line_point_size, color=true_arclength_colors[i], zorder=250)
+        plot_curve(ax=axis, curve=true_arclength[:, :, 0], linewidth=settings.matplotlib_graph_line_width, color=true_arclength_colors[i], zorder=150)
+        true_arclength_legend_labels.append(f'True Arclength (Transformed Curve #{i + 1})')
 
-        plot_sample(ax=axes[1], sample=predicted_arclength[:, :, 0], point_size=40, color=predicted_arclength_colors[i], zorder=250)
-        plot_curve(ax=axes[1], curve=predicted_arclength[:, :, 0], linewidth=2, color=predicted_arclength_colors[i], zorder=150)
-        predicted_arclength_legend_labels.append(f'Predicted Arclength (Curve #{i + 1})')
+        plot_sample(ax=axis, sample=predicted_arclength[:, :, 0], point_size=settings.matplotlib_line_point_size, color=predicted_arclength_colors[i], zorder=250)
+        plot_curve(ax=axis, curve=predicted_arclength[:, :, 0], linewidth=settings.matplotlib_graph_line_width, color=predicted_arclength_colors[i], zorder=150)
+        predicted_arclength_legend_labels.append(f'Predicted Arclength (Transformed Curve #{i + 1})')
 
-        true_arclength_legend_lines = [matplotlib.lines.Line2D([0], [0], color=color, linewidth=3) for color in true_arclength_colors]
-        predicted_arclength_legend_lines = [matplotlib.lines.Line2D([0], [0], color=color, linewidth=3) for color in predicted_arclength_colors]
+        true_arclength_legend_lines = [matplotlib.lines.Line2D([0], [0], color=color, linewidth=settings.matplotlib_graph_line_width) for color in true_arclength_colors]
+        predicted_arclength_legend_lines = [matplotlib.lines.Line2D([0], [0], color=color, linewidth=settings.matplotlib_graph_line_width) for color in predicted_arclength_colors]
         legend_labels = true_arclength_legend_labels + predicted_arclength_legend_labels
         legend_lines = true_arclength_legend_lines + predicted_arclength_legend_lines
-        axes[1].legend(legend_lines, legend_labels, prop={'size': 20})
+        axis.legend(legend_lines, legend_labels, prop={'size': settings.matplotlib_legend_label_fontsize})
 
-    for i, curve_comparison in enumerate(curve_arclength_record['comparisons']):
-        curve_arclength = curve_comparison['arclength_comparison']
-        true_arclength = curve_arclength['true_arclength']
-        predicted_arclength = curve_arclength['predicted_arclength']
-        predicted_arclength_original = curve_arclength['predicted_arclength_original']
+    # for i, curve_comparison in enumerate(curve_arclength_record['comparisons']):
+    #     curve_arclength = curve_comparison['arclength_comparison']
+    #     true_arclength = curve_arclength['true_arclength']
+    #     predicted_arclength = curve_arclength['predicted_arclength']
+    #     predicted_arclength_original = curve_arclength['predicted_arclength_original']
+    #
+    #     d = {
+    #         'True [i, i+1]': true_arclength[1:, 1, 1],
+    #         'True [i+1, i+2]': true_arclength[1:, 1, 2],
+    #         'True [i, i+2]': true_arclength[1:, 1, 3],
+    #         'True [i, i+1] + True [i+1, i+2]': true_arclength[1:, 1, 1] + true_arclength[1:, 1, 2],
+    #         'Pred [i, i+1]': predicted_arclength[1:, 1, 1],
+    #         'Pred [i+1, i+2]': predicted_arclength[1:, 1, 2],
+    #         'Pred [i, i+2]': predicted_arclength[1:, 1, 3],
+    #         'Pred [i, i+1] + Pred [i+1, i+2]': predicted_arclength[1:, 1, 1] + predicted_arclength[1:, 1, 2],
+    #         'Diff [i, i+2]': numpy.abs((true_arclength[1:, 1, 3] - predicted_arclength[1:, 1, 3]) / true_arclength[1:, 1, 3]) * 100,
+    #         'PredOrg [i, i+1]': predicted_arclength_original[1:, 1, 1],
+    #         'PredOrg [i+1, i+2]': predicted_arclength_original[1:, 1, 2],
+    #         'PredOrg [i, i+2]': predicted_arclength_original[1:, 1, 3],
+    #         'PredOrg [i, i+1] + PredOrg [i+1, i+2]': predicted_arclength_original[1:, 1, 1] + predicted_arclength_original[1:, 1, 2]
+    #     }
+    #
+    #     df = pandas.DataFrame(data=d)
+    #
+    #     style = df.style.set_properties(**{'background-color': true_arclength_colors[i]}, subset=list(d.keys())[:4])
+    #     style = style.set_properties(**{'background-color': predicted_arclength_colors[i]}, subset=list(d.keys())[4:8])
+    #     style = style.set_properties(**{'color': 'white', 'border-color': 'black', 'border-style': 'solid', 'border-width': '1px'})
 
-        d = {
-            'True [i, i+1]': true_arclength[1:, 1, 1],
-            'True [i+1, i+2]': true_arclength[1:, 1, 2],
-            'True [i, i+2]': true_arclength[1:, 1, 3],
-            'True [i, i+1] + True [i+1, i+2]': true_arclength[1:, 1, 1] + true_arclength[1:, 1, 2],
-            'Pred [i, i+1]': predicted_arclength[1:, 1, 1],
-            'Pred [i+1, i+2]': predicted_arclength[1:, 1, 2],
-            'Pred [i, i+2]': predicted_arclength[1:, 1, 3],
-            'Pred [i, i+1] + Pred [i+1, i+2]': predicted_arclength[1:, 1, 1] + predicted_arclength[1:, 1, 2],
-            'Diff [i, i+2]': numpy.abs((true_arclength[1:, 1, 3] - predicted_arclength[1:, 1, 3]) / true_arclength[1:, 1, 3]) * 100,
-            'PredOrg [i, i+1]': predicted_arclength_original[1:, 1, 1],
-            'PredOrg [i+1, i+2]': predicted_arclength_original[1:, 1, 2],
-            'PredOrg [i, i+2]': predicted_arclength_original[1:, 1, 3],
-            'PredOrg [i, i+1] + PredOrg [i+1, i+2]': predicted_arclength_original[1:, 1, 1] + predicted_arclength_original[1:, 1, 2]
-        }
-
-        df = pandas.DataFrame(data=d)
-
-        style = df.style.set_properties(**{'background-color': true_arclength_colors[i]}, subset=list(d.keys())[:4])
-        style = style.set_properties(**{'background-color': predicted_arclength_colors[i]}, subset=list(d.keys())[4:8])
-        style = style.set_properties(**{'color': 'white', 'border-color': 'black', 'border-style': 'solid', 'border-width': '1px'})
-
-        display(HTML(style.render()))
+        # display(HTML(style.render()))
 
     # predicted_arclength1 = curve_arclength_record[0]['predicted_arclength']
     # predicted_arclength2 = curve_arclength_record[1]['predicted_arclength']
     # display(HTML((numpy.mean(predicted_arclength1[1:, 1, 3] - predicted_arclength2[1:, 1, 3])))
 
-    predicted_arclength1 = curve_arclength_record['comparisons'][0]['arclength_comparison']['predicted_arclength']
-    predicted_arclength2 = curve_arclength_record['comparisons'][1]['arclength_comparison']['predicted_arclength']
-
-    d = {
-        'Diff [i, i+2]': (((numpy.abs(predicted_arclength1[1:, 1, 3] - predicted_arclength2[1:, 1, 3]) / predicted_arclength1[1:, 1, 3]) + (numpy.abs(predicted_arclength1[1:, 1, 3] - predicted_arclength2[1:, 1, 3]) / predicted_arclength2[1:, 1, 3])) / 2) * 100
-    }
-
-    df = pandas.DataFrame(data=d)
+    # predicted_arclength1 = curve_arclength_record['comparisons'][0]['arclength_comparison']['predicted_arclength']
+    # predicted_arclength2 = curve_arclength_record['comparisons'][1]['arclength_comparison']['predicted_arclength']
+    #
+    # d = {
+    #     'Diff [i, i+2]': (((numpy.abs(predicted_arclength1[1:, 1, 3] - predicted_arclength2[1:, 1, 3]) / predicted_arclength1[1:, 1, 3]) + (numpy.abs(predicted_arclength1[1:, 1, 3] - predicted_arclength2[1:, 1, 3]) / predicted_arclength2[1:, 1, 3])) / 2) * 100
+    # }
+    #
+    # df = pandas.DataFrame(data=d)
 
     # style = df.style.set_properties(**{'background-color': true_arclength_colors[i]}, subset=list(d.keys())[:4])
     # style = style.set_properties(**{'background-color': predicted_arclength_colors[i]}, subset=list(d.keys())[4:8])
     # style = style.set_properties(**{'color': 'white', 'border-color': 'black', 'border-style': 'solid', 'border-width': '1px'})
 
-    display(HTML(df.style.render()))
+    # display(HTML(df.style.render()))
 
     plt.show()
 
@@ -1044,41 +1115,48 @@ def plot_curve_signature_comparisons(curve_records, curve_colors, sample_colors,
 
 
 def plot_curve_signature_comparision(curve_record, curve_colors, sample_colors, curve_color, anchor_color, first_anchor_color, second_anchor_color):
-    fig, axes = plt.subplots(3, 1, figsize=(20,20))
+    # fig, axes = plt.subplots(3, 1, figsize=(20,20))
+    # fig.patch.set_facecolor('white')
+    # for axis in axes:
+    #     for label in (axis.get_xticklabels() + axis.get_yticklabels()):
+    #         label.set_fontsize(10)
+    #
+    # axes[0].axis('equal')
+    # axes[0].set_xlabel('X Coordinate', fontsize=18)
+    # axes[0].set_ylabel('Y Coordinate', fontsize=18)
+    #
+    # for i, comparision in enumerate(curve_record['comparisons']):
+    #     curve = comparision['curve']
+    #     plot_curve(ax=axes[0], curve=curve, color=curve_colors[i], linewidth=3)
+
+    fig, axis = plt.subplots(1, 1, figsize=settings.matplotlib_figsize)
     fig.patch.set_facecolor('white')
-    for axis in axes:
-        for label in (axis.get_xticklabels() + axis.get_yticklabels()):
-            label.set_fontsize(10)
+    for label in (axis.get_xticklabels() + axis.get_yticklabels()):
+        label.set_fontsize(settings.matplotlib_axis_tick_label_fontsize)
 
-    axes[0].axis('equal')
-    axes[0].set_xlabel('X Coordinate', fontsize=18)
-    axes[0].set_ylabel('Y Coordinate', fontsize=18)
+    # axes[1].axis('equal')
+    # for i, curve_comparison in enumerate(curve_record['comparisons']):
+    #     curve_arclength = curve_comparison['arclength_comparison']
+    #     curve_sections = curve_arclength['curve_sections']
+    #     curve = curve_sections['curve']
+    #     for j, sampled_section in enumerate(curve_sections['sampled_sections']):
+    #         point_size_regular = 7
+    #         point_size_anchor = 50
+    #         sample = sampled_section['samples'][0]
+    #         axes[1].set_xlabel('X Coordinate', fontsize=18)
+    #         axes[1].set_ylabel('Y Coordinate', fontsize=18)
+    #         plot_curve(ax=axes[1], curve=curve, color=curve_color, linewidth=3)
+    #         plot_sample(ax=axes[1], sample=sample, point_size=point_size_regular, color=sample_colors[i], zorder=150)
+    #         plot_sample(ax=axes[1], sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=point_size_anchor, alpha=1, color=anchor_color, zorder=200)
+    #         if j == 0:
+    #             plot_sample(ax=axes[1], sample=numpy.array([[sample[0, 0] ,sample[0, 1]]]), point_size=point_size_anchor, alpha=1, color=first_anchor_color, zorder=300)
+    #             plot_sample(ax=axes[1], sample=numpy.array([[sample[-1, 0] ,sample[-1, 1]]]), point_size=point_size_anchor, alpha=1, color=second_anchor_color, zorder=300)
 
-    for i, comparision in enumerate(curve_record['comparisons']):
-        curve = comparision['curve']
-        plot_curve(ax=axes[0], curve=curve, color=curve_colors[i], linewidth=3)
+    axis.set_xlabel('Predicted Arc-Length at Anchors', fontsize=settings.matplotlib_axis_title_label_fontsize)
+    axis.set_ylabel('Predicted Curvature at Anchors', fontsize=settings.matplotlib_axis_title_label_fontsize)
+    # axis.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
-    axes[1].axis('equal')
-    for i, curve_comparison in enumerate(curve_record['comparisons']):
-        curve_arclength = curve_comparison['arclength_comparison']
-        curve_sections = curve_arclength['curve_sections']
-        curve = curve_sections['curve']
-        for j, sampled_section in enumerate(curve_sections['sampled_sections']):
-            point_size_regular = 7
-            point_size_anchor = 50
-            sample = sampled_section['samples'][0]
-            axes[1].set_xlabel('X Coordinate', fontsize=18)
-            axes[1].set_ylabel('Y Coordinate', fontsize=18)
-            plot_curve(ax=axes[1], curve=curve, color=curve_color, linewidth=3)
-            plot_sample(ax=axes[1], sample=sample, point_size=point_size_regular, color=sample_colors[i], zorder=150)
-            plot_sample(ax=axes[1], sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=point_size_anchor, alpha=1, color=anchor_color, zorder=200)
-            if j == 0:
-                plot_sample(ax=axes[1], sample=numpy.array([[sample[0, 0] ,sample[0, 1]]]), point_size=point_size_anchor, alpha=1, color=first_anchor_color, zorder=300)
-                plot_sample(ax=axes[1], sample=numpy.array([[sample[-1, 0] ,sample[-1, 1]]]), point_size=point_size_anchor, alpha=1, color=second_anchor_color, zorder=300)
-
-    axes[2].set_xlabel('Arc-Length', fontsize=18)
-    axes[2].set_ylabel('Curvature', fontsize=18)
-    axes[2].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    signature_curves_legend_labels = []
 
     for i, comparision in enumerate(curve_record['comparisons']):
         arclength_comparison = comparision['arclength_comparison']
@@ -1086,6 +1164,15 @@ def plot_curve_signature_comparision(curve_record, curve_colors, sample_colors, 
         predicted_arclength = arclength_comparison['predicted_arclength'][:, 1, 0]
         # predicted_arclength = numpy.concatenate((numpy.array([0]), predicted_arclength))
         predicted_curvature = curvature_comparison['predicted_curvature_signature'][:, 1]
-        plot_graph(ax=axes[2], x=predicted_arclength, y=predicted_curvature, color=curve_colors[i], linewidth=3)
+        plot_graph(ax=axis, x=predicted_arclength, y=predicted_curvature, color=curve_colors[i], linewidth=settings.matplotlib_graph_line_width)
+        plot_sample(ax=axis, sample=None, x=predicted_arclength, y=predicted_curvature, point_size=settings.matplotlib_line_point_size, color=curve_colors[i], zorder=250)
+        # signature_curves_legend_labels.append(f'Predicted Signature Curve (Transformed Curve #{i + 1})')
 
+    signature_curves_legend_lines = [matplotlib.lines.Line2D([], [], color=color, linewidth=settings.matplotlib_graph_line_width, label=f'Predicted Signature Curve (Transformed Curve #{i + 1})') for i, color in enumerate(curve_colors[:2])]
+    # axis.legend(signature_curves_legend_labels, signature_curves_legend_lines, prop={'size': 20})
+    # axis.legend(signature_curves_legend_labels, signature_curves_legend_lines, prop={'size': 20})
+    axis.legend(handles=signature_curves_legend_lines, prop={'size': settings.matplotlib_legend_label_fontsize})
+
+    # print(len(signature_curves_legend_labels))
+    # print(len(signature_curves_legend_lines))
     plt.show()

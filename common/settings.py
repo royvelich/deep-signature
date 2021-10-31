@@ -78,3 +78,14 @@ arclength_default_history_size = 1500
 
 # signatures
 signature_step = 40
+
+# plots
+matplotlib_axis_title_label_fontsize = 25
+matplotlib_axis_tick_label_fontsize = 25
+matplotlib_fig_title_label_fontsize = 25
+matplotlib_legend_label_fontsize = 25
+matplotlib_sample_point_size = 20
+matplotlib_sample_anchor_size = 60
+matplotlib_line_point_size = 80
+matplotlib_graph_line_width = 4
+matplotlib_figsize = (60,20)
