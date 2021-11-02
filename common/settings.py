@@ -80,12 +80,26 @@ arclength_default_history_size = 1500
 signature_step = 40
 
 # plots
-matplotlib_axis_title_label_fontsize = 25
-matplotlib_axis_tick_label_fontsize = 25
-matplotlib_fig_title_label_fontsize = 25
-matplotlib_legend_label_fontsize = 25
-matplotlib_sample_point_size = 20
-matplotlib_sample_anchor_size = 60
-matplotlib_line_point_size = 80
+matplotlib_factor = 1
+matplotlib_axis_title_label_fontsize = int(35 * matplotlib_factor)
+matplotlib_axis_tick_label_fontsize = int(25 * matplotlib_factor)
+matplotlib_fig_title_label_fontsize = int(25 * matplotlib_factor)
+matplotlib_legend_label_fontsize = int(25 * matplotlib_factor)
+matplotlib_sample_point_size = int(20 * matplotlib_factor)
+matplotlib_sample_anchor_size = int(100 * matplotlib_factor)
+matplotlib_line_point_size = int(140 * matplotlib_factor)
 matplotlib_graph_line_width = 4
-matplotlib_figsize = (60,20)
+matplotlib_figsize = (60, 20)
+
+plotly_fontsize_factor = 1.5
+plotly_pointsize_factor = 1
+plotly_axis_title_label_fontsize = int(25 * plotly_fontsize_factor)
+plotly_axis_tick_label_fontsize = int(25 * plotly_fontsize_factor)
+plotly_fig_title_label_fontsize = int(25 * plotly_fontsize_factor)
+plotly_legend_label_fontsize = int(25 * plotly_fontsize_factor)
+plotly_sample_point_size = int(8 * plotly_pointsize_factor)
+plotly_sample_anchor_size = int(10 * plotly_pointsize_factor)
+plotly_line_point_size = int(12 * plotly_pointsize_factor)
+plotly_graph_line_width = 3
+plotly_write_image_width = 3000
+plotly_write_image_height = 1000

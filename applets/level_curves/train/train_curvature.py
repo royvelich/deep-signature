@@ -39,24 +39,6 @@ if __name__ == '__main__':
     parser.add_argument("--history_size", dest="history_size", default=settings.curvature_default_history_size, type=int)
     args = parser.parse_args()
 
-
-    # epochs = None
-    # train_buffer_size = 200000
-    # validation_buffer_size = 30000
-    # train_batch_size = 200000
-    # validation_batch_size = validation_buffer_size
-    # train_dataset_size = 3*train_batch_size
-    # validation_dataset_size = validation_batch_size
-    # learning_rate = 1
-    # validation_split = .2
-    # supporting_points_count = 3
-    # sample_points = 2 * supporting_points_count + 1
-    # sampling_ratio = 0.3
-    # multimodality = 50
-    # offset_length = 50
-    # num_workers = 15
-    # negative_examples_count = 1
-
     OnlineDataset = None
     results_base_dir_path = None
     if args.group == 'euclidean':

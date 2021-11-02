@@ -1,5 +1,7 @@
 # python peripherals
 import random
+import pathlib
+import os
 
 # scipy
 import scipy.io
@@ -668,29 +670,55 @@ def plot_curve_curvature_comparisons(curve_records, curve_colors):
     for i, curve_record in enumerate(curve_records):
         display(HTML(f'<H1>Curve {i+1} - Curvature Comparison</H1>'))
         plot_curve_curvature_comparison(
+            curve_index=i,
             curve_record=curve_record,
             curve_colors=curve_colors)
 
 
-def plot_curve_curvature_comparison(curve_record, curve_colors):
-    axis_index = 0
-    fontsize = 25
-    axes_count = 15
-    line_width = 2
+def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
+    dir_name = "./curvature_comparison"
+    pathlib.Path(dir_name).mkdir(parents=True, exist_ok=True)
+    factor = 1.3
+
+    def get_range():
+        min_val1 = numpy.abs(numpy.min(curve_record['comparisons'][0]['curve'][:, 1]))
+        min_val2 = numpy.abs(numpy.min(curve_record['comparisons'][1]['curve'][:, 1]))
+        min_val3 = numpy.abs(numpy.min(curve_record['curve'][:, 1]))
+
+        max_val1 = numpy.abs(numpy.max(curve_record['comparisons'][0]['curve'][:, 1]))
+        max_val2 = numpy.abs(numpy.max(curve_record['comparisons'][1]['curve'][:, 1]))
+        max_val3 = numpy.abs(numpy.max(curve_record['curve'][:, 1]))
+
+        val1 = numpy.max(numpy.array([min_val1, min_val2, min_val3]))
+        val2 = numpy.max(numpy.array([max_val1, max_val2, max_val3]))
+
+        val = numpy.maximum(val1, val2) * factor
+        return [-val, val]
+
+    def get_curve_range(comparison_index):
+        if comparison_index > -1:
+            curve = curve_record['comparisons'][comparison_index]['curve']
+        else:
+            curve = curve_record['curve']
+
+        min_val = numpy.abs(numpy.min(curve[:, 1]))
+        max_val = numpy.abs(numpy.max(curve[:, 1]))
+        val = numpy.maximum(min_val, max_val) * factor
+        return [-val, val]
 
     # ---------------------
     # PLOT CURVES TOGETHER
     # ---------------------
-    fig = make_subplots(rows=1, cols=2, subplot_titles=('<b>Reference Curve</b>', '<b>Transformed Curves vs. Reference Curve</b>'))
+    fig = make_subplots(rows=1, cols=3, subplot_titles=('<b>Reference Curve</b>', '<b>Transformed Curve #1</b>', '<b>Transformed Curve #2</b>'))
 
     curve = curve_record['curve']
-    plot_curve_plotly(fig=fig, row=1, col=1, curve=curve, name='Reference Curve', line_width=line_width, line_color=curve_colors[-1])
-    plot_curve_plotly(fig=fig, row=1, col=2, curve=curve, name='Reference Curve', line_width=line_width, line_color=curve_colors[-1])
+    plot_curve_plotly(fig=fig, row=1, col=1, curve=curve, name='Reference Curve', line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1])
 
     for i, comparison in enumerate(curve_record['comparisons']):
         curve = comparison['curve']
-        plot_curve_plotly(fig=fig, row=1, col=2, curve=curve, name=f'Transformed Curve #{i+1}', line_width=line_width, line_color=curve_colors[i])
+        plot_curve_plotly(fig=fig, row=1, col=i+2, curve=curve, name=f'Transformed Curve #{i+1}', line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
 
+    for i in range(len(curve_record['comparisons']) + 1):
         fig.update_yaxes(
             scaleanchor=f'x{i+1}',
             scaleratio=1,
@@ -698,24 +726,82 @@ def plot_curve_curvature_comparison(curve_record, curve_colors):
             col=i+1)
 
     fig.update_layout(
-        legend=dict(
-            orientation="v",
-            yanchor="bottom",
-            xanchor="right"))
+        # legend=dict(
+        #     orientation="v",
+        #     yanchor="bottom",
+        #     xanchor="right"),
+        font=dict(size=settings.plotly_axis_title_label_fontsize))
 
+
+    # fig.update_layout(xaxis1=dict(range=[-100, 100]))
+    fig.update_layout(yaxis1=dict(range=get_range()))
+    # fig.update_layout(xaxis2=dict(range=[-100, 100]))
+    fig.update_layout(yaxis2=dict(range=get_range()))
+    # fig.update_layout(xaxis3=dict(range=[-100, 100]))
+    fig.update_layout(yaxis3=dict(range=get_range()))
+
+    fig['layout']['xaxis']['title'] = 'X Coordinate'
+    fig['layout']['yaxis']['title'] = 'Y Coordinate'
+
+    fig['layout']['xaxis2']['title'] = 'X Coordinate'
+    fig['layout']['yaxis2']['title'] = 'Y Coordinate'
+
+    fig['layout']['xaxis3']['title'] = 'X Coordinate'
+    fig['layout']['yaxis3']['title'] = 'Y Coordinate'
+
+    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+
+    fig.write_image(os.path.join(dir_name, f'curves_together_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     fig.show()
+
+    # # ---------------------
+    # # PLOT CURVES TOGETHER
+    # # ---------------------
+    # fig = make_subplots(rows=1, cols=2, subplot_titles=('<b>Reference Curve</b>', '<b>Transformed Curves vs. Reference Curve</b>'))
+    #
+    # curve = curve_record['curve']
+    # plot_curve_plotly(fig=fig, row=1, col=1, curve=curve, name='Reference Curve', line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1])
+    # plot_curve_plotly(fig=fig, row=1, col=2, curve=curve, name='Reference Curve', line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1])
+    #
+    # for i, comparison in enumerate(curve_record['comparisons']):
+    #     curve = comparison['curve']
+    #     plot_curve_plotly(fig=fig, row=1, col=2, curve=curve, name=f'Transformed Curve #{i+1}', line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
+    #
+    #     fig.update_yaxes(
+    #         scaleanchor=f'x{i+1}',
+    #         scaleratio=1,
+    #         row=1,
+    #         col=i+1)
+    #
+    # fig.update_layout(
+    #     legend=dict(
+    #         orientation="v",
+    #         yanchor="bottom",
+    #         xanchor="right"),
+    #     font=dict(size=settings.plotly_axis_title_label_fontsize))
+    #
+    # fig['layout']['xaxis']['title'] = 'X Coordinate'
+    # fig['layout']['yaxis']['title'] = 'Y Coordinate'
+    #
+    # fig['layout']['xaxis2']['title'] = 'X Coordinate'
+    # fig['layout']['yaxis2']['title'] = 'Y Coordinate'
+    #
+    # fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    #
+    # fig.write_image(os.path.join(dir_name, f'curves_together_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    # fig.show()
 
     # -------------------------------
     # PLOT CURVE SAMPLES SIDE BY SIDE
     # -------------------------------
-    fig = make_subplots(rows=1, cols=len(curve_record['comparisons']), subplot_titles=('<b>Transformed & Sampled Curve #1</b>', '<b>Transformed & Sampled Curve #2</b>'))
+    fig = make_subplots(rows=1, cols=len(curve_record['comparisons']), subplot_titles=('<b>Sampled Curve #1</b>', '<b>Sampled Curve #2</b>'))
 
     for i, comparison in enumerate(curve_record['comparisons']):
         sampled_curve = comparison['sampled_curve']
         curve = comparison['curve']
+        plot_curve_sample_plotly(fig=fig, row=1, col=i+1, name=f'Sampled Curve {i+1}', curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=settings.plotly_sample_point_size)
 
-        plot_curve_sample_plotly(fig=fig, row=1, col=i+1, name=f'Sampled Curve {i+1}', curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=3)
-
+    for i in range(len(curve_record['comparisons']) + 1):
         fig.update_yaxes(
             scaleanchor=f'x{i+1}',
             scaleratio=1,
@@ -723,11 +809,23 @@ def plot_curve_curvature_comparison(curve_record, curve_colors):
             col=i+1)
 
     fig.update_layout(
-        legend=dict(
-            orientation="v",
-            yanchor="bottom",
-            xanchor="right"))
+        # legend=dict(
+        #     orientation="v",
+        #     yanchor="bottom",
+        #     xanchor="right"),
+        font=dict(size=settings.plotly_axis_title_label_fontsize))
+    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
 
+    fig['layout']['xaxis']['title'] = 'X Coordinate'
+    fig['layout']['yaxis']['title'] = 'Y Coordinate'
+
+    fig['layout']['xaxis2']['title'] = 'X Coordinate'
+    fig['layout']['yaxis2']['title'] = 'Y Coordinate'
+
+    fig.update_layout(yaxis1=dict(range=get_range()))
+    fig.update_layout(yaxis2=dict(range=get_range()))
+
+    fig.write_image(os.path.join(dir_name, f'curve_samples_side_by_side_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     fig.show()
 
     # ----------------------------------------------------------------------------------
@@ -735,7 +833,7 @@ def plot_curve_curvature_comparison(curve_record, curve_colors):
     # ----------------------------------------------------------------------------------
     left_width = 0.25
     for i, comparison in enumerate(curve_record['comparisons']):
-        fig = make_subplots(rows=1, cols=3, column_widths=[left_width, left_width, 1 - (2*left_width)], subplot_titles=('<b>Sampled Curve</b>', '<b>Equally Spaced Anchors with Respect to Sampled Curve</b>',  '<b>Predicted Curvature at Anchors</b>'))
+        fig = make_subplots(rows=1, cols=3, column_widths=[left_width, left_width, 1 - (2*left_width)], subplot_titles=('<b>Sampled Curve</b>', '<b>Equally Spaced Anchors</b>',  '<b>Predicted Curvature at Anchors</b>'))
         sampled_curve = comparison['sampled_curve']
         anchors = comparison['anchors']
         anchor_indices = comparison['anchor_indices']
@@ -743,88 +841,102 @@ def plot_curve_curvature_comparison(curve_record, curve_colors):
         curvature_comparison = comparison['curvature_comparison']
         predicted_curvature = curvature_comparison['predicted_curvature']
 
-        plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Sampled Curve", curve=curve, curve_sample=sampled_curve, color='grey', point_size=3)
-        plot_curve_sample_plotly(fig=fig, row=1, col=2, name="Anchors", curve=curve, curve_sample=anchors, color=anchor_indices, point_size=3)
-        plot_curvature_with_cmap_plotly(fig=fig, row=1, col=3, name="Predicted Curvature at Anchors", curve=curve, curvature=predicted_curvature[:, 1], indices=anchor_indices, line_color='grey', line_width=2, point_size=10, color_scale='hsv')
+        plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Sampled Curve", curve=curve, curve_sample=sampled_curve, color='grey', point_size=settings.plotly_sample_point_size)
+        plot_curve_sample_plotly(fig=fig, row=1, col=2, name="Anchors", curve=curve, curve_sample=anchors, color=anchor_indices, point_size=settings.plotly_sample_point_size)
+        plot_curvature_with_cmap_plotly(fig=fig, row=1, col=3, name="Predicted Curvature at Anchors", curve=curve, curvature=predicted_curvature[:, 1], indices=anchor_indices, line_color='grey', line_width=settings.plotly_graph_line_width, point_size=settings.plotly_sample_anchor_size, color_scale='hsv')
 
         fig.update_yaxes(
-            scaleanchor="x",
+            scaleanchor="x1",
             scaleratio=1,
             row=1,
             col=1)
 
         fig.update_yaxes(
-            scaleanchor="x",
+            scaleanchor="x2",
             scaleratio=1,
             row=1,
             col=2)
 
+        fig['layout']['xaxis']['title'] = 'X Coordinate'
+        fig['layout']['yaxis']['title'] = 'Y Coordinate'
+
+        fig['layout']['xaxis2']['title'] = 'X Coordinate'
+        fig['layout']['yaxis2']['title'] = 'Y Coordinate'
+
         fig['layout']['xaxis3']['title'] = 'Anchor Point Index'
         fig['layout']['yaxis3']['title'] = 'Predicted Curvature'
 
-        fig.update_layout(
-            legend=dict(
-                orientation="v",
-                yanchor="bottom",
-                xanchor="right"))
+        curr_range = get_range()
+        fig.update_layout(yaxis1=dict(range=curr_range))
+        fig.update_layout(yaxis2=dict(range=curr_range))
 
+        fig.update_layout(
+            # legend=dict(
+            #     orientation="v",
+            #     yanchor="bottom",
+            #     xanchor="right"),
+            font=dict(size=settings.plotly_axis_title_label_fontsize))
+
+        fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+
+        fig.write_image(os.path.join(dir_name, f'curve_samples_and_predicted_curvature_{curve_index}_{i}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
         fig.show()
 
-    # ----------------------------------------------------------------
-    # PLOT CURVE SAMPLES, ANCHORS AND PREDICTED CURVATURE SIDE BY SIDE
-    # ----------------------------------------------------------------
-
-    button_offset = 0.1
-    buttonX = 0.1
-    buttonY = 1.3
-    buttons_count = 2
-    left_width = 0.25
-    for i, comparison in enumerate(curve_record['comparisons']):
-        fig = make_subplots(rows=1, cols=2, column_widths=[left_width, 1 - left_width])
-        sampled_curve = comparison['sampled_curve']
-        anchors = comparison['anchors']
-        anchor_indices = comparison['anchor_indices']
-        curve = comparison['curve']
-        curvature_comparison = comparison['curvature_comparison']
-        predicted_curvature = curvature_comparison['predicted_curvature']
-
-        plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Sampled Curve", curve=curve, curve_sample=sampled_curve, color='grey')
-        plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Anchors", curve=curve, curve_sample=anchors, color=anchor_indices, point_size=3)
-        plot_curvature_with_cmap_plotly(fig=fig, row=1, col=2, name="Predicted Curvature at Anchors", curve=curve, curvature=predicted_curvature[:, 1], indices=anchor_indices, line_color='grey', line_width=2, point_size=10, color_scale='hsv')
-
-        # https://stackoverflow.com/questions/65941253/plotly-how-to-toggle-traces-with-a-button-similar-to-clicking-them-in-legend
-        update_menus = [{} for _ in range(buttons_count)]
-        button_labels = ['Toggle Samples', 'Toggle Anchors']
-        for j in range(buttons_count):
-            button = dict(method='restyle',
-                           label=button_labels[j],
-                           visible=True,
-                           args=[{'visible': True}, [j]],
-                           args2=[{'visible': False}, [j]])
-
-            update_menus[j]['buttons'] = [button]
-            update_menus[j]['showactive'] = False
-            update_menus[j]['y'] = buttonY
-            update_menus[j]['x'] = buttonX + j * button_offset
-            update_menus[j]['type'] = 'buttons'
-
-        fig.update_layout(
-            showlegend=True,
-            updatemenus=update_menus)
-
-        fig.update_yaxes(
-            scaleanchor="x",
-            scaleratio=1,
-            row=1,
-            col=1)
-
-        fig.update_layout(
-            legend=dict(
-                orientation="v",
-                yanchor="bottom",
-                xanchor="right"))
-
-        fig.show()
+    # # ----------------------------------------------------------------
+    # # PLOT CURVE SAMPLES, ANCHORS AND PREDICTED CURVATURE SIDE BY SIDE
+    # # ----------------------------------------------------------------
+    #
+    # button_offset = 0.1
+    # buttonX = 0.1
+    # buttonY = 1.3
+    # buttons_count = 2
+    # left_width = 0.25
+    # for i, comparison in enumerate(curve_record['comparisons']):
+    #     fig = make_subplots(rows=1, cols=2, column_widths=[left_width, 1 - left_width])
+    #     sampled_curve = comparison['sampled_curve']
+    #     anchors = comparison['anchors']
+    #     anchor_indices = comparison['anchor_indices']
+    #     curve = comparison['curve']
+    #     curvature_comparison = comparison['curvature_comparison']
+    #     predicted_curvature = curvature_comparison['predicted_curvature']
+    #
+    #     plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Sampled Curve", curve=curve, curve_sample=sampled_curve, color='grey')
+    #     plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Anchors", curve=curve, curve_sample=anchors, color=anchor_indices, point_size=3)
+    #     plot_curvature_with_cmap_plotly(fig=fig, row=1, col=2, name="Predicted Curvature at Anchors", curve=curve, curvature=predicted_curvature[:, 1], indices=anchor_indices, line_color='grey', line_width=2, point_size=10, color_scale='hsv')
+    #
+    #     # https://stackoverflow.com/questions/65941253/plotly-how-to-toggle-traces-with-a-button-similar-to-clicking-them-in-legend
+    #     update_menus = [{} for _ in range(buttons_count)]
+    #     button_labels = ['Toggle Samples', 'Toggle Anchors']
+    #     for j in range(buttons_count):
+    #         button = dict(method='restyle',
+    #                        label=button_labels[j],
+    #                        visible=True,
+    #                        args=[{'visible': True}, [j]],
+    #                        args2=[{'visible': False}, [j]])
+    #
+    #         update_menus[j]['buttons'] = [button]
+    #         update_menus[j]['showactive'] = False
+    #         update_menus[j]['y'] = buttonY
+    #         update_menus[j]['x'] = buttonX + j * button_offset
+    #         update_menus[j]['type'] = 'buttons'
+    #
+    #     fig.update_layout(
+    #         showlegend=True,
+    #         updatemenus=update_menus)
+    #
+    #     fig.update_yaxes(
+    #         scaleanchor="x",
+    #         scaleratio=1,
+    #         row=1,
+    #         col=1)
+    #
+    #     fig.update_layout(
+    #         legend=dict(
+    #             orientation="v",
+    #             yanchor="bottom",
+    #             xanchor="right"))
+    #
+    #     fig.show()
 
     # ----------------------------------
     # PLOT PREDICTED CURVATURES TOGETHER
@@ -836,17 +948,21 @@ def plot_curve_curvature_comparison(curve_record, curve_colors):
         curvature_comparison = comparison['curvature_comparison']
         predicted_curvature = curvature_comparison['predicted_curvature']
 
-        plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Predicted Curvature at Anchors #{i+1}', curvature=predicted_curvature[:, 1], line_width=line_width, line_color=curve_colors[i])
+        plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Predicted Curvature at Anchors #{i+1}', curvature=predicted_curvature[:, 1], line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
 
     fig['layout']['xaxis']['title'] = 'Anchor Point Index'
     fig['layout']['yaxis']['title'] = 'Predicted Curvature'
 
     fig.update_layout(
-        legend=dict(
-            orientation="v",
-            yanchor="bottom",
-            xanchor="right"))
+        # legend=dict(
+        #     orientation="v",
+        #     yanchor="bottom",
+        #     xanchor="right"),
+        font=dict(size=settings.plotly_axis_title_label_fontsize))
 
+    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+
+    fig.write_image(os.path.join(dir_name, f'predicted_curves_together_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     fig.show()
 
 
@@ -863,7 +979,7 @@ def plot_curve_curvature_comparison2(curve_record, curve_colors):
 
     for i, comparision in enumerate(curve_record['comparisons']):
         curve = comparision['curve']
-        plot_curve(ax=axes[0], curve=curve, color=curve_colors[i], linewidth=3)
+        plot_curve(ax=axes[0], curve=curve, color=curve_colors[i], linewidth=settings.plotly_graph_line_width)
 
 
     # axis_index = 0
@@ -968,8 +1084,8 @@ def plot_curve_curvature_comparison2(curve_record, curve_colors):
     # fig = make_subplots(rows=1, cols=1)
 
     axes[1].axis('equal')
-    axes[1].set_xlabel('Index', fontsize=18)
-    axes[1].set_ylabel('Curvature', fontsize=18)
+    axes[1].set_xlabel('Index', fontsize=settings.plotly_axis_title_label_fontsize)
+    axes[1].set_ylabel('Curvature', fontsize=settings.plotly_axis_title_label_fontsize)
 
     for i, comparison in enumerate(curve_record['comparisons']):
         curvature_comparison = comparison['curvature_comparison']
@@ -986,6 +1102,7 @@ def plot_curve_arclength_records(curve_records, true_arclength_colors, predicted
     for i, curve_record in enumerate(curve_records):
         display(HTML(f'<H1>Curve {i + 1} - Arc-Length Comparison</H1>'))
         plot_curve_arclength_record(
+            curve_index=i,
             curve_arclength_record=curve_record,
             true_arclength_colors=true_arclength_colors,
             predicted_arclength_colors=predicted_arclength_colors,
@@ -996,28 +1113,53 @@ def plot_curve_arclength_records(curve_records, true_arclength_colors, predicted
             second_anchor_color=second_anchor_color)
 
 
-def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, predicted_arclength_colors, curve_colors, curve_color, anchor_color, first_anchor_color, second_anchor_color):
+def plot_curve_arclength_record(curve_index, curve_arclength_record, true_arclength_colors, predicted_arclength_colors, curve_colors, curve_color, anchor_color, first_anchor_color, second_anchor_color):
+    factor = 1.3
+    def get_range():
+        min_val1 = numpy.abs(numpy.min(curve_arclength_record['comparisons'][0]['curve'][:, 1]))
+        min_val2 = numpy.abs(numpy.min(curve_arclength_record['comparisons'][1]['curve'][:, 1]))
+        min_val3 = numpy.abs(numpy.min(curve_arclength_record['curve'][:, 1]))
+
+        max_val1 = numpy.abs(numpy.max(curve_arclength_record['comparisons'][0]['curve'][:, 1]))
+        max_val2 = numpy.abs(numpy.max(curve_arclength_record['comparisons'][1]['curve'][:, 1]))
+        max_val3 = numpy.abs(numpy.max(curve_arclength_record['curve'][:, 1]))
+
+        val1 = numpy.max(numpy.array([min_val1, min_val2, min_val3]))
+        val2 = numpy.max(numpy.array([max_val1, max_val2, max_val3]))
+
+        val = numpy.maximum(val1, val2) * factor
+        return [-val, val]
+
+    dir_name = "./arclength_comparison"
+    pathlib.Path(dir_name).mkdir(parents=True, exist_ok=True)
+
     fig, axes = plt.subplots(1, 2, figsize=settings.matplotlib_figsize)
     fig.patch.set_facecolor('white')
     for axis in axes:
-        axis.axis('equal')
+        # axis.axis('equal')
         for label in (axis.get_xticklabels() + axis.get_yticklabels()):
             label.set_fontsize(settings.matplotlib_axis_tick_label_fontsize)
+
+    curve_range = get_range()
 
     for i, curve_comparison in enumerate(curve_arclength_record['comparisons']):
         curve_arclength = curve_comparison['arclength_comparison']
         curve_sections = curve_arclength['curve_sections']
-        curve = curve_sections['curve']
         for j, sampled_section in enumerate(curve_sections['sampled_sections']):
             sample = sampled_section['samples'][0]
-            axes[i].set_xlabel('X Coordinate', fontsize=settings.matplotlib_axis_title_label_fontsize)
-            axes[i].set_ylabel('Y Coordinate', fontsize=settings.matplotlib_axis_title_label_fontsize)
-            # plot_curve(ax=axes[i], curve=curve, color=curve_color, linewidth=3)
             plot_sample(ax=axes[i], sample=sample, point_size=settings.matplotlib_sample_point_size, color=curve_colors[i], zorder=150)
             plot_sample(ax=axes[i], sample=numpy.array([[sample[0,0] ,sample[0, 1]], [sample[-1,0] ,sample[-1, 1]]]), point_size=settings.matplotlib_sample_anchor_size, alpha=1, color=curve_colors[-1], zorder=200)
             if j == 0:
                 plot_sample(ax=axes[i], sample=numpy.array([[sample[0, 0] ,sample[0, 1]]]), point_size=settings.matplotlib_sample_anchor_size, alpha=1, color=first_anchor_color, zorder=300)
                 plot_sample(ax=axes[i], sample=numpy.array([[sample[-1, 0] ,sample[-1, 1]]]), point_size=settings.matplotlib_sample_anchor_size, alpha=1, color=second_anchor_color, zorder=300)
+
+        axes[i].set_title(f'Sampled Curve Sections #{i+1}', fontsize=settings.matplotlib_axis_title_label_fontsize)
+        axes[i].set_xlabel('X Coordinate', fontsize=settings.matplotlib_axis_title_label_fontsize)
+        axes[i].set_ylabel('Y Coordinate', fontsize=settings.matplotlib_axis_title_label_fontsize)
+        axes[i].set_xlim((curve_range[0], curve_range[1]))
+        axes[i].set_ylim((curve_range[0], curve_range[1]))
+
+    fig.savefig(os.path.join(dir_name, f'sectioned_curve_{curve_index}.svg'))
 
 
     fig, axis = plt.subplots(1, 1, figsize=settings.matplotlib_figsize)
@@ -1048,6 +1190,8 @@ def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, p
         legend_labels = true_arclength_legend_labels + predicted_arclength_legend_labels
         legend_lines = true_arclength_legend_lines + predicted_arclength_legend_lines
         axis.legend(legend_lines, legend_labels, prop={'size': settings.matplotlib_legend_label_fontsize})
+
+    axis.set_title(f'Predicted Arc-Length vs. Ground Truth Arc-Length at Anchors', fontsize=settings.matplotlib_axis_title_label_fontsize)
 
     # for i, curve_comparison in enumerate(curve_arclength_record['comparisons']):
     #     curve_arclength = curve_comparison['arclength_comparison']
@@ -1098,6 +1242,7 @@ def plot_curve_arclength_record(curve_arclength_record, true_arclength_colors, p
 
     # display(HTML(df.style.render()))
 
+    fig.savefig(os.path.join(dir_name, f'arclength_{curve_index}.svg'))
     plt.show()
 
 
@@ -1105,6 +1250,7 @@ def plot_curve_signature_comparisons(curve_records, curve_colors, sample_colors,
     for i, curve_record in enumerate(curve_records):
         display(HTML(f'<H1>Curve {i+1} - Signature Comparison</H1>'))
         plot_curve_signature_comparision(
+            curve_index=i,
             curve_record=curve_record,
             curve_colors=curve_colors,
             sample_colors=sample_colors,
@@ -1114,7 +1260,10 @@ def plot_curve_signature_comparisons(curve_records, curve_colors, sample_colors,
             second_anchor_color=second_anchor_color)
 
 
-def plot_curve_signature_comparision(curve_record, curve_colors, sample_colors, curve_color, anchor_color, first_anchor_color, second_anchor_color):
+def plot_curve_signature_comparision(curve_index, curve_record, curve_colors, sample_colors, curve_color, anchor_color, first_anchor_color, second_anchor_color):
+    dir_name = "./signature_comparison"
+    pathlib.Path(dir_name).mkdir(parents=True, exist_ok=True)
+
     # fig, axes = plt.subplots(3, 1, figsize=(20,20))
     # fig.patch.set_facecolor('white')
     # for axis in axes:
@@ -1172,7 +1321,8 @@ def plot_curve_signature_comparision(curve_record, curve_colors, sample_colors, 
     # axis.legend(signature_curves_legend_labels, signature_curves_legend_lines, prop={'size': 20})
     # axis.legend(signature_curves_legend_labels, signature_curves_legend_lines, prop={'size': 20})
     axis.legend(handles=signature_curves_legend_lines, prop={'size': settings.matplotlib_legend_label_fontsize})
-
+    axis.set_title(f'Predicted Signature Curve at Anchors (Transformed Curve #1 vs. Transformed Curve #2)', fontsize=settings.matplotlib_axis_title_label_fontsize)
     # print(len(signature_curves_legend_labels))
     # print(len(signature_curves_legend_lines))
+    plt.savefig(os.path.join(dir_name, f'signature_{curve_index}.svg'))
     plt.show()
