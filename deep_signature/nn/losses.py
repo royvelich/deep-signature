@@ -145,17 +145,19 @@ class ArcLengthLoss(torch.nn.Module):
         super(ArcLengthLoss, self).__init__()
 
     def forward(self, output, batch_data):
-        v_1_3 = output[:, 0, :].unsqueeze(dim=1) # 1:3
-        v_2_4 = output[:, 1, :].unsqueeze(dim=1) # 2:4
-        v_3_5 = output[:, 2, :].unsqueeze(dim=1) # 3:5
-        v_1_4 = output[:, 3, :].unsqueeze(dim=1) # 1:4
-        v_2_5 = output[:, 4, :].unsqueeze(dim=1) # 2:5
-        v_1_5 = output[:, 5, :].unsqueeze(dim=1) # 1:5
+        v_1_3 = output[:, 0, :].unsqueeze(dim=1)  # 1:3
+        v_2_4 = output[:, 1, :].unsqueeze(dim=1)  # 2:4
+        v_3_5 = output[:, 2, :].unsqueeze(dim=1)  # 3:5
+        v_1_4 = output[:, 3, :].unsqueeze(dim=1)  # 1:4
+        v_2_5 = output[:, 4, :].unsqueeze(dim=1)  # 2:5
+        v_1_5 = output[:, 5, :].unsqueeze(dim=1)  # 1:5
 
-        v_1_2 = output[:, 6, :].unsqueeze(dim=1) # 1:2
-        v_2_3 = output[:, 7, :].unsqueeze(dim=1) # 2:3
-        v_3_4 = output[:, 8, :].unsqueeze(dim=1) # 3:4
-        v_4_5 = output[:, 9, :].unsqueeze(dim=1) # 4:5
+        v_1_2 = output[:, 6, :].unsqueeze(dim=1)  # 1:2
+        v_2_3 = output[:, 7, :].unsqueeze(dim=1)  # 2:3
+        v_3_4 = output[:, 8, :].unsqueeze(dim=1)  # 3:4
+        v_4_5 = output[:, 9, :].unsqueeze(dim=1)  # 4:5
+
+        # output2 = output[:, 10:, :]
 
         v_1_3_sum = v_1_2 + v_2_3
         v_2_4_sum = v_2_3 + v_3_4
@@ -164,40 +166,73 @@ class ArcLengthLoss(torch.nn.Module):
         v_2_5_sum = v_2_3 + v_3_4 + v_4_5
         v_1_5_sum = v_1_2 + v_2_3 + v_3_4 + v_4_5
 
-        # diff_1 = v_2_5_sum - v_1_5_sum
-        # diff_2 = v_1_4_sum - v_1_5_sum
-        #
-        # diff_3 = v_3_5_sum - v_2_5_sum
-        # diff_4 = v_2_4_sum - v_2_5_sum
-        #
-        # diff_5 = v_2_4_sum - v_1_4_sum
-        # diff_6 = v_1_3_sum - v_1_4_sum
+        v_1_2_sub = v_1_3 - v_2_3
+        v_2_3_sub = v_2_4 - v_3_4
+        v_3_4_sub = v_3_5 - v_4_5
+        v_4_5_sub = v_3_5 - v_3_4
+        v_2_3_sub2 = v_1_3 - v_1_2
+        v_3_4_sub2 = v_2_4 - v_2_3
+        v_1_3_sub = v_1_4 - v_3_4
+        v_2_4_sub = v_2_5 - v_4_5
+        v_3_5_sub = v_2_5 - v_2_3
+        v_2_5_sub = v_1_5 - v_1_2
+        v_1_4_sub = v_1_5 - v_4_5
 
-        diff = torch.cat((v_2_5_sum - v_1_5_sum,
-                          v_1_4_sum - v_1_5_sum,
-                          v_3_5_sum - v_2_5_sum,
-                          v_2_4_sum - v_2_5_sum,
-                          v_2_4_sum - v_1_4_sum,
-                          v_1_3_sum - v_1_4_sum,
-                          v_1_2 - v_1_3_sum,
-                          v_2_3 - v_1_3_sum,
-                          v_2_3 - v_2_4_sum,
-                          v_3_4 - v_2_4_sum,
-                          v_3_4 - v_3_5_sum,
-                          v_4_5 - v_3_5_sum), dim=1);
+        diff = torch.cat((v_1_2 - v_1_3,
+                          v_1_3 - v_1_4,
+                          v_1_4 - v_1_5,
+                          v_2_3 - v_2_4,
+                          v_2_4 - v_2_5,
+                          v_3_4 - v_3_5),
+                         dim=1)
 
-        v10 = torch.cat((v_1_3, v_1_3_sum, v_2_4, v_2_4_sum, v_3_5, v_3_5_sum, v_1_4, v_1_4_sum, v_2_5, v_2_5_sum, v_1_5, v_1_5_sum), dim=1).abs()
+        v10 = torch.cat((v_1_3, v_1_3_sum,
+                         v_2_4, v_2_4_sum,
+                         v_3_5, v_3_5_sum,
+                         v_1_4, v_1_4_sum,
+                         v_2_5, v_2_5_sum,
+                         v_1_5, v_1_5_sum,
+                         v_1_2, v_1_2_sub,
+                         v_2_3, v_2_3_sub,
+                         v_3_4, v_3_4_sub,
+                         v_4_5, v_4_5_sub,
+                         v_2_3, v_2_3_sub2,
+                         v_3_4, v_3_4_sub2,
+                         v_1_3, v_1_3_sub,
+                         v_2_4, v_2_4_sub,
+                         v_3_5, v_3_5_sub,
+                         v_2_5, v_2_5_sub,
+                         v_1_4, v_1_4_sub),
+                        dim=1).abs()
+
         v11 = v10[:, 0::2, :]
         v12 = v10[:, 1::2, :]
         v13 = (v11 - v12).abs()
-        v14 = v13.exp()
-        v15 = v14.mean(dim=1)
-        v16 = v15.log()
+        v15 = v13.mean(dim=1)
 
-        diff_2 = diff.exp()
-        diff_3 = diff_2.mean(dim=1)
+        diff_2 = diff.mean(dim=1)
+        diff_3 = diff_2.exp()
 
-        return v16.mean(dim=0) + diff_3.mean(dim=0)
+        # anchor_points_count = int(batch_data['metadata']['anchor_points_count'][0])
+        # supporting_points_count = int(batch_data['metadata']['supporting_points_count'][0])
+        # sections_count = anchor_points_count - 1
+        # sections = [v_1_2, v_2_3, v_3_4, v_4_5]
+        # loss3 = None
+        # for i in range(sections_count):
+        #     base_index = (2*(supporting_points_count-1)) * i
+        #     section_diff1 = output2[:, base_index + 1, :].unsqueeze(dim=1) - output2[:, base_index, :].unsqueeze(dim=1)
+        #     section_diff2 = output2[:, base_index + 3, :].unsqueeze(dim=1) - output2[:, base_index + 2, :].unsqueeze(dim=1)
+        #     # section_diff3 = output2[:, base_index + 5, :].unsqueeze(dim=1) - output2[:, base_index + 4, :].unsqueeze(dim=1)
+        #     # section_diff4 = output2[:, base_index + 7, :].unsqueeze(dim=1) - output2[:, base_index + 6, :].unsqueeze(dim=1)
+        #     # loss3_tmp = (sections[i] - section_diff1 - section_diff2 - section_diff3 - section_diff4).abs()
+        #     loss3_tmp = (sections[i] - section_diff1 - section_diff2).abs()
+        #     if loss3 is None:
+        #         loss3 = loss3_tmp
+        #     else:
+        #         loss3 = loss3 + loss3_tmp
+
+        # return v15.mean(dim=0) + diff_3.mean(dim=0) + loss3.mean(dim=1).mean(dim=0)
+        return v15.mean(dim=0) + diff_3.mean(dim=0)
 
 
 class NegativeLoss(torch.nn.Module):

@@ -47,7 +47,7 @@ class DeepSignatureCurvatureNet(torch.nn.Module):
     def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
-        out_features = 150
+        out_features = 100
         p = None
         first_layer = True
         while out_features > 10:
@@ -58,7 +58,7 @@ class DeepSignatureCurvatureNet(torch.nn.Module):
             #     weights_init = sine_init
 
             linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
-            linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+            # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
             # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
             # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
             # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=sine_init))
@@ -119,7 +119,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
     def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
-        out_features = 250
+        out_features = 100
         p = None
         while out_features > 10:
             linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True))
@@ -137,6 +137,9 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         if use_batch_norm:
             linear_modules.append(torch.nn.BatchNorm1d(out_features))
 
+        # linear_modules.append(torch.nn.PReLU())
+        # linear_modules.append(torch.nn.LeakyReLU())
+        # linear_modules.append(torch.nn.ReLU())
         linear_modules.append(torch.nn.GELU())
         # linear_modules.append(Sine())
 

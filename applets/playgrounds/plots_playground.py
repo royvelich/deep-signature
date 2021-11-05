@@ -53,7 +53,7 @@ from notebooks.utils import utils as notebook_utils
 
 # plt.style.use("dark_background")
 
-transform_type = 'affine'
+transform_type = 'equiaffine'
 
 if transform_type == 'euclidean':
     level_curves_arclength_tuplets_dir_path = settings.level_curves_euclidean_arclength_tuplets_dir_path
@@ -102,6 +102,24 @@ anchors_ratio = 0.2
 
 device = torch.device('cuda')
 
+import warnings
+warnings.filterwarnings("ignore")
+
+# constants
+true_arclength_colors = ['#FF8C00', '#444444']
+predicted_arclength_colors = ['#AA0000', '#00AA00']
+sample_colors = ['#AA0000', '#00AA00']
+curve_colors = ['#AA0000', '#00AA00', '#0000AA']
+limit = 1
+factor_extraction_limit = -2
+# step = settings.arclength_default_supporting_points_count - 1
+step = 10
+comparison_curves_count = 2
+sampling_ratio = 0.2
+anchors_ratio = 0.3
+
+device = torch.device('cuda')
+
 # if we're in the equiaffine case, snap 'step' to the closest mutiple of 3 (from above)
 # if transform_type == "equiaffine":
 #     step = int(3 * numpy.ceil(step / 3))
@@ -111,8 +129,8 @@ torch.set_default_dtype(torch.float64)
 numpy.random.seed(60)
 
 # create models
-arclength_model = DeepSignatureArcLengthNet(sample_points=arclength_sample_points).cuda()
-curvature_model = DeepSignatureCurvatureNet(sample_points=curvature_sample_points).cuda()
+arclength_model = DeepSignatureArcLengthNet(sample_points=settings.arclength_default_supporting_points_count).cuda()
+curvature_model = DeepSignatureCurvatureNet(sample_points=settings.curvature_default_sample_points_count).cuda()
 
 # load arclength model state
 latest_subdir = common_utils.get_latest_subdirectory(level_curves_arclength_tuplets_results_dir_path)
@@ -127,9 +145,17 @@ curvature_model.load_state_dict(torch.load(results['model_file_path'], map_locat
 curvature_model.eval()
 
 # load curves (+ shuffle)
-curves = LevelCurvesGenerator.load_curves(dir_path=settings.level_curves_dir_path_train)
+# curves_train = LevelCurvesGenerator.load_curves(dir_path=settings.level_curves_dir_path_train)
+# curves_validation = LevelCurvesGenerator.load_curves(dir_path=settings.level_curves_dir_path_validation)
+curves = LevelCurvesGenerator.load_curves(dir_path=settings.level_curves_dir_path_test)
+
+# print(len(curves_train))
+# print(len(curves_validation))
+# print(len(curves_test))
+
 numpy.random.shuffle(curves)
-curves = curves[:limit]
+curves_limited = curves[:limit]
+factor_extraction_curves = curves[factor_extraction_limit:]
 
 # create color map
 color_map = plt.get_cmap('rainbow', limit)
@@ -138,21 +164,22 @@ color_map = plt.get_cmap('rainbow', limit)
 curve_records = notebook_utils.generate_curve_records(
     arclength_model=arclength_model,
     curvature_model=curvature_model,
-    curves=curves,
+    curves=curves_limited,
+    factor_extraction_curves=factor_extraction_curves,
     transform_type=transform_type,
     comparison_curves_count=comparison_curves_count,
     sampling_ratio=sampling_ratio,
     anchors_ratio=anchors_ratio,
     step=step,
-    neighborhood_supporting_points_count=neighborhood_supporting_points_count,
-    section_supporting_points_count=section_supporting_points_count)
+    neighborhood_supporting_points_count=settings.curvature_default_supporting_points_count,
+    section_supporting_points_count=settings.arclength_default_supporting_points_count)
 
-notebook_utils.plot_curve_signature_comparisons(
-    curve_records=curve_records,
-    curve_colors=curve_colors)
-
-notebook_utils.plot_curve_arclength_records(
-    curve_records=curve_records,
-    true_arclength_colors=true_arclength_colors,
-    predicted_arclength_colors=predicted_arclength_colors,
-    sample_colors=sample_colors)
+# notebook_utils.plot_curve_signature_comparisons(
+#     curve_records=curve_records,
+#     curve_colors=curve_colors)
+#
+# notebook_utils.plot_curve_arclength_records(
+#     curve_records=curve_records,
+#     true_arclength_colors=true_arclength_colors,
+#     predicted_arclength_colors=predicted_arclength_colors,
+#     sample_colors=sample_colors)

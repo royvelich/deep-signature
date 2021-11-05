@@ -188,7 +188,10 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
         mod_index = numpy.mod(index, self._buffer_size)
         tuplet = self._items[mod_index]
         for key in tuplet.keys():
-            item[key] = torch.from_numpy(numpy.array(tuplet[key]).astype('float64')).cuda().double()
+            if key == 'input':
+                item[key] = torch.from_numpy(numpy.array(tuplet[key]).astype('float64')).cuda().double()
+            else:
+                item[key] = tuplet[key]
 
         if self._replace is True:
             try:

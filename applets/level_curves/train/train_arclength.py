@@ -71,7 +71,7 @@ if __name__ == '__main__':
         sampling_ratio=args.sampling_ratio,
         multimodality=args.multimodality,
         replace=False,
-        buffer_size=args.train_buffer_size,
+        buffer_size=args.validation_buffer_size,
         num_workers=args.num_workers_validation,
         section_points_count=args.section_points_count,
         supporting_points_count=args.supporting_points_count,

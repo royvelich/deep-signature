@@ -216,7 +216,7 @@ def sample_overlapping_curve_sections(curve, point_index, point_type, indices_po
     return curve[indices1], curve[indices2]
 
 
-def sample_curve_section_indices_old(curve, start_point_index, end_point_index, supporting_points_count=None):
+def sample_curve_section_indices_old(curve, start_point_index, end_point_index, supporting_points_count=None, uniform=False):
     rng = numpy.random.default_rng()
     curve_points_count = curve.shape[0]
 
@@ -224,36 +224,30 @@ def sample_curve_section_indices_old(curve, start_point_index, end_point_index, 
         start_point_index = -(curve_points_count - start_point_index)
         # end_point_index = -end_point_index
 
+    indices_pool = numpy.mod(numpy.array(list(range(start_point_index + 1, end_point_index))), curve.shape[0])
     bins = int(numpy.abs(end_point_index - start_point_index) + 1) - 2
-    dist = discrete_distribution.random_discrete_dist(bins=bins, multimodality=20, max_density=1, count=1)[0]
-    supporting_points_count = supporting_points_count if supporting_points_count is not None else bins
-    meta_indices = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=supporting_points_count-2)
-    indices_pool = numpy.mod(numpy.array(list(range(start_point_index+1, end_point_index))), curve.shape[0])
+    supporting_points_count = supporting_points_count - 2 if supporting_points_count is not None else bins
 
-    # indices_pool = numpy.linspace(
-    #     start=start_point_index,
-    #     stop=end_point_index,
-    #     num=int(numpy.abs(end_point_index - start_point_index) + 1),
-    #     endpoint=True,
-    #     dtype=int)
+    # uniform = False
+    if uniform is False:
+        dist = discrete_distribution.random_discrete_dist(bins=bins, multimodality=20, max_density=1, count=1)[0]
+        meta_indices = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=supporting_points_count)
+    else:
+        meta_indices = list(range(end_point_index-start_point_index-1))
+        meta_indices = numpy.sort(rng.choice(a=meta_indices, size=supporting_points_count, replace=False))
 
-    # inner_indices_pool = indices_pool[1:-1]
-    # indices = numpy.mod(numpy.sort(rng.choice(a=inner_indices_pool, size=supporting_points_count - 2, replace=False)), curve_points_count)
-    # indices = numpy.concatenate((
-    #     numpy.mod(numpy.array([indices_pool[0]]), curve_points_count),
-    #     indices,
-    #     numpy.mod(numpy.array([indices_pool[-1]]), curve_points_count)))
-
+    # print(meta_indices)
     indices = indices_pool[meta_indices]
-    indices = numpy.concatenate(([numpy.mod(start_point_index, curve.shape[0])], indices, [end_point_index]))
+    indices = numpy.concatenate(([numpy.mod(start_point_index, curve.shape[0])], indices, [numpy.mod(end_point_index, curve.shape[0])]))
 
     return indices
 
 
-def sample_curve_section_old(curve, supporting_points_count, start_point_index, end_point_index):
+def sample_curve_section_old(curve, supporting_points_count, start_point_index, end_point_index, uniform):
     indices = sample_curve_section_indices_old(
         curve=curve,
         supporting_points_count=supporting_points_count,
         start_point_index=start_point_index,
-        end_point_index=end_point_index)
+        end_point_index=end_point_index,
+        uniform=uniform)
     return curve[indices]

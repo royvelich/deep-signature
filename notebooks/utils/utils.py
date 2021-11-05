@@ -344,6 +344,45 @@ def calculate_arclength_by_index(curve_sections, transform_type, modifier=None):
     return true_arclength
 
 
+def calculate_arclength_by_index2(curve_sections, transform_type, modifier=None):
+    curve = curve_sections['curve']
+    sampled_extended_sections = curve_sections['sampled_extended_sections']
+    true_arclength = numpy.zeros([len(sampled_extended_sections) + 1, 2])
+    for i, sampled_extended_section in enumerate(sampled_extended_sections):
+        point_index = i + 1
+
+        indices1 = sampled_extended_section['indices'][0]
+        indices2 = sampled_extended_section['indices'][1]
+        # sample1 = curve_processing.normalize_curve(curve=sampled_section['samples'][0])
+        # sample2 = curve_processing.normalize_curve(curve=sampled_section['samples'][1])
+
+        # arclength_batch_data1 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample1).double(), dim=0), dim=0).cuda()
+        # arclength_batch_data2 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2).double(), dim=0), dim=0).cuda()
+
+        with torch.no_grad():
+            true_arclength[point_index, 0] = point_index
+            if transform_type == 'euclidean':
+                sample1 = curve[indices1]
+                sample2 = curve[indices2]
+                true_arclength[point_index, 1] = numpy.abs(curve_processing.calculate_euclidean_arclength(curve=sample1)[-1] - curve_processing.calculate_euclidean_arclength(curve=sample2)[-1])
+            elif transform_type == 'equiaffine':
+                left_indices1 = numpy.mod(numpy.array([indices1[0] - 2, indices1[0] - 1]), curve.shape[0])
+                right_indices1 = numpy.mod(numpy.array([indices1[-1] + 1, indices1[-1] + 2]), curve.shape[0])
+
+                left_indices2 = numpy.mod(numpy.array([indices2[0] - 2, indices2[0] - 1]), curve.shape[0])
+                right_indices2 = numpy.mod(numpy.array([indices2[-1] + 1, indices2[-1] + 2]), curve.shape[0])
+
+                segment_indices1 = numpy.concatenate((left_indices1, indices1, right_indices1))
+                segment_indices2 = numpy.concatenate((left_indices2, indices2, right_indices2))
+                sample1 = curve[segment_indices1]
+                sample2 = curve[segment_indices2]
+                true_arclength[point_index, 1] = numpy.abs(curve_processing.calculate_equiaffine_arclength_by_euclidean_metrics(curve=sample1)[-1] - curve_processing.calculate_equiaffine_arclength_by_euclidean_metrics(curve=sample2)[-1])
+
+        true_arclength[point_index, 1] = true_arclength[point_index, 1] + true_arclength[i, 1]
+
+    return true_arclength
+
+
 def calculate_curvature_by_index(curve, transform_type):
     true_curvature = numpy.zeros([curve.shape[0], 2])
     true_curvature[:, 0] = numpy.arange(curve.shape[0])
@@ -388,6 +427,25 @@ def predict_arclength_by_index(model, curve_sections):
 
             if accumulate is True:
                 predicted_arclength[point_index, 1, j] = predicted_arclength[point_index, 1, j] + predicted_arclength[i, 1, j]
+
+    return predicted_arclength
+
+def predict_arclength_by_index2(model, curve_sections):
+    sampled_sections = curve_sections['sampled_extended_sections']
+    predicted_arclength = numpy.zeros([len(sampled_sections) + 1, 2])
+    for i, sampled_section in enumerate(sampled_sections):
+        point_index = i + 1
+
+        sample1 = curve_processing.normalize_curve(curve=sampled_section['samples'][0])
+        sample2 = curve_processing.normalize_curve(curve=sampled_section['samples'][1])
+
+        arclength_batch_data1 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample1).double(), dim=0), dim=0).cuda()
+        arclength_batch_data2 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2).double(), dim=0), dim=0).cuda()
+
+        with torch.no_grad():
+            predicted_arclength[point_index, 0] = point_index
+            predicted_arclength[point_index, 1] = numpy.abs(torch.squeeze(model(arclength_batch_data1), dim=0).cpu().detach().numpy() - torch.squeeze(model(arclength_batch_data2), dim=0).cpu().detach().numpy())
+        predicted_arclength[point_index, 1] = predicted_arclength[point_index, 1] + predicted_arclength[i, 1]
 
     return predicted_arclength
 
@@ -441,7 +499,15 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
                 curve_sections=curve_sections,
                 transform_type=transform_type)
 
+            true_arclength2 = calculate_arclength_by_index2(
+                curve_sections=curve_sections,
+                transform_type=transform_type)
+
             predicted_arclength = predict_arclength_by_index(
+                model=arclength_model,
+                curve_sections=curve_sections)
+
+            predicted_arclength2 = predict_arclength_by_index2(
                 model=arclength_model,
                 curve_sections=curve_sections)
 
@@ -457,6 +523,9 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
                 model=curvature_model,
                 curve_neighborhoods=curve_neighborhoods_from_sections)
 
+            print(predicted_arclength2.shape)
+            print(curve.shape)
+
             sampled_indices = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
             sampled_curve = comparison_curve[sampled_indices]
             anchors = comparison_curve[anchor_indices]
@@ -464,7 +533,9 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
             arclength_comparison = {
                 'curve_sections': curve_sections,
                 'true_arclength': true_arclength,
+                'true_arclength2': true_arclength2,
                 'predicted_arclength': predicted_arclength,
+                'predicted_arclength2': predicted_arclength2,
                 'predicted_arclength_original': predicted_arclength.copy()
             }
 
@@ -513,6 +584,7 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
         for curve_record in curve_records:
             for comparison in curve_record['comparisons']:
                 comparison['arclength_comparison']['predicted_arclength'][:, 1, :] *= factor
+                comparison['arclength_comparison']['predicted_arclength2'][:, 1] *= factor
 
     return curve_records
 
@@ -573,19 +645,22 @@ def extract_curve_sections(curve, step, sample_points):
             curve=curve,
             start_point_index=index1,
             end_point_index=index2,
-            supporting_points_count=sample_points)
+            supporting_points_count=sample_points,
+            uniform=True)
 
         sampled_indices3 = curve_sampling.sample_curve_section_indices_old(
             curve=curve,
             start_point_index=index2,
             end_point_index=index3,
-            supporting_points_count=sample_points)
+            supporting_points_count=sample_points,
+            uniform=True)
 
         sampled_indices4 = curve_sampling.sample_curve_section_indices_old(
             curve=curve,
             start_point_index=index1,
             end_point_index=index3,
-            supporting_points_count=sample_points)
+            supporting_points_count=sample_points,
+            uniform=True)
 
         sampled_section = {
             'indices': [sampled_indices1, sampled_indices1, sampled_indices3, sampled_indices4],
@@ -598,17 +673,20 @@ def extract_curve_sections(curve, step, sample_points):
         full_indices1 = curve_sampling.sample_curve_section_indices_old(
             curve=curve,
             start_point_index=index1,
-            end_point_index=index2)
+            end_point_index=index2,
+            uniform=True)
 
         full_indices3 = curve_sampling.sample_curve_section_indices_old(
             curve=curve,
             start_point_index=index2,
-            end_point_index=index3)
+            end_point_index=index3,
+            uniform=True)
 
         full_indices4 = curve_sampling.sample_curve_section_indices_old(
             curve=curve,
             start_point_index=index1,
-            end_point_index=index3)
+            end_point_index=index3,
+            uniform=True)
 
         full_section = {
             'indices': [full_indices1, full_indices1, full_indices3, full_indices4],
@@ -618,9 +696,36 @@ def extract_curve_sections(curve, step, sample_points):
 
         full_sections.append(full_section)
 
+    sampled_extended_sections = []
+    for index in list(range(curve.shape[0])):
+        start_point_index = index - step
+        end_point_index = index
+        sampled_indices1 = curve_sampling.sample_curve_section_indices_old(
+            curve=curve,
+            start_point_index=start_point_index,
+            end_point_index=end_point_index,
+            supporting_points_count=sample_points,
+            uniform=True)
+
+        sampled_indices2 = curve_sampling.sample_curve_section_indices_old(
+            curve=curve,
+            start_point_index=start_point_index,
+            end_point_index=end_point_index+1,
+            supporting_points_count=sample_points,
+            uniform=True)
+
+        sampled_extended_section = {
+            'indices': [sampled_indices1, sampled_indices2],
+            'samples': [curve[sampled_indices1], curve[sampled_indices2]],
+            'accumulate': [False, False]
+        }
+
+        sampled_extended_sections.append(sampled_extended_section)
+
     return {
         'sampled_sections': sampled_sections,
         'full_sections': full_sections,
+        'sampled_extended_sections': sampled_extended_sections,
         'curve': curve
     }
 
@@ -1161,6 +1266,62 @@ def plot_curve_arclength_record(curve_index, curve_arclength_record, true_arclen
 
     fig.savefig(os.path.join(dir_name, f'sectioned_curve_{curve_index}.svg'))
 
+    fig, axis = plt.subplots(1, 1, figsize=settings.matplotlib_figsize)
+    fig.patch.set_facecolor('white')
+    for label in (axis.get_xticklabels() + axis.get_yticklabels()):
+        label.set_fontsize(settings.matplotlib_axis_tick_label_fontsize)
+
+    axis.set_xlabel('Anchor Point Index', fontsize=settings.matplotlib_axis_title_label_fontsize)
+    axis.set_ylabel('Predicted Arc-Length', fontsize=settings.matplotlib_axis_title_label_fontsize)
+    axis.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    true_arclength_legend_labels = []
+    predicted_arclength_legend_labels = []
+    for i, curve_comparison in enumerate(curve_arclength_record['comparisons']):
+        curve_arclength = curve_comparison['arclength_comparison']
+        true_arclength = curve_arclength['true_arclength']
+        true_arclength2 = curve_arclength['true_arclength2']
+        predicted_arclength = curve_arclength['predicted_arclength']
+        predicted_arclength2 = curve_arclength['predicted_arclength2']
+
+        plot_sample(ax=axis, sample=true_arclength[:, :, 0], point_size=settings.matplotlib_line_point_size, color=true_arclength_colors[i], zorder=250)
+        plot_curve(ax=axis, curve=true_arclength[:, :, 0], linewidth=settings.matplotlib_graph_line_width, color=true_arclength_colors[i], zorder=150)
+        true_arclength_legend_labels.append(f'True Arclength (Transformed Curve #{i + 1})')
+
+        # plot_sample(ax=axis, sample=true_arclength2, point_size=settings.matplotlib_line_point_size, color=true_arclength_colors[i], zorder=250)
+        # plot_curve(ax=axis, curve=true_arclength2, linewidth=settings.matplotlib_graph_line_width, color=true_arclength_colors[i], zorder=150)
+        # true_arclength_legend_labels.append(f'True Arclength (Transformed Curve #{i + 1})')
+
+        plot_sample(ax=axis, sample=predicted_arclength[:, :, 0], point_size=settings.matplotlib_line_point_size, color=predicted_arclength_colors[i], zorder=250)
+        plot_curve(ax=axis, curve=predicted_arclength[:, :, 0], linewidth=settings.matplotlib_graph_line_width, color=predicted_arclength_colors[i], zorder=150)
+        predicted_arclength_legend_labels.append(f'Predicted Arclength (Transformed Curve #{i + 1})')
+
+        # plot_sample(ax=axis, sample=predicted_arclength2, point_size=settings.matplotlib_line_point_size, color=predicted_arclength_colors[i], zorder=250)
+        # plot_curve(ax=axis, curve=predicted_arclength2, linewidth=settings.matplotlib_graph_line_width, color=predicted_arclength_colors[i], zorder=150)
+        # predicted_arclength_legend_labels.append(f'Predicted Arclength (Transformed Curve #{i + 1})')
+
+        true_arclength_legend_lines = [matplotlib.lines.Line2D([0], [0], color=color, linewidth=settings.matplotlib_graph_line_width) for color in true_arclength_colors]
+        predicted_arclength_legend_lines = [matplotlib.lines.Line2D([0], [0], color=color, linewidth=settings.matplotlib_graph_line_width) for color in predicted_arclength_colors]
+        legend_labels = true_arclength_legend_labels + predicted_arclength_legend_labels
+        legend_lines = true_arclength_legend_lines + predicted_arclength_legend_lines
+        axis.legend(legend_lines, legend_labels, prop={'size': settings.matplotlib_legend_label_fontsize})
+
+    axis.set_title(f'Predicted Arc-Length vs. Ground Truth Arc-Length at Anchors', fontsize=settings.matplotlib_axis_title_label_fontsize)
+    fig.savefig(os.path.join(dir_name, f'arclength_{curve_index}.svg'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     fig, axis = plt.subplots(1, 1, figsize=settings.matplotlib_figsize)
     fig.patch.set_facecolor('white')
@@ -1175,14 +1336,24 @@ def plot_curve_arclength_record(curve_index, curve_arclength_record, true_arclen
     for i, curve_comparison in enumerate(curve_arclength_record['comparisons']):
         curve_arclength = curve_comparison['arclength_comparison']
         true_arclength = curve_arclength['true_arclength']
+        true_arclength2 = curve_arclength['true_arclength2']
         predicted_arclength = curve_arclength['predicted_arclength']
+        predicted_arclength2 = curve_arclength['predicted_arclength2']
 
-        plot_sample(ax=axis, sample=true_arclength[:, :, 0], point_size=settings.matplotlib_line_point_size, color=true_arclength_colors[i], zorder=250)
-        plot_curve(ax=axis, curve=true_arclength[:, :, 0], linewidth=settings.matplotlib_graph_line_width, color=true_arclength_colors[i], zorder=150)
+        # plot_sample(ax=axis, sample=true_arclength[:, :, 0], point_size=settings.matplotlib_line_point_size, color=true_arclength_colors[i], zorder=250)
+        # plot_curve(ax=axis, curve=true_arclength[:, :, 0], linewidth=settings.matplotlib_graph_line_width, color=true_arclength_colors[i], zorder=150)
+        # true_arclength_legend_labels.append(f'True Arclength (Transformed Curve #{i + 1})')
+
+        plot_sample(ax=axis, sample=true_arclength2, point_size=settings.matplotlib_line_point_size, color=true_arclength_colors[i], zorder=250)
+        plot_curve(ax=axis, curve=true_arclength2, linewidth=settings.matplotlib_graph_line_width, color=true_arclength_colors[i], zorder=150)
         true_arclength_legend_labels.append(f'True Arclength (Transformed Curve #{i + 1})')
 
-        plot_sample(ax=axis, sample=predicted_arclength[:, :, 0], point_size=settings.matplotlib_line_point_size, color=predicted_arclength_colors[i], zorder=250)
-        plot_curve(ax=axis, curve=predicted_arclength[:, :, 0], linewidth=settings.matplotlib_graph_line_width, color=predicted_arclength_colors[i], zorder=150)
+        # plot_sample(ax=axis, sample=predicted_arclength[:, :, 0], point_size=settings.matplotlib_line_point_size, color=predicted_arclength_colors[i], zorder=250)
+        # plot_curve(ax=axis, curve=predicted_arclength[:, :, 0], linewidth=settings.matplotlib_graph_line_width, color=predicted_arclength_colors[i], zorder=150)
+        # predicted_arclength_legend_labels.append(f'Predicted Arclength (Transformed Curve #{i + 1})')
+
+        plot_sample(ax=axis, sample=predicted_arclength2, point_size=settings.matplotlib_line_point_size, color=predicted_arclength_colors[i], zorder=250)
+        plot_curve(ax=axis, curve=predicted_arclength2, linewidth=settings.matplotlib_graph_line_width, color=predicted_arclength_colors[i], zorder=150)
         predicted_arclength_legend_labels.append(f'Predicted Arclength (Transformed Curve #{i + 1})')
 
         true_arclength_legend_lines = [matplotlib.lines.Line2D([0], [0], color=color, linewidth=settings.matplotlib_graph_line_width) for color in true_arclength_colors]
@@ -1191,7 +1362,17 @@ def plot_curve_arclength_record(curve_index, curve_arclength_record, true_arclen
         legend_lines = true_arclength_legend_lines + predicted_arclength_legend_lines
         axis.legend(legend_lines, legend_labels, prop={'size': settings.matplotlib_legend_label_fontsize})
 
-    axis.set_title(f'Predicted Arc-Length vs. Ground Truth Arc-Length at Anchors', fontsize=settings.matplotlib_axis_title_label_fontsize)
+    axis.set_title(f'Predicted Arc-Length2 vs. Ground Truth Arc-Length2 at Anchors', fontsize=settings.matplotlib_axis_title_label_fontsize)
+    fig.savefig(os.path.join(dir_name, f'arclength2_{curve_index}.svg'))
+
+
+
+
+
+
+
+
+
 
     # for i, curve_comparison in enumerate(curve_arclength_record['comparisons']):
     #     curve_arclength = curve_comparison['arclength_comparison']
@@ -1242,7 +1423,7 @@ def plot_curve_arclength_record(curve_index, curve_arclength_record, true_arclen
 
     # display(HTML(df.style.render()))
 
-    fig.savefig(os.path.join(dir_name, f'arclength_{curve_index}.svg'))
+
     plt.show()
 
 
