@@ -116,7 +116,7 @@ factor_extraction_limit = -2
 step = 10
 comparison_curves_count = 2
 sampling_ratio = 0.6
-anchors_ratio = 0.3
+anchors_ratio = 0.2
 
 device = torch.device('cuda')
 

@@ -322,9 +322,13 @@ def calculate_equiaffine_arclength(curve):
     return s
 
 
-def calculate_equiaffine_arclength_by_euclidean_metrics(curve):
-    s = calculate_euclidean_arclength(curve=curve[2:-2])
-    k = numpy.abs(calculate_euclidean_curvature(curve=curve, padding=False))
+def calculate_equiaffine_arclength_by_euclidean_metrics(curve, closed_curve=True):
+    if not closed_curve:
+        s = calculate_euclidean_arclength(curve=curve[2:-2])
+        k = numpy.abs(calculate_euclidean_curvature(curve=curve, padding=False))
+    else:
+        s = calculate_euclidean_arclength(curve=curve)
+        k = numpy.abs(calculate_euclidean_curvature(curve=curve, padding=True))
     ds = numpy.diff(a=s, n=1, axis=0)
     ds = numpy.concatenate((numpy.array([0]), ds))
     k_cbrt = numpy.cbrt(k)
