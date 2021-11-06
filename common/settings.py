@@ -35,13 +35,13 @@ level_curves_affine_arclength_tuplets_results_dir_path = os.path.normpath(os.pat
 # curvature
 curvature_default_continue_training = False
 curvature_default_epochs = None
-curvature_default_train_buffer_size = 300000
+curvature_default_train_buffer_size = 200000
 curvature_default_validation_buffer_size = 40000
 curvature_default_train_batch_size = curvature_default_train_buffer_size
 curvature_default_validation_batch_size = curvature_default_validation_buffer_size
 curvature_default_train_dataset_size = curvature_default_train_batch_size
 curvature_default_validation_dataset_size = curvature_default_validation_batch_size
-curvature_default_learning_rate = 1
+curvature_default_learning_rate = 0.1
 curvature_default_validation_split = None
 curvature_default_supporting_points_count = 2
 curvature_default_sample_points_count = 2 * curvature_default_supporting_points_count + 1
@@ -55,7 +55,7 @@ curvature_default_history_size = 1500
 
 # arclength
 arclength_default_continue_training = False
-arclength_default_learning_rate = .01
+arclength_default_learning_rate = .001
 arclength_default_validation_split = None
 arclength_default_epochs = None
 arclength_default_train_buffer_size = 50000
@@ -97,8 +97,8 @@ plotly_axis_title_label_fontsize = int(25 * plotly_fontsize_factor)
 plotly_axis_tick_label_fontsize = int(25 * plotly_fontsize_factor)
 plotly_fig_title_label_fontsize = int(25 * plotly_fontsize_factor)
 plotly_legend_label_fontsize = int(25 * plotly_fontsize_factor)
-plotly_sample_point_size = int(8 * plotly_pointsize_factor)
-plotly_sample_anchor_size = int(10 * plotly_pointsize_factor)
+plotly_sample_point_size = int(2 * plotly_pointsize_factor)
+plotly_sample_anchor_size = int(2 * plotly_pointsize_factor)
 plotly_line_point_size = int(12 * plotly_pointsize_factor)
 plotly_graph_line_width = 3
 plotly_write_image_width = 3000

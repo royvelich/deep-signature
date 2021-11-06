@@ -53,7 +53,7 @@ from notebooks.utils import utils as notebook_utils
 
 # plt.style.use("dark_background")
 
-transform_type = 'equiaffine'
+transform_type = 'euclidean'
 
 if transform_type == 'euclidean':
     level_curves_arclength_tuplets_dir_path = settings.level_curves_euclidean_arclength_tuplets_dir_path
@@ -115,7 +115,7 @@ factor_extraction_limit = -2
 # step = settings.arclength_default_supporting_points_count - 1
 step = 10
 comparison_curves_count = 2
-sampling_ratio = 0.2
+sampling_ratio = 0.6
 anchors_ratio = 0.3
 
 device = torch.device('cuda')
