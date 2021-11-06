@@ -415,6 +415,8 @@ def predict_arclength_by_index(model, curve, indices_pool, anchor_indices, suppo
 def generate_curve_records(arclength_model, curvature_model, curves, factor_extraction_curves, transform_type, comparison_curves_count, sampling_ratio, anchors_ratio, step, neighborhood_supporting_points_count, section_supporting_points_count):
     curve_records = []
     for curve_index, curve in enumerate(curves):
+        curve = curve_processing.enforce_cw(curve=curve)
+
         comparison_curves = []
         for i in range(comparison_curves_count):
             if transform_type == 'euclidean':

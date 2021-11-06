@@ -335,3 +335,27 @@ def calculate_equiaffine_arclength_by_euclidean_metrics(curve, closed_curve=True
     ds_affine = k_cbrt * ds
     s_affine = numpy.cumsum(a=ds_affine, axis=0)
     return s_affine
+
+
+def enforce_cw(curve):
+    x_coord = curve[:, 0]
+    min_index = x_coord.argmin()
+    index1 = numpy.mod(min_index - 1, curve.shape[0])
+    index2 = numpy.mod(min_index, curve.shape[0])
+    index3 = numpy.mod(min_index + 1, curve.shape[0])
+    p1 = curve[index1]
+    p2 = curve[index2]
+    p3 = curve[index3]
+
+    v1 = p1 - p2
+    v2 = p3 - p2
+
+    v = numpy.cross(v1, v2)
+
+    if v < 0:
+        return numpy.flip(m=curve, axis=0).copy()
+
+    return curve
+
+
+
