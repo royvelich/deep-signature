@@ -101,22 +101,29 @@ def plot_curve_sample_plotly(fig, row, col, name, curve, curve_sample, color, po
         col=col)
 
 
-def plot_curve_plotly(fig, row, col, curve, name, line_width=2, line_color='green', mode='lines+markers'):
-    x = curve[:, 0]
-    y = curve[:, 1]
-
+def plot_graph_plotly(fig, row, col, x, y, name, point_size=2, line_width=2, line_color='green', mode='lines+markers'):
     fig.add_trace(
         trace=graph_objects.Scatter(
             name=name,
             x=x,
             y=y,
             mode=mode,
+            marker={
+                'size': point_size
+            },
             line={
                 'color': line_color,
                 'width': line_width
             }),
         row=row,
         col=col)
+
+
+def plot_curve_plotly(fig, row, col, curve, name, point_size=2, line_width=2, line_color='green', mode='lines+markers'):
+    x = curve[:, 0]
+    y = curve[:, 1]
+    plot_graph_plotly(fig=fig, row=row, col=col, x=x, y=y, name=name, point_size=point_size, line_width=line_width, line_color=line_color, mode=mode)
+
 
 
 def plot_curvature_plotly(fig, row, col, name, curvature, line_width=2, line_color='green'):
@@ -355,7 +362,8 @@ def predict_curvature_by_index(model, curve_neighborhoods, factor=-1):
     return predicted_curvature
 
 
-def predict_arclength_by_index(model, curve, indices_pool, anchor_indices, supporting_points_count):
+def predict_arclength_by_index(model, curve, indices_pool, supporting_points_count, anchor_indices=None):
+    anchor_indices = anchor_indices if anchor_indices is not None else indices_pool
     predicted_arclength = numpy.zeros(anchor_indices.shape[0])
     step = supporting_points_count - 1
     arclength_at_index = {}
@@ -439,13 +447,7 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
             sampling_points_count = int(sampling_ratio * comparison_curve_points_count)
             dist = discrete_distribution.random_discrete_dist(bins=comparison_curve_points_count, multimodality=60, max_density=1, count=1)[0]
             indices_pool = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
-
-            curve_neighborhoods = extract_curve_neighborhoods(
-                curve=comparison_curve,
-                indices_pool=indices_pool,
-                sampling_points_count=sampling_points_count,
-                supporting_points_count=neighborhood_supporting_points_count,
-                anchor_indices=anchor_indices)
+            modified_indices_pool = utils.insert_sorted(indices_pool, numpy.array([0]))
 
             true_arclength = calculate_arclength_by_index(
                 curve=comparison_curve,
@@ -456,16 +458,37 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
                 model=arclength_model,
                 curve=comparison_curve,
                 indices_pool=indices_pool,
-                anchor_indices=anchor_indices,
+                supporting_points_count=section_supporting_points_count,
+                anchor_indices=anchor_indices)
+
+            predicted_arclength_without_anchors = predict_arclength_by_index(
+                model=arclength_model,
+                curve=comparison_curve,
+                indices_pool=indices_pool,
                 supporting_points_count=section_supporting_points_count)
 
-            true_curvature = calculate_curvature_by_index(
-                curve=curve,
-                transform_type=transform_type)
+            curve_neighborhoods = extract_curve_neighborhoods(
+                curve=comparison_curve,
+                indices_pool=indices_pool,
+                supporting_points_count=neighborhood_supporting_points_count,
+                anchor_indices=anchor_indices)
+
+            curve_neighborhoods_without_anchors = extract_curve_neighborhoods(
+                curve=comparison_curve,
+                indices_pool=modified_indices_pool,
+                supporting_points_count=neighborhood_supporting_points_count)
 
             predicted_curvature = predict_curvature_by_index(
                 model=curvature_model,
                 curve_neighborhoods=curve_neighborhoods)
+
+            predicted_curvature_without_anchors = predict_curvature_by_index(
+                model=curvature_model,
+                curve_neighborhoods=curve_neighborhoods_without_anchors)
+
+            true_curvature = calculate_curvature_by_index(
+                curve=curve,
+                transform_type=transform_type)
 
             sampled_indices = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
             sampled_curve = comparison_curve[sampled_indices]
@@ -474,12 +497,14 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
             arclength_comparison = {
                 'true_arclength': true_arclength,
                 'predicted_arclength': predicted_arclength,
+                'predicted_arclength_without_anchors': predicted_arclength_without_anchors
             }
 
             curvature_comparison = {
                 'curve_neighborhoods': curve_neighborhoods,
                 'true_curvature': true_curvature,
                 'predicted_curvature': predicted_curvature,
+                'predicted_curvature_without_anchors': predicted_curvature_without_anchors
             }
 
             curve_record['comparisons'].append({
@@ -522,8 +547,9 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
     return curve_records
 
 
-def extract_curve_neighborhoods(curve, indices_pool, sampling_points_count, supporting_points_count, anchor_indices):
+def extract_curve_neighborhoods(curve, indices_pool, supporting_points_count, anchor_indices=None):
     sampled_neighborhoods = []
+    anchor_indices = anchor_indices if anchor_indices is not None else indices_pool
     for anchor_index in anchor_indices:
         sampled_indices = curve_sampling.sample_curve_neighborhood_indices(
             center_point_index=anchor_index,
@@ -698,7 +724,7 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
         curvature_comparison = comparison['curvature_comparison']
         predicted_curvature = curvature_comparison['predicted_curvature']
 
-        plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Sampled Curve", curve=curve, curve_sample=sampled_curve, color='grey', point_size=settings.plotly_sample_point_size)
+        plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Sampled Curve", curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=settings.plotly_sample_point_size)
         plot_curve_sample_plotly(fig=fig, row=1, col=2, name="Anchors", curve=curve, curve_sample=anchors, color=anchor_indices, point_size=settings.plotly_sample_point_size)
         plot_curvature_with_cmap_plotly(fig=fig, row=1, col=3, name="Predicted Curvature", curve=curve, curvature=predicted_curvature[:, 1], indices=anchor_indices, line_color='grey', line_width=settings.plotly_graph_line_width, point_size=settings.plotly_sample_anchor_size, color_scale='hsv')
 
@@ -750,6 +776,48 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
     fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
 
     fig.write_image(os.path.join(dir_name, f'predicted_curves_together_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    fig.show()
+
+    # ------------------------------------
+    # CURVATURE VS. INDEX OF SAMPLE POINTS
+    # ------------------------------------
+    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted Curvature as a Function of Point Index</b>',))
+    for i, comparison in enumerate(curve_record['comparisons']):
+        curvature_comparison = comparison['curvature_comparison']
+        predicted_curvature = curvature_comparison['predicted_curvature_without_anchors']
+
+        plot_curve_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curve=predicted_curvature, point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
+
+    fig['layout']['xaxis']['title'] = 'Sample Point Index'
+    fig['layout']['yaxis']['title'] = 'Predicted Curvature'
+
+    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+
+    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+
+    fig.write_image(os.path.join(dir_name, f'predicted_curvature_as_function_of_index_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    fig.show()
+
+    # -----------------------------------------
+    # CURVATURE VS. ARC-LENGTH OF SAMPLE POINTS
+    # -----------------------------------------
+    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted Curvature as a Function of Predicted Arc-Length</b>',))
+    for i, comparison in enumerate(curve_record['comparisons']):
+        curvature_comparison = comparison['curvature_comparison']
+        arclength_comparison = comparison['arclength_comparison']
+        predicted_curvature = curvature_comparison['predicted_curvature_without_anchors']
+        predicted_arclength = arclength_comparison['predicted_arclength_without_anchors']
+
+        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=predicted_arclength[:, 1], y=predicted_curvature[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
+
+    fig['layout']['xaxis']['title'] = 'Predicted Arc-Length'
+    fig['layout']['yaxis']['title'] = 'Predicted Curvature'
+
+    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+
+    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+
+    fig.write_image(os.path.join(dir_name, f'predicted_curvature_as_function_of_arclength_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     fig.show()
 
 

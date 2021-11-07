@@ -92,10 +92,10 @@ matplotlib_graph_line_width = 6
 matplotlib_figsize = (60, 20)
 
 plotly_fontsize_factor = 1.5
-plotly_pointsize_factor = 1
+plotly_pointsize_factor = 1.2
 plotly_axis_title_label_fontsize = int(25 * plotly_fontsize_factor)
 plotly_axis_tick_label_fontsize = int(25 * plotly_fontsize_factor)
-plotly_fig_title_label_fontsize = int(25 * plotly_fontsize_factor)
+plotly_fig_title_label_fontsize = int(35 * plotly_fontsize_factor)
 plotly_legend_label_fontsize = int(25 * plotly_fontsize_factor)
 plotly_sample_point_size = int(4 * plotly_pointsize_factor)
 plotly_sample_anchor_size = int(4 * plotly_pointsize_factor)
