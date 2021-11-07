@@ -101,7 +101,7 @@ def plot_curve_sample_plotly(fig, row, col, name, curve, curve_sample, color, po
         col=col)
 
 
-def plot_curve_plotly(fig, row, col, curve, name, line_width=2, line_color='green'):
+def plot_curve_plotly(fig, row, col, curve, name, line_width=2, line_color='green', mode='lines+markers'):
     x = curve[:, 0]
     y = curve[:, 1]
 
@@ -110,7 +110,7 @@ def plot_curve_plotly(fig, row, col, curve, name, line_width=2, line_color='gree
             name=name,
             x=x,
             y=y,
-            mode='lines+markers',
+            mode=mode,
             line={
                 'color': line_color,
                 'width': line_width
@@ -342,7 +342,7 @@ def calculate_curvature_by_index(curve, transform_type):
 # -------------------
 # PREDICTION ROUTINES
 # -------------------
-def predict_curvature_by_index(model, curve_neighborhoods):
+def predict_curvature_by_index(model, curve_neighborhoods, factor=-1):
     sampled_neighborhoods = curve_neighborhoods['sampled_neighborhoods']
     predicted_curvature = numpy.zeros([len(sampled_neighborhoods), 2])
     for point_index, sampled_neighborhood in enumerate(sampled_neighborhoods):
@@ -351,7 +351,7 @@ def predict_curvature_by_index(model, curve_neighborhoods):
             curvature_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample).double(), dim=0), dim=0).cuda()
             with torch.no_grad():
                 predicted_curvature[point_index, 0] = point_index
-                predicted_curvature[point_index, 1] = torch.squeeze(model(curvature_batch_data), dim=0).cpu().detach().numpy()
+                predicted_curvature[point_index, 1] = torch.squeeze(model(curvature_batch_data), dim=0).cpu().detach().numpy() * factor
     return predicted_curvature
 
 
@@ -463,7 +463,7 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
                 curve=curve,
                 transform_type=transform_type)
 
-            predicted_curvature = -predict_curvature_by_index(
+            predicted_curvature = predict_curvature_by_index(
                 model=curvature_model,
                 curve_neighborhoods=curve_neighborhoods)
 
@@ -553,17 +553,20 @@ def calculate_signature_metrics(curve_records):
         comparisons = curve_record['comparisons']
         arclength_comparison_ref = comparisons[0]['arclength_comparison']
         curvature_comparison_ref = comparisons[0]['curvature_comparison']
-        predicted_arclength_ref = arclength_comparison_ref['predicted_arclength'][1:, 1, 0].squeeze()
-        predicted_curvature_signature_ref = curvature_comparison_ref['predicted_curvature_signature'][:, 1].squeeze()
+        predicted_arclength_ref = arclength_comparison_ref['predicted_arclength'][1:, 1].squeeze()
+        predicted_curvature_ref = curvature_comparison_ref['predicted_curvature'][:, 1].squeeze()
         for comparison in comparisons[1:]:
             arclength_comparison = comparison['arclength_comparison']
             curvature_comparison = comparison['curvature_comparison']
-            predicted_arclength = arclength_comparison['predicted_arclength'][1:, 1, 0].squeeze()
-            predicted_curvature_signature = curvature_comparison['predicted_curvature_signature'][:, 1].squeeze()
-            arclength_offset = (predicted_arclength - predicted_arclength_ref) / numpy.abs(predicted_arclength_ref)
-            curvature_offset = (predicted_curvature_signature - predicted_curvature_signature_ref) / numpy.abs(predicted_curvature_signature_ref)
+            predicted_arclength = arclength_comparison['predicted_arclength'][1:, 1].squeeze()
+            predicted_curvature = curvature_comparison['predicted_curvature'][:, 1].squeeze()
+            arclength_offset = numpy.abs(predicted_arclength - predicted_arclength_ref) / numpy.abs(predicted_arclength_ref)
+            curvature_offset = numpy.abs(predicted_curvature - predicted_curvature_ref) / numpy.abs(predicted_curvature_ref)
             arclength_offsets = numpy.concatenate((arclength_offsets, arclength_offset))
             curvature_offsets = numpy.concatenate((curvature_offsets, curvature_offset))
+
+    curvature_offsets.sort()
+    print(curvature_offsets)
 
     return {
         'arclength_offset_mean': numpy.mean(arclength_offsets),
@@ -643,6 +646,8 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
 
     fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
 
+    fig.update_layout(showlegend=False)
+
     fig.write_image(os.path.join(dir_name, f'curves_together_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     fig.show()
 
@@ -675,6 +680,8 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
     fig.update_layout(yaxis1=dict(range=get_range()))
     fig.update_layout(yaxis2=dict(range=get_range()))
 
+    fig.update_layout(showlegend=False)
+
     fig.write_image(os.path.join(dir_name, f'curve_samples_side_by_side_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     fig.show()
 
@@ -683,7 +690,7 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
     # ----------------------------------------------------------------------------------
     left_width = 0.25
     for i, comparison in enumerate(curve_record['comparisons']):
-        fig = make_subplots(rows=1, cols=3, column_widths=[left_width, left_width, 1 - (2*left_width)], subplot_titles=('<b>Sampled Curve</b>', '<b>Equally Spaced Anchors</b>',  '<b>Predicted Curvature at Anchors</b>'))
+        fig = make_subplots(rows=1, cols=3, column_widths=[left_width, left_width, 1 - (2*left_width)], subplot_titles=('<b>Sampled Curve</b>', '<b>Anchors</b>',  '<b>Predicted Curvature at Anchors</b>'))
         sampled_curve = comparison['sampled_curve']
         anchors = comparison['anchors']
         anchor_indices = comparison['anchor_indices']
@@ -693,7 +700,7 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
 
         plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Sampled Curve", curve=curve, curve_sample=sampled_curve, color='grey', point_size=settings.plotly_sample_point_size)
         plot_curve_sample_plotly(fig=fig, row=1, col=2, name="Anchors", curve=curve, curve_sample=anchors, color=anchor_indices, point_size=settings.plotly_sample_point_size)
-        plot_curvature_with_cmap_plotly(fig=fig, row=1, col=3, name="Predicted Curvature at Anchors", curve=curve, curvature=predicted_curvature[:, 1], indices=anchor_indices, line_color='grey', line_width=settings.plotly_graph_line_width, point_size=settings.plotly_sample_anchor_size, color_scale='hsv')
+        plot_curvature_with_cmap_plotly(fig=fig, row=1, col=3, name="Predicted Curvature", curve=curve, curvature=predicted_curvature[:, 1], indices=anchor_indices, line_color='grey', line_width=settings.plotly_graph_line_width, point_size=settings.plotly_sample_anchor_size, color_scale='hsv')
 
         fig.update_yaxes(
             scaleanchor="x1",
@@ -720,7 +727,7 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
         fig.update_layout(yaxis1=dict(range=curr_range))
         fig.update_layout(yaxis2=dict(range=curr_range))
 
-        fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+        fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize), showlegend=False)
 
         fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
 
@@ -733,7 +740,7 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
         curvature_comparison = comparison['curvature_comparison']
         predicted_curvature = curvature_comparison['predicted_curvature']
 
-        plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Predicted Curvature at Anchors #{i+1}', curvature=predicted_curvature[:, 1], line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
+        plot_curve_plotly(fig=fig, row=1, col=1, name=f'Predicted Curvature at Anchors #{i+1}', curve=predicted_curvature, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='lines')
 
     fig['layout']['xaxis']['title'] = 'Anchor Point Index'
     fig['layout']['yaxis']['title'] = 'Predicted Curvature'
@@ -778,15 +785,15 @@ def plot_curve_arclength_record(curve_index, curve_arclength_record, true_arclen
         true_arclength = curve_arclength['true_arclength']
         predicted_arclength = curve_arclength['predicted_arclength']
 
-        plot_sample(ax=axis, sample=true_arclength, point_size=settings.matplotlib_line_point_size, color=true_arclength_colors[i], zorder=250)
-        plot_curve(ax=axis, curve=true_arclength, linewidth=settings.matplotlib_graph_line_width, color=true_arclength_colors[i], zorder=150, label=f'True Arclength (Transformed Curve #{i + 1})')
+        # plot_sample(ax=axis, sample=true_arclength, point_size=settings.matplotlib_line_point_size, color=true_arclength_colors[i], zorder=250)
+        plot_curve(ax=axis, curve=true_arclength, linewidth=settings.matplotlib_graph_line_width, color=true_arclength_colors[i], zorder=150, label=f'True Arc-Length (Transformed Curve #{i + 1})')
 
-        plot_sample(ax=axis, sample=predicted_arclength, point_size=settings.matplotlib_line_point_size, color=predicted_arclength_colors[i], zorder=250)
-        plot_curve(ax=axis, curve=predicted_arclength, linewidth=settings.matplotlib_graph_line_width, color=predicted_arclength_colors[i], zorder=150, label=f'Predicted Arclength (Transformed Curve #{i + 1})')
+        # plot_sample(ax=axis, sample=predicted_arclength, point_size=settings.matplotlib_line_point_size, color=predicted_arclength_colors[i], zorder=250)
+        plot_curve(ax=axis, curve=predicted_arclength, linewidth=settings.matplotlib_graph_line_width, color=predicted_arclength_colors[i], zorder=150, label=f'Predicted Arc-Length (Transformed Curve #{i + 1})')
 
         axis.legend(prop={'size': settings.matplotlib_legend_label_fontsize})
 
-    axis.set_title(f'Predicted Arc-Length vs. Ground Truth Arc-Length at Anchors', fontsize=settings.matplotlib_axis_title_label_fontsize)
+    axis.set_title(f'Predicted Arc-Length vs. Ground Truth Arc-Length (at Anchors)', fontsize=settings.matplotlib_axis_title_label_fontsize)
     fig.savefig(os.path.join(dir_name, f'arclength_{curve_index}.svg'))
 
     plt.show()
@@ -829,12 +836,12 @@ def plot_curve_signature_comparision(curve_index, curve_record, true_signature_c
         true_curvature = 150*curvature_comparison['true_curvature'][:, 1]
 
         plot_graph(ax=axis, x=predicted_arclength, y=predicted_curvature, color=predicted_signature_colors[i], linewidth=settings.matplotlib_graph_line_width, label=f'Predicted Signature Curve (Transformed Curve #{i + 1})')
-        plot_sample(ax=axis, sample=None, x=predicted_arclength, y=predicted_curvature, point_size=settings.matplotlib_line_point_size, color=predicted_signature_colors[i], zorder=250)
+        # plot_sample(ax=axis, sample=None, x=predicted_arclength, y=predicted_curvature, point_size=settings.matplotlib_line_point_size, color=predicted_signature_colors[i], zorder=250)
 
         plot_graph(ax=axis, x=true_arclength, y=true_curvature, color=true_signature_colors[i], linewidth=settings.matplotlib_graph_line_width, label=f'True Signature Curve (Transformed Curve #{i + 1})')
-        plot_sample(ax=axis, sample=None, x=true_arclength, y=true_curvature, point_size=settings.matplotlib_line_point_size, color=true_signature_colors[i], zorder=250)
+        # plot_sample(ax=axis, sample=None, x=true_arclength, y=true_curvature, point_size=settings.matplotlib_line_point_size, color=true_signature_colors[i], zorder=250)
 
     axis.legend(prop={'size': settings.matplotlib_legend_label_fontsize})
-    axis.set_title(f'Signature Curve (Transformed Curve #1 vs. Transformed Curve #2)', fontsize=settings.matplotlib_axis_title_label_fontsize)
+    axis.set_title(f'Predicted Signature Curve vs. Ground Truth Signature Curve (at Anchors)', fontsize=settings.matplotlib_axis_title_label_fontsize)
     plt.savefig(os.path.join(dir_name, f'signature_{curve_index}.svg'))
     plt.show()

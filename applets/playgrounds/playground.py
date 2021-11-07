@@ -102,6 +102,9 @@ def insert_sorted(arr, items):
 
 if __name__ == '__main__':
 
+    bla = numpy.array([1,5,5,5])
+
+
     from itertools import count
 
     for i in count(5):
