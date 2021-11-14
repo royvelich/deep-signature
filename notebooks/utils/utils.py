@@ -318,7 +318,7 @@ def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=Non
 # GROUND TRUTH ROUTINES
 # ---------------------
 def calculate_arclength_by_index(curve, anchor_indices, transform_type, modifier=None):
-    true_arclength = None
+    true_arclength = numpy.zeros(curve.shape[0])
     if transform_type == 'euclidean':
         true_arclength = curve_processing.calculate_euclidean_arclength(curve=curve)
     elif transform_type == 'equiaffine':

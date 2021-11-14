@@ -178,10 +178,12 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
             transform = cls._generate_curve_transform()
             transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
 
+            negative_center_point_index = numpy.mod(center_point_index + center_point_index_offset, transformed_curve.shape[0])
+            # negative_center_point_index = int(numpy.random.randint(transformed_curve.shape[0], size=1))
             indices_pool = discrete_distribution.sample_discrete_dist(dist=discrete_distribution_pack[dist_index], sampling_points_count=sampling_points_count)
             sample = curve_sampling.sample_curve_neighborhood(
                 curve=transformed_curve,
-                center_point_index=numpy.mod(center_point_index + center_point_index_offset, transformed_curve.shape[0]),
+                center_point_index=negative_center_point_index,
                 indices_pool=indices_pool,
                 supporting_points_count=supporting_points_count)
 
