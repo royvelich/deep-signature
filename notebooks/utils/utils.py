@@ -639,7 +639,7 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
     # ---------------------
     # PLOT CURVES TOGETHER
     # ---------------------
-    fig = make_subplots(rows=1, cols=3, subplot_titles=('<b>Reference Curve</b>', '<b>Transformed Curve #1</b>', '<b>Transformed Curve #2</b>'))
+    fig = make_subplots(rows=1, cols=4, subplot_titles=('<b>Reference Curve</b>', '<b>Transformed Curve #1</b>', '<b>Transformed Curve #2</b>'))
 
     curve = curve_record['curve']
     plot_curve_plotly(fig=fig, row=1, col=1, curve=curve, name='Reference Curve', line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1])
@@ -647,6 +647,7 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
     for i, comparison in enumerate(curve_record['comparisons']):
         curve = comparison['curve']
         plot_curve_plotly(fig=fig, row=1, col=i+2, curve=curve, name=f'Transformed Curve #{i+1}', line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
+        plot_curve_plotly(fig=fig, row=1, col=4, curve=curve, name=f'', line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
 
     for i in range(len(curve_record['comparisons']) + 1):
         fig.update_yaxes(
