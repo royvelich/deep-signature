@@ -49,38 +49,13 @@ class DeepSignatureCurvatureNet(torch.nn.Module):
         in_features = in_features
         out_features = 100
         p = None
-        first_layer = True
         while out_features > 10:
-            # if first_layer is True:
-            #     weights_init = first_layer_sine_init
-            #     first_layer = False
-            # else:
-            #     weights_init = sine_init
-
             linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
             linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
-            # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
-            # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
-            # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=sine_init))
             in_features = out_features
             out_features = int(out_features / 2)
 
-        # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=in_features, out_features=20, p=p, use_batch_norm=True, weights_init=None))
-        # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=20, out_features=20, p=p, use_batch_norm=True, weights_init=None))
-        # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=20, out_features=20, p=p, use_batch_norm=True, weights_init=None))
-        # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=20, out_features=20, p=p, use_batch_norm=True, weights_init=None))
-        # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=20, out_features=20, p=p, use_batch_norm=True, weights_init=None))
-        # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=20, out_features=20, p=p, use_batch_norm=True, weights_init=None))
-        # linear_modules.append(torch.nn.Linear(in_features=20, out_features=1))
-
-        # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
         linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
-
-        # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=in_features, out_features=20, p=p, use_batch_norm=False))
-        # # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=20, out_features=20, p=p, use_batch_norm=False))
-        # # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=20, out_features=20, p=p, use_batch_norm=False))
-        # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=20, out_features=20, p=p, use_batch_norm=False))
-        # linear_modules.append(torch.nn.Linear(in_features=20, out_features=1))
 
         return torch.nn.Sequential(*linear_modules)
 
@@ -88,9 +63,6 @@ class DeepSignatureCurvatureNet(torch.nn.Module):
     def _create_hidden_layer(in_features, out_features, p=None, use_batch_norm=False, weights_init=None):
         linear_modules = []
         linear_module = torch.nn.Linear(in_features=in_features, out_features=out_features)
-
-        # if weights_init is not None:
-        #     weights_init(linear_module)
 
         linear_modules.append(linear_module)
 
@@ -119,10 +91,11 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
     def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
-        out_features = 100
+        out_features = 60
         p = None
         while out_features > 10:
             linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True))
+            linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True))
             linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True))
             in_features = out_features
             out_features = int(out_features / 2)

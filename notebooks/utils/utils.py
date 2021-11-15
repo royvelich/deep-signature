@@ -454,12 +454,12 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
                 anchor_indices=anchor_indices,
                 transform_type=transform_type)
 
-            predicted_arclength = predict_arclength_by_index(
-                model=arclength_model,
-                curve=comparison_curve,
-                indices_pool=indices_pool,
-                supporting_points_count=section_supporting_points_count,
-                anchor_indices=anchor_indices)
+            # predicted_arclength = predict_arclength_by_index(
+            #     model=arclength_model,
+            #     curve=comparison_curve,
+            #     indices_pool=indices_pool,
+            #     supporting_points_count=section_supporting_points_count,
+            #     anchor_indices=anchor_indices)
 
             predicted_arclength_without_anchors = predict_arclength_by_index(
                 model=arclength_model,
@@ -496,7 +496,7 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
 
             arclength_comparison = {
                 'true_arclength': true_arclength,
-                'predicted_arclength': predicted_arclength,
+                # 'predicted_arclength': predicted_arclength,
                 'predicted_arclength_without_anchors': predicted_arclength_without_anchors
             }
 
@@ -538,11 +538,11 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
         factor = numpy.mean(true_arclength[1:, 1] / predicted_arclength[1:, 1])
         factors.append(factor)
 
-    if transform_type != 'affine':
-        factor = numpy.mean(numpy.array(factors))
-        for curve_record in curve_records:
-            for comparison in curve_record['comparisons']:
-                comparison['arclength_comparison']['predicted_arclength'][:, 1] *= factor
+    # if transform_type != 'affine':
+    #     factor = numpy.mean(numpy.array(factors))
+    #     for curve_record in curve_records:
+    #         for comparison in curve_record['comparisons']:
+    #             comparison['arclength_comparison']['predicted_arclength'][:, 1] *= factor
 
     return curve_records
 
@@ -649,7 +649,7 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
         plot_curve_plotly(fig=fig, row=1, col=i+2, curve=curve, name=f'Transformed Curve #{i+1}', line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
         plot_curve_plotly(fig=fig, row=1, col=4, curve=curve, name=f'', line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
 
-    for i in range(len(curve_record['comparisons']) + 1):
+    for i in range(len(curve_record['comparisons']) + 2):
         fig.update_yaxes(
             scaleanchor=f'x{i+1}',
             scaleratio=1,
@@ -678,88 +678,90 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors):
     fig.write_image(os.path.join(dir_name, f'curves_together_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     fig.show()
 
-    # -------------------------------
-    # PLOT CURVE SAMPLES SIDE BY SIDE
-    # -------------------------------
-    fig = make_subplots(rows=1, cols=len(curve_record['comparisons']), subplot_titles=('<b>Sampled Curve #1</b>', '<b>Sampled Curve #2</b>'))
+    # # -------------------------------
+    # # PLOT CURVE SAMPLES SIDE BY SIDE
+    # # -------------------------------
+    # fig = make_subplots(rows=1, cols=len(curve_record['comparisons']), subplot_titles=('<b>Sampled Curve #1</b>', '<b>Sampled Curve #2</b>'))
+    #
+    # for i, comparison in enumerate(curve_record['comparisons']):
+    #     sampled_curve = comparison['sampled_curve']
+    #     curve = comparison['curve']
+    #     plot_curve_sample_plotly(fig=fig, row=1, col=i+1, name=f'Sampled Curve {i+1}', curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=settings.plotly_sample_point_size)
+    #
+    # for i in range(len(curve_record['comparisons']) + 1):
+    #     fig.update_yaxes(
+    #         scaleanchor=f'x{i+1}',
+    #         scaleratio=1,
+    #         row=1,
+    #         col=i+1)
+    #
+    # fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+    # fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    #
+    # fig['layout']['xaxis']['title'] = 'X Coordinate'
+    # fig['layout']['yaxis']['title'] = 'Y Coordinate'
+    #
+    # fig['layout']['xaxis2']['title'] = 'X Coordinate'
+    # fig['layout']['yaxis2']['title'] = 'Y Coordinate'
+    #
+    # fig.update_layout(yaxis1=dict(range=get_range()))
+    # fig.update_layout(yaxis2=dict(range=get_range()))
+    #
+    # fig.update_layout(showlegend=False)
+    #
+    # fig.write_image(os.path.join(dir_name, f'curve_samples_side_by_side_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    # fig.show()
+    #
+    # # ----------------------------------------------------------------------------------
+    # # PLOT CURVE SAMPLES, ANCHORS AND PREDICTED CURVATURE SIDE BY SIDE (WITHOUT BUTTONS)
+    # # ----------------------------------------------------------------------------------
+    # left_width = 0.25
+    # for i, comparison in enumerate(curve_record['comparisons']):
+    #     fig = make_subplots(rows=1, cols=3, column_widths=[left_width, left_width, 1 - (2*left_width)], subplot_titles=('<b>Sampled Curve</b>', '<b>Anchors</b>',  '<b>Predicted Curvature at Anchors</b>'))
+    #     sampled_curve = comparison['sampled_curve']
+    #     anchors = comparison['anchors']
+    #     anchor_indices = comparison['anchor_indices']
+    #     curve = comparison['curve']
+    #     curvature_comparison = comparison['curvature_comparison']
+    #     predicted_curvature = curvature_comparison['predicted_curvature']
+    #
+    #     plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Sampled Curve", curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=settings.plotly_sample_point_size)
+    #     plot_curve_sample_plotly(fig=fig, row=1, col=2, name="Anchors", curve=curve, curve_sample=anchors, color=anchor_indices, point_size=settings.plotly_sample_point_size)
+    #     plot_curvature_with_cmap_plotly(fig=fig, row=1, col=3, name="Predicted Curvature", curve=curve, curvature=predicted_curvature[:, 1], indices=anchor_indices, line_color='grey', line_width=settings.plotly_graph_line_width, point_size=settings.plotly_sample_anchor_size, color_scale='hsv')
+    #
+    #     fig.update_yaxes(
+    #         scaleanchor="x1",
+    #         scaleratio=1,
+    #         row=1,
+    #         col=1)
+    #
+    #     fig.update_yaxes(
+    #         scaleanchor="x2",
+    #         scaleratio=1,
+    #         row=1,
+    #         col=2)
+    #
+    #     fig['layout']['xaxis']['title'] = 'X Coordinate'
+    #     fig['layout']['yaxis']['title'] = 'Y Coordinate'
+    #
+    #     fig['layout']['xaxis2']['title'] = 'X Coordinate'
+    #     fig['layout']['yaxis2']['title'] = 'Y Coordinate'
+    #
+    #     fig['layout']['xaxis3']['title'] = 'Anchor Point Index'
+    #     fig['layout']['yaxis3']['title'] = 'Predicted Curvature'
+    #
+    #     curr_range = get_range()
+    #     fig.update_layout(yaxis1=dict(range=curr_range))
+    #     fig.update_layout(yaxis2=dict(range=curr_range))
+    #
+    #     fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize), showlegend=False)
+    #
+    #     fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    #
+    #     fig.write_image(os.path.join(dir_name, f'curve_samples_and_predicted_curvature_{curve_index}_{i}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    #     fig.show()
+    #
 
-    for i, comparison in enumerate(curve_record['comparisons']):
-        sampled_curve = comparison['sampled_curve']
-        curve = comparison['curve']
-        plot_curve_sample_plotly(fig=fig, row=1, col=i+1, name=f'Sampled Curve {i+1}', curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=settings.plotly_sample_point_size)
-
-    for i in range(len(curve_record['comparisons']) + 1):
-        fig.update_yaxes(
-            scaleanchor=f'x{i+1}',
-            scaleratio=1,
-            row=1,
-            col=i+1)
-
-    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
-    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
-
-    fig['layout']['xaxis']['title'] = 'X Coordinate'
-    fig['layout']['yaxis']['title'] = 'Y Coordinate'
-
-    fig['layout']['xaxis2']['title'] = 'X Coordinate'
-    fig['layout']['yaxis2']['title'] = 'Y Coordinate'
-
-    fig.update_layout(yaxis1=dict(range=get_range()))
-    fig.update_layout(yaxis2=dict(range=get_range()))
-
-    fig.update_layout(showlegend=False)
-
-    fig.write_image(os.path.join(dir_name, f'curve_samples_side_by_side_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
-    fig.show()
-
-    # ----------------------------------------------------------------------------------
-    # PLOT CURVE SAMPLES, ANCHORS AND PREDICTED CURVATURE SIDE BY SIDE (WITHOUT BUTTONS)
-    # ----------------------------------------------------------------------------------
-    left_width = 0.25
-    for i, comparison in enumerate(curve_record['comparisons']):
-        fig = make_subplots(rows=1, cols=3, column_widths=[left_width, left_width, 1 - (2*left_width)], subplot_titles=('<b>Sampled Curve</b>', '<b>Anchors</b>',  '<b>Predicted Curvature at Anchors</b>'))
-        sampled_curve = comparison['sampled_curve']
-        anchors = comparison['anchors']
-        anchor_indices = comparison['anchor_indices']
-        curve = comparison['curve']
-        curvature_comparison = comparison['curvature_comparison']
-        predicted_curvature = curvature_comparison['predicted_curvature']
-
-        plot_curve_sample_plotly(fig=fig, row=1, col=1, name="Sampled Curve", curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=settings.plotly_sample_point_size)
-        plot_curve_sample_plotly(fig=fig, row=1, col=2, name="Anchors", curve=curve, curve_sample=anchors, color=anchor_indices, point_size=settings.plotly_sample_point_size)
-        plot_curvature_with_cmap_plotly(fig=fig, row=1, col=3, name="Predicted Curvature", curve=curve, curvature=predicted_curvature[:, 1], indices=anchor_indices, line_color='grey', line_width=settings.plotly_graph_line_width, point_size=settings.plotly_sample_anchor_size, color_scale='hsv')
-
-        fig.update_yaxes(
-            scaleanchor="x1",
-            scaleratio=1,
-            row=1,
-            col=1)
-
-        fig.update_yaxes(
-            scaleanchor="x2",
-            scaleratio=1,
-            row=1,
-            col=2)
-
-        fig['layout']['xaxis']['title'] = 'X Coordinate'
-        fig['layout']['yaxis']['title'] = 'Y Coordinate'
-
-        fig['layout']['xaxis2']['title'] = 'X Coordinate'
-        fig['layout']['yaxis2']['title'] = 'Y Coordinate'
-
-        fig['layout']['xaxis3']['title'] = 'Anchor Point Index'
-        fig['layout']['yaxis3']['title'] = 'Predicted Curvature'
-
-        curr_range = get_range()
-        fig.update_layout(yaxis1=dict(range=curr_range))
-        fig.update_layout(yaxis2=dict(range=curr_range))
-
-        fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize), showlegend=False)
-
-        fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
-
-        fig.write_image(os.path.join(dir_name, f'curve_samples_and_predicted_curvature_{curve_index}_{i}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
-        fig.show()
 
     fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted Curvature at Anchors (Transformed Curve #1 vs. Transformed Curve #2)</b>',))
 
