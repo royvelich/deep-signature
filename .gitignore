@@ -129,7 +129,8 @@ dmypy.json
 .pyre/
 
 # IDEA
-# .idea/
+.idea/*
+!.idea/runConfigurations
 
 # MY STUFF
 *.npy
