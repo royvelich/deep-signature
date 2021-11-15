@@ -29,9 +29,7 @@ if __name__ == '__main__':
     parser.add_argument("--validation_dataset_size", dest="validation_dataset_size", default=settings.arclength_default_validation_dataset_size, type=int)
     parser.add_argument("--learning_rate", dest="learning_rate", default=settings.arclength_default_learning_rate, type=float)
     parser.add_argument("--validation_split", dest="validation_split", default=settings.arclength_default_validation_split, type=float)
-    parser.add_argument("--sampling_ratio", dest="sampling_ratio", default=settings.arclength_default_sampling_ratio, type=float)
     parser.add_argument("--supporting_points_count", dest="supporting_points_count", default=settings.arclength_default_supporting_points_count, type=int)
-    parser.add_argument("--sample_points", dest="section_points_count", default=settings.arclength_default_section_points_count, type=int)
     parser.add_argument("--multimodality", dest="multimodality", default=settings.arclength_default_multimodality, type=int)
     parser.add_argument("--min_offset", dest="min_offset", default=settings.arclength_default_min_offset, type=int)
     parser.add_argument("--max_offset", dest="max_offset", default=settings.arclength_default_max_offset, type=int)
@@ -55,12 +53,10 @@ if __name__ == '__main__':
     train_dataset = OnlineDataset(
         dataset_size=args.train_dataset_size,
         dir_path=settings.level_curves_dir_path_train,
-        sampling_ratio=args.sampling_ratio,
         multimodality=args.multimodality,
         replace=True,
         buffer_size=args.train_buffer_size,
         num_workers=args.num_workers_train,
-        section_points_count=args.section_points_count,
         supporting_points_count=args.supporting_points_count,
         min_offset=args.min_offset,
         max_offset=args.max_offset)
@@ -68,12 +64,10 @@ if __name__ == '__main__':
     validation_dataset = OnlineDataset(
         dataset_size=args.validation_dataset_size,
         dir_path=settings.level_curves_dir_path_validation,
-        sampling_ratio=args.sampling_ratio,
         multimodality=args.multimodality,
         replace=False,
         buffer_size=args.validation_buffer_size,
         num_workers=args.num_workers_validation,
-        section_points_count=args.section_points_count,
         supporting_points_count=args.supporting_points_count,
         min_offset=args.min_offset,
         max_offset=args.max_offset)

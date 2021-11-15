@@ -380,14 +380,14 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
             end_meta_index = meta_index
             end_meta_index2 = end_meta_index + 1
 
-            sampled_indices1 = curve_sampling.sample_curve_section_indices_old(
+            sampled_indices1 = curve_sampling.sample_curve_section_indices(
                 curve=sampled_curve,
                 start_point_index=start_meta_index,
                 end_point_index=end_meta_index,
                 supporting_points_count=supporting_points_count,
                 uniform=True)
 
-            sampled_indices2 = curve_sampling.sample_curve_section_indices_old(
+            sampled_indices2 = curve_sampling.sample_curve_section_indices(
                 curve=sampled_curve,
                 start_point_index=start_meta_index,
                 end_point_index=end_meta_index2,

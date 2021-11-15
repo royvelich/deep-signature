@@ -64,20 +64,14 @@ arclength_default_train_batch_size = arclength_default_train_buffer_size
 arclength_default_validation_batch_size = arclength_default_validation_buffer_size
 arclength_default_train_dataset_size = arclength_default_train_batch_size
 arclength_default_validation_dataset_size = arclength_default_validation_batch_size
-arclength_default_sampling_ratio = 0.3
-arclength_default_multimodality = 50
+arclength_default_multimodality = 20
 arclength_default_offset_length = 50
-arclength_default_num_workers = 1
 arclength_default_supporting_points_count = 5
-arclength_default_section_points_count = arclength_default_supporting_points_count
 arclength_default_min_offset = arclength_default_supporting_points_count - 1
 arclength_default_max_offset = 2 * arclength_default_min_offset
 arclength_default_num_workers_train = 5
 arclength_default_num_workers_validation = 5
 arclength_default_history_size = 1500
-
-# signatures
-signature_step = 40
 
 # plots
 matplotlib_factor = 1

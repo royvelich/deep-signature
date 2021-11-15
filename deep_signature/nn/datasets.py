@@ -23,28 +23,20 @@ class DeepSignaturePairsDataset(Dataset):
     def load_dataset(self, negative_pairs_dir_path, positive_pairs_dir_path):
         negative_pairs = numpy.load(file=os.path.normpath(os.path.join(negative_pairs_dir_path, 'negative_pairs.npy')), allow_pickle=True)
         positive_pairs = numpy.load(file=os.path.normpath(os.path.join(positive_pairs_dir_path, 'positive_pairs.npy')), allow_pickle=True)
-        # pairs_count = numpy.minimum(negative_pairs.shape[0], positive_pairs.shape[0])
-        # full_pairs_count = 2 * pairs_count
         full_pairs_count = negative_pairs.shape[0] + positive_pairs.shape[0]
 
         random.shuffle(negative_pairs)
         random.shuffle(positive_pairs)
-        # negative_pairs = negative_pairs[:pairs_count]
-        # positive_pairs = positive_pairs[:pairs_count]
 
         self._pairs = numpy.empty((full_pairs_count, negative_pairs.shape[1], negative_pairs.shape[2], negative_pairs.shape[3]))
         self._pairs[:negative_pairs.shape[0], :] = negative_pairs
         self._pairs[negative_pairs.shape[0]:, :] = positive_pairs
-        # del negative_pairs
-        # del positive_pairs
 
         negaitve_labels = numpy.zeros(negative_pairs.shape[0])
         positive_labels = numpy.ones(positive_pairs.shape[0])
         self._labels = numpy.empty(full_pairs_count)
         self._labels[:negative_pairs.shape[0]] = negaitve_labels
         self._labels[negative_pairs.shape[0]:] = positive_labels
-        # self._labels[::2] = negaitve_labels
-        # self._labels[1::2] = positive_labels
 
     def __len__(self):
         return self._labels.shape[0]
@@ -100,13 +92,13 @@ class EuclideanTuple:
                 negative_examples_count=negative_examples_count)
 
     @staticmethod
-    def _generate_arclength_tuple(curves, multimodality, supporting_points_count, min_offset, max_offset):
+    def _generate_arclength_tuple(curves, min_offset, max_offset, multimodality, supporting_points_count):
         return dataset_generation.EuclideanArcLengthTupletsDatasetGenerator.generate_tuple(
                 curves=curves,
-                multimodality=multimodality,
-                supporting_points_count=supporting_points_count,
                 min_offset=min_offset,
-                max_offset=max_offset)
+                max_offset=max_offset,
+                multimodality=multimodality,
+                supporting_points_count=supporting_points_count)
 
 
 class EquiaffineTuple:
@@ -120,22 +112,14 @@ class EquiaffineTuple:
                 offset_length=offset_length,
                 negative_examples_count=negative_examples_count)
 
-    # @staticmethod
-    # def _generate_arclength_tuple(curves, sampling_ratio, multimodality, section_points_count):
-    #     return dataset_generation.EquiaffineArclengthTupletsDatasetGenerator.generate_tuple(
-    #         curves=curves,
-    #         sampling_ratio=sampling_ratio,
-    #         multimodality=multimodality,
-    #         section_points_count=section_points_count)
-
     @staticmethod
-    def _generate_arclength_tuple(curves, multimodality, supporting_points_count, min_offset, max_offset):
+    def _generate_arclength_tuple(curves, min_offset, max_offset, multimodality, supporting_points_count):
         return dataset_generation.EquiaffineArcLengthTupletsDatasetGenerator.generate_tuple(
                 curves=curves,
-                multimodality=multimodality,
-                supporting_points_count=supporting_points_count,
                 min_offset=min_offset,
-                max_offset=max_offset)
+                max_offset=max_offset,
+                multimodality=multimodality,
+                supporting_points_count=supporting_points_count)
 
 
 class AffineTuple:
@@ -149,35 +133,26 @@ class AffineTuple:
                 offset_length=offset_length,
                 negative_examples_count=negative_examples_count)
 
-    # @staticmethod
-    # def _generate_arclength_tuple(curves, sampling_ratio, multimodality, section_points_count):
-    #     return dataset_generation.AffineArclengthTupletsDatasetGenerator.generate_tuple(
-    #             curves=curves,
-    #             sampling_ratio=sampling_ratio,
-    #             multimodality=multimodality,
-    #             section_points_count=section_points_count)
-
     @staticmethod
-    def _generate_arclength_tuple(curves, multimodality, supporting_points_count, min_offset, max_offset):
+    def _generate_arclength_tuple(curves, min_offset, max_offset, multimodality, supporting_points_count):
         return dataset_generation.AffineArcLengthTupletsDatasetGenerator.generate_tuple(
                 curves=curves,
-                multimodality=multimodality,
-                supporting_points_count=supporting_points_count,
                 min_offset=min_offset,
-                max_offset=max_offset)
+                max_offset=max_offset,
+                multimodality=multimodality,
+                supporting_points_count=supporting_points_count)
 
 
 class DeepSignatureTupletsOnlineDataset(Dataset):
-    def __init__(self, dataset_size, dir_path, sampling_ratio, multimodality, replace, buffer_size, num_workers):
+    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers):
         self._curves = curve_generation.CurvesGenerator.load_curves(dir_path)
         self._dataset_size = dataset_size
-        self._sampling_ratio = sampling_ratio
         self._multimodality = multimodality
         self._replace = replace
         self._buffer_size = buffer_size
         self._num_workers = num_workers
         self._q = Queue()
-        self._args = [self._curves, self._sampling_ratio, self._multimodality, self._q]
+        self._args = [self._curves, self._multimodality, self._q]
         self._items = []
 
     def __len__(self):
@@ -224,16 +199,18 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
 
 
 class DeepSignatureCurvatureTupletsOnlineDataset(DeepSignatureTupletsOnlineDataset):
-    def __init__(self, dataset_size, dir_path, sampling_ratio, multimodality, replace, buffer_size, num_workers, supporting_points_count, offset_length, negative_examples_count):
+    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers, sampling_ratio, supporting_points_count, offset_length, negative_examples_count):
         DeepSignatureTupletsOnlineDataset.__init__(
             self,
             dataset_size=dataset_size,
             dir_path=dir_path,
-            sampling_ratio=sampling_ratio,
             multimodality=multimodality,
             replace=replace,
             buffer_size=buffer_size,
             num_workers=num_workers)
+
+        self._sampling_ratio = sampling_ratio
+        self._args.append(sampling_ratio)
 
         self._supporting_points_count = supporting_points_count
         self._args.append(supporting_points_count)
@@ -269,19 +246,15 @@ class DeepSignatureAffineCurvatureTupletsOnlineDataset(DeepSignatureCurvatureTup
 
 
 class DeepSignatureArclengthTupletsOnlineDataset(DeepSignatureTupletsOnlineDataset):
-    def __init__(self, dataset_size, dir_path, sampling_ratio, multimodality, replace, buffer_size, num_workers, section_points_count, supporting_points_count, min_offset, max_offset):
+    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers, supporting_points_count, min_offset, max_offset):
         DeepSignatureTupletsOnlineDataset.__init__(
             self,
             dataset_size=dataset_size,
             dir_path=dir_path,
-            sampling_ratio=sampling_ratio,
             multimodality=multimodality,
             replace=replace,
             buffer_size=buffer_size,
             num_workers=num_workers)
-
-        self._section_points_count = section_points_count
-        self._args.append(section_points_count)
 
         self._supporting_points_count = supporting_points_count
         self._args.append(supporting_points_count)
@@ -293,23 +266,14 @@ class DeepSignatureArclengthTupletsOnlineDataset(DeepSignatureTupletsOnlineDatas
         self._args.append(max_offset)
 
     @classmethod
-    def _map_func(cls, curves, sampling_ratio, multimodality, q, section_points_count, supporting_points_count, min_offset, max_offset):
+    def _map_func(cls, curves, multimodality, q, supporting_points_count, min_offset, max_offset):
         while True:
             q.put(cls._generate_arclength_tuple(
                 curves=curves,
-                multimodality=multimodality,
-                supporting_points_count=supporting_points_count,
                 min_offset=min_offset,
-                max_offset=max_offset))
-
-            # q.put(cls._generate_arclength_tuple(
-            #     curves=curves,
-            #     sampling_ratio=sampling_ratio,
-            #     multimodality=multimodality,
-            #     section_points_count=section_points_count,
-            #     supporting_points_count=supporting_points_count,
-            #     min_offset=min_offset,
-            #     max_offset=max_offset))
+                max_offset=max_offset,
+                multimodality=multimodality,
+                supporting_points_count=supporting_points_count))
 
 
 class DeepSignatureEuclideanArclengthTupletsOnlineDataset(DeepSignatureArclengthTupletsOnlineDataset, EuclideanTuple):
