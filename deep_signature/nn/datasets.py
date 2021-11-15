@@ -222,7 +222,7 @@ class DeepSignatureCurvatureTupletsOnlineDataset(DeepSignatureTupletsOnlineDatas
         self._args.append(negative_examples_count)
 
     @classmethod
-    def _map_func(cls, curves, sampling_ratio, multimodality, q, supporting_points_count, offset_length, negative_examples_count):
+    def _map_func(cls, curves, multimodality, q, sampling_ratio, supporting_points_count, offset_length, negative_examples_count):
         while True:
             q.put(cls._generate_curvature_tuple(
                 curves=curves,
