@@ -6,6 +6,7 @@ data_dir = "C:/deep-signature-data"
 images_dir_path_train = os.path.normpath(os.path.join(data_dir, "images/train"))
 images_dir_path_validation = os.path.normpath(os.path.join(data_dir, "images/validation"))
 images_dir_path_test = os.path.normpath(os.path.join(data_dir, "images/test"))
+plots_dir = os.path.normpath(os.path.join(data_dir, "plots"))
 
 # circles
 circles_dir_path_train = os.path.normpath(os.path.join(data_dir, "circles/curves/train"))
