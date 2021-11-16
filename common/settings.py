@@ -69,7 +69,7 @@ arclength_default_offset_length = 50
 arclength_default_supporting_points_count = 5
 arclength_default_min_offset = arclength_default_supporting_points_count - 1
 arclength_default_max_offset = 2 * arclength_default_min_offset
-arclength_default_num_workers_train = 5
+arclength_default_num_workers_train = 10
 arclength_default_num_workers_validation = 5
 arclength_default_history_size = 1500
 
