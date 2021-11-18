@@ -774,7 +774,8 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors, sam
         fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
 
         fig.write_image(os.path.join(dir_name, f'curve_samples_and_predicted_curvature_{curve_index}_{i}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
-        fig.show()
+        if plot_to_screen is True:
+            fig.show()
     #
     # # --------------------
     # # CURVATURE AT ANCHORS
