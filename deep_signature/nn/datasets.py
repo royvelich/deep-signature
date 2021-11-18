@@ -151,7 +151,7 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
         self._replace = replace
         self._buffer_size = buffer_size
         self._num_workers = num_workers
-        self._q = Queue()
+        self._q = Queue(maxsize=dataset_size)
         self._args = [self._curves, self._multimodality, self._q]
         self._items = []
 
