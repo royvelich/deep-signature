@@ -121,7 +121,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         return sample
 
     @classmethod
-    def generate_tuple(cls, curves, min_offset, max_offset, multimodality, supporting_points_count):
+    def generate_tuple(cls, curves, min_offset, max_offset, multimodality, supporting_points_count, anchor_points_count):
         input = []
         factors = []
         metadata = {}
@@ -137,7 +137,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             'metadata': metadata
         }
 
-        anchor_points_count = 5
+        # anchor_points_count = 5
         metadata['anchor_points_count'] = anchor_points_count
         metadata['supporting_points_count'] = supporting_points_count
         raw_offset = numpy.random.randint(max_offset, size=anchor_points_count-1)

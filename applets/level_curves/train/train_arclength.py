@@ -30,6 +30,7 @@ if __name__ == '__main__':
     parser.add_argument("--learning_rate", dest="learning_rate", default=settings.arclength_default_learning_rate, type=float)
     parser.add_argument("--validation_split", dest="validation_split", default=settings.arclength_default_validation_split, type=float)
     parser.add_argument("--supporting_points_count", dest="supporting_points_count", default=settings.arclength_default_supporting_points_count, type=int)
+    parser.add_argument("--anchor_points_count", dest="anchor_points_count", default=settings.arclength_default_anchor_points_count, type=int)
     parser.add_argument("--multimodality", dest="multimodality", default=settings.arclength_default_multimodality, type=int)
     parser.add_argument("--min_offset", dest="min_offset", default=settings.arclength_default_min_offset, type=int)
     parser.add_argument("--max_offset", dest="max_offset", default=settings.arclength_default_max_offset, type=int)
@@ -59,7 +60,8 @@ if __name__ == '__main__':
         num_workers=args.num_workers_train,
         supporting_points_count=args.supporting_points_count,
         min_offset=args.min_offset,
-        max_offset=args.max_offset)
+        max_offset=args.max_offset,
+        anchor_points_count=args.anchor_points_count)
 
     validation_dataset = OnlineDataset(
         dataset_size=args.validation_dataset_size,
@@ -70,7 +72,8 @@ if __name__ == '__main__':
         num_workers=args.num_workers_validation,
         supporting_points_count=args.supporting_points_count,
         min_offset=args.min_offset,
-        max_offset=args.max_offset)
+        max_offset=args.max_offset,
+        anchor_points_count=args.anchor_points_count)
 
     validation_dataset.start()
     validation_dataset.stop()
@@ -86,7 +89,7 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
     # optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    loss_fn = ArcLengthLoss()
+    loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count)
     model_trainer = ModelTrainer(model=model, loss_functions=[loss_fn], optimizer=optimizer)
     model_trainer.fit(
         train_dataset=train_dataset,

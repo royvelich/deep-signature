@@ -92,13 +92,14 @@ class EuclideanTuple:
                 negative_examples_count=negative_examples_count)
 
     @staticmethod
-    def _generate_arclength_tuple(curves, min_offset, max_offset, multimodality, supporting_points_count):
+    def _generate_arclength_tuple(curves, min_offset, max_offset, multimodality, supporting_points_count, anchor_points_count):
         return dataset_generation.EuclideanArcLengthTupletsDatasetGenerator.generate_tuple(
                 curves=curves,
                 min_offset=min_offset,
                 max_offset=max_offset,
                 multimodality=multimodality,
-                supporting_points_count=supporting_points_count)
+                supporting_points_count=supporting_points_count,
+                anchor_points_count=anchor_points_count)
 
 
 class EquiaffineTuple:
@@ -113,13 +114,14 @@ class EquiaffineTuple:
                 negative_examples_count=negative_examples_count)
 
     @staticmethod
-    def _generate_arclength_tuple(curves, min_offset, max_offset, multimodality, supporting_points_count):
+    def _generate_arclength_tuple(curves, min_offset, max_offset, multimodality, supporting_points_count, anchor_points_count):
         return dataset_generation.EquiaffineArcLengthTupletsDatasetGenerator.generate_tuple(
                 curves=curves,
                 min_offset=min_offset,
                 max_offset=max_offset,
                 multimodality=multimodality,
-                supporting_points_count=supporting_points_count)
+                supporting_points_count=supporting_points_count,
+                anchor_points_count=anchor_points_count)
 
 
 class AffineTuple:
@@ -134,13 +136,14 @@ class AffineTuple:
                 negative_examples_count=negative_examples_count)
 
     @staticmethod
-    def _generate_arclength_tuple(curves, min_offset, max_offset, multimodality, supporting_points_count):
+    def _generate_arclength_tuple(curves, min_offset, max_offset, multimodality, supporting_points_count, anchor_points_count):
         return dataset_generation.AffineArcLengthTupletsDatasetGenerator.generate_tuple(
                 curves=curves,
                 min_offset=min_offset,
                 max_offset=max_offset,
                 multimodality=multimodality,
-                supporting_points_count=supporting_points_count)
+                supporting_points_count=supporting_points_count,
+                anchor_points_count=anchor_points_count)
 
 
 class DeepSignatureTupletsOnlineDataset(Dataset):
@@ -246,7 +249,7 @@ class DeepSignatureAffineCurvatureTupletsOnlineDataset(DeepSignatureCurvatureTup
 
 
 class DeepSignatureArclengthTupletsOnlineDataset(DeepSignatureTupletsOnlineDataset):
-    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers, supporting_points_count, min_offset, max_offset):
+    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers, supporting_points_count, min_offset, max_offset, anchor_points_count):
         DeepSignatureTupletsOnlineDataset.__init__(
             self,
             dataset_size=dataset_size,
@@ -265,15 +268,19 @@ class DeepSignatureArclengthTupletsOnlineDataset(DeepSignatureTupletsOnlineDatas
         self._max_offset = max_offset
         self._args.append(max_offset)
 
+        self._anchor_points_count = anchor_points_count
+        self._args.append(anchor_points_count)
+
     @classmethod
-    def _map_func(cls, curves, multimodality, q, supporting_points_count, min_offset, max_offset):
+    def _map_func(cls, curves, multimodality, q, supporting_points_count, min_offset, max_offset, anchor_points_count):
         while True:
             q.put(cls._generate_arclength_tuple(
                 curves=curves,
                 min_offset=min_offset,
                 max_offset=max_offset,
                 multimodality=multimodality,
-                supporting_points_count=supporting_points_count))
+                supporting_points_count=supporting_points_count,
+                anchor_points_count=anchor_points_count))
 
 
 class DeepSignatureEuclideanArclengthTupletsOnlineDataset(DeepSignatureArclengthTupletsOnlineDataset, EuclideanTuple):
