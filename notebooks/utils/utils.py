@@ -616,7 +616,7 @@ def calculate_signature_metrics(curve_records):
 # -------------
 def plot_curve_curvature_comparisons(curve_records, curve_colors, sampling_ratio, transformation_group_type, plot_to_screen=True):
     for i, curve_record in enumerate(curve_records):
-        display(HTML(f'<H1>Curve {i+1} - Curvature Comparison</H1>'))
+        display(HTML(f'<H1>Curve {i+1} - Comparison</H1>'))
         plot_curve_curvature_comparison(
             curve_index=i,
             curve_record=curve_record,
