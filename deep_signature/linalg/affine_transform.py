@@ -20,7 +20,7 @@ def generate_random_equiaffine_transform_2d(max_scale=3, min_cond=1.1, max_cond=
             return A
 
 
-def generate_random_affine_transform_2d(max_scale=3, min_cond=1.3, max_cond=3.5, min_det=1.5):
+def generate_random_affine_transform_2d(max_scale=3, min_cond=1.1, max_cond=3, min_det=1.5):
     while True:
         A = numpy.random.uniform(low=0, high=max_scale, size=(2,2))
         det = numpy.linalg.det(A)

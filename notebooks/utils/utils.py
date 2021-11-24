@@ -422,7 +422,7 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
 # --------------------------
 # RECORD GENERATION ROUTINES
 # --------------------------
-def generate_curve_records(arclength_model, curvature_model, curves, factor_extraction_curves, transform_type, comparison_curves_count, sampling_ratio, anchors_ratio, step, neighborhood_supporting_points_count, section_supporting_points_count):
+def generate_curve_records(arclength_model, curvature_model, curves, factor_extraction_curves, transform_type, comparison_curves_count, sampling_ratio, anchors_ratio, neighborhood_supporting_points_count, section_supporting_points_count):
     curve_records = []
     for curve_index, curve in enumerate(curves):
         curve = curve_processing.enforce_cw(curve=curve)
@@ -651,16 +651,22 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors, sam
     # ---------------------
     fig = make_subplots(rows=1, cols=4, subplot_titles=('<b>Reference Curve</b>', '<b>Transformed Curve #1</b>', '<b>Transformed Curve #2</b>'))
 
-    curve = curve_record['curve']
-    plot_curve_plotly(fig=fig, row=1, col=1, curve=curve, name='Reference Curve', line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1])
+    orig_curve = curve_record['curve']
+    plot_curve_plotly(fig=fig, row=1, col=1, curve=orig_curve, name='Reference Curve', line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1])
 
     for i, comparison in enumerate(curve_record['comparisons']):
         curve = comparison['curve']
         plot_curve_plotly(fig=fig, row=1, col=i+2, curve=curve, name=f'Transformed Curve #{i+1}', line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
         plot_curve_sample_plotly(fig=fig, row=1, col=i + 2, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[0,:], axis=0), color='black', point_size=settings.plotly_sample_point_size)
+        # plot_curve_sample_plotly(fig=fig, row=1, col=i + 2, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[200,:], axis=0), color='black', point_size=settings.plotly_sample_point_size)
 
-        plot_curve_plotly(fig=fig, row=1, col=4, curve=curve, name=f'', line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
+        plot_curve_plotly(fig=fig, row=1, col=i+2, curve=orig_curve, name=f'', line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1])
+        plot_curve_sample_plotly(fig=fig, row=1, col=i + 2, name=f'', curve=orig_curve, curve_sample=numpy.expand_dims(orig_curve[0,:], axis=0), color='black', point_size=settings.plotly_sample_point_size)
+        # plot_curve_sample_plotly(fig=fig, row=1, col=i + 2, name=f'', curve=orig_curve, curve_sample=numpy.expand_dims(orig_curve[200,:], axis=0), color='black', point_size=settings.plotly_sample_point_size)
+
+        plot_curve_plotly(fig=fig, row=1, col=4, curve=curve, name='', line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
         plot_curve_sample_plotly(fig=fig, row=1, col=4, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[0, :], axis=0), color='black', point_size=settings.plotly_sample_point_size)
+        # plot_curve_sample_plotly(fig=fig, row=1, col=4, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[200, :], axis=0), color='black', point_size=settings.plotly_sample_point_size)
 
     for i in range(len(curve_record['comparisons']) + 2):
         fig.update_yaxes(

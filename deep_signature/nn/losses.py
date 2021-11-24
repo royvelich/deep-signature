@@ -53,10 +53,11 @@ class ArcLengthLoss(torch.nn.Module):
                 # print(f'[{index1 + 1}, {index2 + 1}] - [{index1 + 1}, {index2 + 2}]')
                 A.append((section_approx[(index1, index2)] - section_approx[(index1, index2 + 1)]))
 
-        for i in range(3, self._anchor_points_count+1):
-            for endpoints in itertools.combinations(indices, i):
+        for endpoints in itertools.combinations(indices, 2):
+            if endpoints[1] - endpoints[0] > 1:
                 B_aux = []
-                for index1, index2 in zip(endpoints, endpoints[1:]):
+                adj_indices = list(range(endpoints[0], endpoints[1] + 1))
+                for index1, index2 in zip(adj_indices, adj_indices[1:]):
                     B_aux.append(section_approx[(index1, index2)])
                     # print(f'[{index1 + 1}, {index2 + 1}]', end='')
 
@@ -65,9 +66,22 @@ class ArcLengthLoss(torch.nn.Module):
                 B.append(B_aux_sum)
                 # print(f'[{endpoints[0] + 1}, {endpoints[-1] + 1}]')
 
+        # for i in range(3, self._anchor_points_count+1):
+        #     for endpoints in itertools.combinations(indices, i):
+        #         B_aux = []
+        #         for index1, index2 in zip(endpoints, endpoints[1:]):
+        #             B_aux.append(section_approx[(index1, index2)])
+        #             print(f'[{index1 + 1}, {index2 + 1}]', end='')
+        #
+        #         B_aux_sum = torch.sum(torch.cat(B_aux, dim=1), dim=1).unsqueeze(dim=1)
+        #         B.append(section_approx[(endpoints[0], endpoints[-1])])
+        #         B.append(B_aux_sum)
+        #         print(f'[{endpoints[0] + 1}, {endpoints[-1] + 1}]')
+
         A_eval = torch.cat(A, dim=1)
-        A_eval_exp = A_eval.exp()
-        A_eval_exp_mean = A_eval_exp.mean(dim=1)
+        A_eval_mean = A_eval.mean(dim=1)
+        A_eval_mean_exp = A_eval_mean.exp()
+        # A_eval_mean_exp = torch.pow(5, A_eval_mean)
 
         B_eval = torch.cat(B, dim=1).abs()
         B_eval1 = B_eval[:, 0::2]
@@ -75,7 +89,7 @@ class ArcLengthLoss(torch.nn.Module):
         B_eval_diff = (B_eval1 - B_eval2).abs()
         B_eval_diff_mean = B_eval_diff.mean(dim=1)
 
-        loss_eval = (A_eval_exp_mean + B_eval_diff_mean).mean(dim=0)
+        loss_eval = (A_eval_mean_exp + B_eval_diff_mean).mean(dim=0)
 
         return loss_eval
 
@@ -87,7 +101,7 @@ class ArcLengthLoss2(torch.nn.Module):
 
     def forward(self, output, batch_data):
         sample_index = 0
-        nu = 1e-1
+        nu = 1e-2
         w = 0.7
         section_approx = {}
         indices = list(range(self._anchor_points_count))

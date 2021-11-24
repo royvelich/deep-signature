@@ -1,12 +1,11 @@
 import torch
 import numpy
-from deep_signature.nn.datasets import DeepSignatureTupletsDataset
 from deep_signature.nn.datasets import DeepSignatureEuclideanArclengthTupletsOnlineDataset
 from deep_signature.nn.datasets import DeepSignatureEquiaffineArclengthTupletsOnlineDataset
 from deep_signature.nn.datasets import DeepSignatureAffineArclengthTupletsOnlineDataset
 from deep_signature.nn.networks import DeepSignatureArcLengthNet
 from deep_signature.nn.losses import ArcLengthLoss
-from deep_signature.nn.losses import CurvatureLoss
+from deep_signature.nn.losses import ArcLengthLoss2
 from deep_signature.nn.trainers import ModelTrainer
 from common import settings
 from common import utils as common_utils
