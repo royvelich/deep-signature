@@ -10,7 +10,7 @@ import numpy
 # deep_signature
 from deep_signature.data_manipulation import curve_sampling, curve_processing
 from deep_signature.stats import discrete_distribution
-from deep_signature.linalg import euclidean_transform, affine_transform
+from deep_signature.linalg import transformations
 
 
 class TuplesDatasetGenerator:
@@ -20,19 +20,25 @@ class TuplesDatasetGenerator:
 class EuclideanTransform:
     @staticmethod
     def _generate_curve_transform():
-        return euclidean_transform.generate_random_euclidean_transform_2d()
+        return transformations.generate_random_euclidean_transform_2d()
+
+
+class SimilarityTransform:
+    @staticmethod
+    def _generate_curve_transform():
+        return transformations.generate_random_similarity_transform_2d()
 
 
 class EquiaffineTransform:
     @staticmethod
     def _generate_curve_transform():
-        return affine_transform.generate_random_equiaffine_transform_2d()
+        return transformations.generate_random_equiaffine_transform_2d()
 
 
 class AffineTransform:
     @staticmethod
     def _generate_curve_transform():
-        return affine_transform.generate_random_affine_transform_2d()
+        return transformations.generate_random_affine_transform_2d()
 
 
 class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
@@ -95,6 +101,10 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
 
 
 class EuclideanCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator, EuclideanTransform):
+    pass
+
+
+class SimilarityCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator, SimilarityTransform):
     pass
 
 
@@ -174,6 +184,10 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
 
 class EuclideanArcLengthTupletsDatasetGenerator(ArcLengthTupletsDatasetGenerator, EuclideanTransform):
+    pass
+
+
+class SimilarityArcLengthTupletsDatasetGenerator(ArcLengthTupletsDatasetGenerator, SimilarityTransform):
     pass
 
 

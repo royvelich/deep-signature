@@ -1,11 +1,15 @@
+# numpy
 import numpy
 
+# deep signature
 from deep_signature.stats import discrete_distribution
-from deep_signature.utils import utils
+
+# utils
+from utils import common as common_utils
 
 
 def sample_curve_neighborhood_indices(center_point_index, indices_pool, supporting_points_count):
-    modified_indices_pool = utils.insert_sorted(indices_pool, numpy.array([center_point_index]))
+    modified_indices_pool = common_utils.insert_sorted(indices_pool, numpy.array([center_point_index]))
     meta_index = numpy.where(modified_indices_pool == center_point_index)[0]
     meta_indices = numpy.arange(start=meta_index - supporting_points_count, stop=meta_index + supporting_points_count + 1)
     indices = modified_indices_pool[numpy.mod(meta_indices, modified_indices_pool.shape[0])]

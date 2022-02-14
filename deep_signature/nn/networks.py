@@ -92,7 +92,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         linear_modules = []
         in_features = in_features
 
-        if transformation_group_type == 'affine':
+        if transformation_group_type == 'affine' or transformation_group_type == 'similarity':
             out_features = 60
         else:
             out_features = 100
@@ -101,7 +101,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         while out_features > 10:
             linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True))
             linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True))
-            if transformation_group_type == 'affine':
+            if transformation_group_type == 'affine' or transformation_group_type == 'similarity':
                 linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True))
             in_features = out_features
             out_features = int(out_features / 2)

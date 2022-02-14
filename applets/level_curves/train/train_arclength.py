@@ -1,13 +1,13 @@
 import torch
 import numpy
 from deep_signature.nn.datasets import DeepSignatureEuclideanArclengthTupletsOnlineDataset
+from deep_signature.nn.datasets import DeepSignatureSimilarityArclengthTupletsOnlineDataset
 from deep_signature.nn.datasets import DeepSignatureEquiaffineArclengthTupletsOnlineDataset
 from deep_signature.nn.datasets import DeepSignatureAffineArclengthTupletsOnlineDataset
 from deep_signature.nn.networks import DeepSignatureArcLengthNet
 from deep_signature.nn.losses import ArcLengthLoss
-from deep_signature.nn.losses import ArcLengthLoss2
 from deep_signature.nn.trainers import ModelTrainer
-from common import settings
+from utils import settings
 from common import utils as common_utils
 from argparse import ArgumentParser
 
@@ -43,6 +43,9 @@ if __name__ == '__main__':
     if args.group == 'euclidean':
         OnlineDataset = DeepSignatureEuclideanArclengthTupletsOnlineDataset
         results_base_dir_path = settings.level_curves_euclidean_arclength_tuplets_results_dir_path
+    elif args.group == 'similarity':
+        OnlineDataset = DeepSignatureSimilarityArclengthTupletsOnlineDataset
+        results_base_dir_path = settings.level_curves_similarity_arclength_tuplets_results_dir_path
     elif args.group == 'equiaffine':
         OnlineDataset = DeepSignatureEquiaffineArclengthTupletsOnlineDataset
         results_base_dir_path = settings.level_curves_equiaffine_arclength_tuplets_results_dir_path

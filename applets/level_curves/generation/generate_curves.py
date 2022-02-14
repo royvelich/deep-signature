@@ -1,5 +1,5 @@
 from deep_signature.data_generation import curve_generation
-from common import settings
+from utils import settings
 
 if __name__ == '__main__':
     # curve_generation.LevelCurvesGenerator.generate_curves(

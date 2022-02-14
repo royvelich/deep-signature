@@ -124,6 +124,28 @@ class EquiaffineTuple:
                 anchor_points_count=anchor_points_count)
 
 
+class SimilarityTuple:
+    @staticmethod
+    def _generate_curvature_tuple(curves, sampling_ratio, multimodality, supporting_points_count, offset_length, negative_examples_count):
+        return dataset_generation.SimilarityCurvatureTupletsDatasetGenerator.generate_tuple(
+                curves=curves,
+                sampling_ratio=sampling_ratio,
+                multimodality=multimodality,
+                supporting_points_count=supporting_points_count,
+                offset_length=offset_length,
+                negative_examples_count=negative_examples_count)
+
+    @staticmethod
+    def _generate_arclength_tuple(curves, min_offset, max_offset, multimodality, supporting_points_count, anchor_points_count):
+        return dataset_generation.SimilarityArcLengthTupletsDatasetGenerator.generate_tuple(
+                curves=curves,
+                min_offset=min_offset,
+                max_offset=max_offset,
+                multimodality=multimodality,
+                supporting_points_count=supporting_points_count,
+                anchor_points_count=anchor_points_count)
+
+
 class AffineTuple:
     @staticmethod
     def _generate_curvature_tuple(curves, sampling_ratio, multimodality, supporting_points_count, offset_length, negative_examples_count):
@@ -240,6 +262,10 @@ class DeepSignatureEuclideanCurvatureTupletsOnlineDataset(DeepSignatureCurvature
     pass
 
 
+class DeepSignatureSimilarityCurvatureTupletsOnlineDataset(DeepSignatureCurvatureTupletsOnlineDataset, SimilarityTuple):
+    pass
+
+
 class DeepSignatureEquiaffineCurvatureTupletsOnlineDataset(DeepSignatureCurvatureTupletsOnlineDataset, EquiaffineTuple):
     pass
 
@@ -284,6 +310,10 @@ class DeepSignatureArclengthTupletsOnlineDataset(DeepSignatureTupletsOnlineDatas
 
 
 class DeepSignatureEuclideanArclengthTupletsOnlineDataset(DeepSignatureArclengthTupletsOnlineDataset, EuclideanTuple):
+    pass
+
+
+class DeepSignatureSimilarityArclengthTupletsOnlineDataset(DeepSignatureArclengthTupletsOnlineDataset, SimilarityTuple):
     pass
 
 

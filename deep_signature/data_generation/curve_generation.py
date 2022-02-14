@@ -15,7 +15,9 @@ import skimage.measure
 
 # deep_signature
 from deep_signature.data_manipulation import curve_processing
-from deep_signature.utils import utils
+
+# utils
+from utils import common as common_utils
 
 
 class CurvesGenerator:
@@ -31,7 +33,7 @@ class CurvesGenerator:
                 curves.append(curve)
                 print(f'Curves Count: {len(curves)}')
 
-        utils.par_proc(
+        common_utils.par_proc(
             map_func=cls._map_func,
             reduce_func=reduce_func,
             iterable=iterable,
