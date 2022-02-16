@@ -292,10 +292,10 @@ def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=Non
 # -------------
 # PLOT ROUTINES
 # -------------
-def plot_curve_curvature_comparisons(curve_records, curve_colors, sampling_ratio, transformation_group_type, plot_to_screen=True):
+def plot_curve_comparisons(curve_records, curve_colors, sampling_ratio, transformation_group_type, plot_to_screen=True):
     for i, curve_record in enumerate(curve_records):
         display(HTML(f'<H1>Curve {i+1} - Comparison</H1>'))
-        plot_curve_curvature_comparison(
+        plot_curve_comparison(
             curve_index=i,
             curve_record=curve_record,
             curve_colors=curve_colors,
@@ -304,7 +304,7 @@ def plot_curve_curvature_comparisons(curve_records, curve_colors, sampling_ratio
             plot_to_screen=plot_to_screen)
 
 
-def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors, sampling_ratio, transformation_group_type, plot_to_screen):
+def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_ratio, transformation_group_type, plot_to_screen):
     dir_name = os.path.normpath(os.path.join(settings.plots_dir, f"./signature_plots_{sampling_ratio}_{transformation_group_type}"))
     pathlib.Path(dir_name).mkdir(parents=True, exist_ok=True)
     factor = 1.3
@@ -518,7 +518,7 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors, sam
     fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted Curvature as a Function of Point Index</b>',))
     for i, comparison in enumerate(curve_record['comparisons']):
         curvature_comparison = comparison['curvature_comparison']
-        predicted_curvature = curvature_comparison['predicted_curvature_without_anchors']
+        predicted_curvature = curvature_comparison['predicted_curvature']
 
         plot_curve_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curve=predicted_curvature, point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
 
@@ -540,8 +540,9 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors, sam
     for i, comparison in enumerate(curve_record['comparisons']):
         curvature_comparison = comparison['curvature_comparison']
         arclength_comparison = comparison['arclength_comparison']
-        predicted_curvature = curvature_comparison['predicted_curvature_without_anchors']
-        predicted_arclength = arclength_comparison['predicted_arclength_without_anchors']
+        predicted_curvature = curvature_comparison['predicted_curvature']
+        predicted_arclength = arclength_comparison['predicted_arclength']
+        predicted_signature = comparison['predicted_signature']
         true_curvature = curvature_comparison['true_curvature']
         true_arclength = arclength_comparison['true_arclength']
 
@@ -558,7 +559,7 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors, sam
         else:
             ratio = 1
 
-        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=predicted_arclength[:, 1], y=ratio*predicted_curvature[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
+        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=predicted_signature[:, 0], y=ratio*predicted_signature[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
 
     fig['layout']['xaxis']['title'] = 'Predicted Arc-Length'
     fig['layout']['yaxis']['title'] = 'Predicted Curvature'
@@ -571,7 +572,6 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors, sam
     if plot_to_screen is True:
         fig.show()
 
-
     # -----------------------------------------
     # CURVATURE VS. ARC-LENGTH OF SAMPLE POINTS
     # -----------------------------------------
@@ -579,8 +579,8 @@ def plot_curve_curvature_comparison(curve_index, curve_record, curve_colors, sam
     for i, comparison in enumerate(curve_record['comparisons']):
         curvature_comparison = comparison['curvature_comparison']
         arclength_comparison = comparison['arclength_comparison']
-        predicted_curvature = curvature_comparison['predicted_curvature_without_anchors']
-        predicted_arclength = arclength_comparison['predicted_arclength_without_anchors']
+        predicted_curvature = curvature_comparison['predicted_curvature']
+        predicted_arclength = arclength_comparison['predicted_arclength']
         true_curvature = curvature_comparison['true_curvature']
         true_arclength = arclength_comparison['true_arclength']
 
@@ -676,11 +676,12 @@ def plot_curve_signature_comparision(curve_index, curve_record, true_signature_c
         curvature_comparison = comparision['curvature_comparison']
         predicted_arclength = arclength_comparison['predicted_arclength'][:, 1]
         predicted_curvature = curvature_comparison['predicted_curvature'][:, 1]
+        predicted_signature = comparision['predicted_signature']
 
         true_arclength = arclength_comparison['true_arclength'][:, 1]
         true_curvature = 150*curvature_comparison['true_curvature'][:, 1]
 
-        plot_graph(ax=axis, x=predicted_arclength, y=predicted_curvature, color=predicted_signature_colors[i], linewidth=settings.matplotlib_graph_line_width, label=f'Predicted Signature Curve (Transformed Curve #{i + 1})')
+        plot_graph(ax=axis, x=predicted_signature[:, 0], y=predicted_signature[:, 1], color=predicted_signature_colors[i], linewidth=settings.matplotlib_graph_line_width, label=f'Predicted Signature Curve (Transformed Curve #{i + 1})')
         # plot_sample(ax=axis, sample=None, x=predicted_arclength, y=predicted_curvature, point_size=settings.matplotlib_line_point_size, color=predicted_signature_colors[i], zorder=250)
 
         plot_graph(ax=axis, x=true_arclength, y=true_curvature, color=true_signature_colors[i], linewidth=settings.matplotlib_graph_line_width, label=f'True Signature Curve (Transformed Curve #{i + 1})')
