@@ -8,10 +8,12 @@ import numpy
 import skimage.io
 import skimage.color
 import skimage.measure
+from skimage import metrics
 
 # deep signature
 from deep_signature.data_manipulation import curve_processing
 from deep_signature.linalg import transformations
+from deep_signature.data_generation.curve_generation import LevelCurvesGenerator
 
 # common
 from utils import common as common_utils
@@ -47,87 +49,105 @@ def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=Non
         zorder=zorder)
 
 
+def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_ratio, curvature_model, arclength_model):
+    transform = transformations.generate_random_transform_2d(transform_type=transform_type)
+    transformed_curve = curve_processing.center_curve(curve=curve_processing.transform_curve(curve=curve, transform=transform))
+    predicted_curve_invariants = evaluation_utils.predict_curve_invariants(
+        curve=transformed_curve,
+        arclength_model=arclength_model,
+        curvature_model=curvature_model,
+        sampling_ratio=sampling_ratio,
+        anchors_ratio=anchors_ratio,
+        neighborhood_supporting_points_count=settings.curvature_default_supporting_points_count,
+        section_supporting_points_count=settings.arclength_default_supporting_points_count)
+    signature_curve = predicted_curve_invariants['predicted_signature']
+    return signature_curve
+
+
+def calculate_hausdorff_distances(curve1, curve2):
+    shift_distances = []
+    for shift in range(curve2.shape[0]):
+        shifted_curve2 = evaluation_utils.shift_signature_curve(curve=curve2, shift=shift)
+        hausdorff_distance = evaluation_utils.calculate_hausdorff_distance(curve1=curve1, curve2=shifted_curve2, distance_type='euclidean')
+        shift_distances.append(hausdorff_distance)
+    return numpy.array(shift_distances)
+
+
 if __name__ == '__main__':
-    sampling_ratio = 0.7
+    sampling_ratio = 0.5
     anchors_ratio = 1
-    transform_type = 'euclidean'
+    transform_type = 'equiaffine'
     curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type)
 
     image_file_path = os.path.normpath('C:/Users/Roy/OneDrive - Technion/Thesis/1x/cats.png')
     image = skimage.io.imread(image_file_path)
     gray_image = skimage.color.rgb2gray(image)
-    contours = skimage.measure.find_contours(gray_image, 0.5)
+    contours = skimage.measure.find_contours(gray_image, 0.3)
     contours.sort(key=lambda contour: contour.shape[0], reverse=True)
-    contours = [contour for contour in contours if contour.shape[0] > 1000]
+    curves = [contour for contour in contours if 1000 < contour.shape[0]]
+    # numpy.save('cats.npy', contours)
 
-    numpy.save('cats.npy', contours)
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+    # plot_curve(ax=ax, curve=contours[0], color='red', zorder=10)
+    # plt.show()
+    #
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+    # plot_curve(ax=ax, curve=contours[1], color='red', zorder=10)
+    # plt.show()
 
-    comparison_curves = []
-    for i, contour in enumerate(contours):
-        if transform_type == 'euclidean':
-            transform = transformations.generate_random_euclidean_transform_2d()
-        elif transform_type == 'similarity':
-            transform = transformations.generate_random_similarity_transform_2d()
-        elif transform_type == 'equiaffine':
-            transform = transformations.generate_random_equiaffine_transform_2d()
-        elif transform_type == 'affine':
-            transform = transformations.generate_random_affine_transform_2d()
-        transformed_curve = curve_processing.transform_curve(curve=contour, transform=transform)
-        comparison_curves.append({
-            'curve': curve_processing.center_curve(curve=transformed_curve),
-            'id': i
-        })
+    # curves = LevelCurvesGenerator.load_curves(dir_path=settings.level_curves_dir_path_test)
+    # curves = [curve for curve in curves if 700 < curve.shape[0] < 1100]
+    #
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+    # plot_curve(ax=ax, curve=curves[0], color='red', zorder=10)
+    # plt.show()
+    #
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+    # plot_curve(ax=ax, curve=curves[1], color='red', zorder=10)
+    # plt.show()
 
-    for i, contour in enumerate(contours):
-        if transform_type == 'euclidean':
-            transform = transformations.generate_random_euclidean_transform_2d()
-        elif transform_type == 'similarity':
-            transform = transformations.generate_random_similarity_transform_2d()
-        elif transform_type == 'equiaffine':
-            transform = transformations.generate_random_equiaffine_transform_2d()
-        elif transform_type == 'affine':
-            transform = transformations.generate_random_affine_transform_2d()
+    curves = curves[:20]
 
-        transformed_anchor_curve = curve_processing.transform_curve(curve=contour, transform=transform)
-        anchor_predicted_curve_invariants = evaluation_utils.predict_curve_invariants(
-            curve=transformed_anchor_curve,
-            arclength_model=arclength_model,
-            curvature_model=curvature_model,
+    correct = 0
+    signatures = []
+    for i, curve in enumerate(curves):
+        signature_curve = calculate_signature_curve(
+            curve=curve,
+            transform_type=transform_type,
             sampling_ratio=sampling_ratio,
             anchors_ratio=anchors_ratio,
-            neighborhood_supporting_points_count=settings.curvature_default_supporting_points_count,
-            section_supporting_points_count=settings.arclength_default_supporting_points_count)
+            curvature_model=curvature_model,
+            arclength_model=arclength_model)
+        signatures.append(signature_curve)
 
-        anchor_signature_curve = anchor_predicted_curve_invariants['predicted_signature']
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+    # plot_sample(ax=ax, sample=signatures[0], color='red', zorder=10, point_size=300)
+    # plt.show()
+    #
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+    # shifted_curve = evaluation_utils.shift_signature_curve(curve=signatures[0], shift=90)
+    # plot_sample(ax=ax, sample=shifted_curve, color='blue', zorder=10, point_size=300)
+    # plt.show()
 
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(40, 20))
-        plot_sample(ax=ax, sample=anchor_signature_curve, color='red', zorder=10)
-        plt.show()
+    distances = numpy.zeros((len(curves), len(curves)))
+    for i, curve in enumerate(curves):
+        anchor_signature_curve = calculate_signature_curve(
+            curve=curve,
+            transform_type=transform_type,
+            sampling_ratio=sampling_ratio,
+            anchors_ratio=anchors_ratio,
+            curvature_model=curvature_model,
+            arclength_model=arclength_model)
+        for j, signature_curve in enumerate(signatures):
+            shift_distances1 = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
+            shift_distances2 = calculate_hausdorff_distances(curve1=signature_curve, curve2=anchor_signature_curve)
+            distances[i, j] = numpy.min([numpy.min(shift_distances1), numpy.min(shift_distances2)])
 
-        distances = numpy.zeros(len(contours))
-        for comparison_curve_index, comparison_curve in enumerate(comparison_curves):
-            predicted_curve_invariants = evaluation_utils.predict_curve_invariants(
-                curve=comparison_curve['curve'],
-                arclength_model=arclength_model,
-                curvature_model=curvature_model,
-                sampling_ratio=sampling_ratio,
-                anchors_ratio=anchors_ratio,
-                neighborhood_supporting_points_count=settings.curvature_default_supporting_points_count,
-                section_supporting_points_count=settings.arclength_default_supporting_points_count)
+        curve_id = numpy.argmin(distances[i, :])
+        if curve_id == i:
+            correct = correct + 1
+            print(f'curve #{i} correctly identified')
+        else:
+            print(f'curve #{i} failed to be identified')
 
-            signature_curve = predicted_curve_invariants['predicted_signature']
-            shift_distances = []
-            for shift in range(signature_curve.shape[0]):
-                shifted_signature_curve = evaluation_utils.shift_signature_curve(curve=signature_curve, shift=shift)
-                hausdorff_distance = evaluation_utils.calculate_hausdorff_distance(curve1=anchor_signature_curve, curve2=shifted_signature_curve)
-                shift_distances.append(hausdorff_distance[0])
-
-            distances[comparison_curve_index] = numpy.min(shift_distances)
-
-        bla = 5
-
-
-    # for i in range(42, 52):
-    #     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 20))
-    #     plot_curve(ax=ax, curve=contours[i])
-    #     plt.show()
+    print(f'{correct} identifications out of {len(curves)}')

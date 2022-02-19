@@ -18,6 +18,9 @@ import matplotlib.lines
 # pytorch
 import torch
 
+# skimage
+from skimage import metrics
+
 # pandas
 import pandas
 
@@ -43,6 +46,9 @@ from plotly import graph_objects
 # utils
 from utils import common as common_utils
 from utils import settings
+
+# hausdorff
+from hausdorff import hausdorff_distance
 
 # https://stackoverflow.com/questions/36074455/python-matplotlib-with-a-line-color-gradient-and-colorbar
 from deep_signature.stats import discrete_distribution
@@ -157,7 +163,7 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
 def predict_curve_invariants(curve, arclength_model, curvature_model, sampling_ratio, anchors_ratio, neighborhood_supporting_points_count, section_supporting_points_count, reference_index=0, multimodality=30, anchor_indices=None):
     curve_points_count = curve.shape[0]
     sampling_points_count = int(sampling_ratio * curve_points_count)
-    dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=multimodality, max_density=1, count=1)[0]
+    dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=settings.curvature_default_multimodality, max_density=1, count=1)[0]
     indices_pool = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
     modified_indices_pool = common_utils.insert_sorted(indices_pool, numpy.array([0]))
 
@@ -396,6 +402,9 @@ def shift_signature_curve(curve, shift):
     shifted_curvature = numpy.roll(a=curve[:, 1], shift=shift, axis=0)
     return numpy.array([shifted_arclength, shifted_curvature]).transpose()
 
-def calculate_hausdorff_distance(curve1, curve2):
-    hausdorff_distance = scipy.spatial.distance.directed_hausdorff(u=curve1, v=curve2)
-    return hausdorff_distance
+def calculate_hausdorff_distance(curve1, curve2, distance_type):
+    # hausdorff_distance = scipy.spatial.distance.directed_hausdorff(u=curve1, v=curve2)
+    # hausdorff_distance2 = metrics.hausdorff_distance(image0=curve1, image1=curve2)
+    # return hausdorff_distance[0]
+    distance = hausdorff_distance(XA=curve1, XB=curve2, distance=distance_type)
+    return distance

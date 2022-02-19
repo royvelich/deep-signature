@@ -93,6 +93,11 @@ class LevelCurvesGenerator(CurvesGenerator):
         except:
             return None
 
+        if len(image.shape) == 3 and image.shape[2] == 4:
+            image = skimage.color.rgba2rgb(image)
+        elif len(image.shape) == 2:
+            image = skimage.color.gray2rgb(image)
+
         gray_image = skimage.color.rgb2gray(image)
         gray_image_filtered = skimage.filters.gaussian(gray_image, sigma=sigma)
         contours = skimage.measure.find_contours(gray_image_filtered, contour_level)
@@ -134,7 +139,7 @@ class LevelCurvesGenerator(CurvesGenerator):
             if equiaffine_std < 0.05:
                 continue
 
-            return curve
+            return contour
         return None
 
     @staticmethod

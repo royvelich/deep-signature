@@ -8,7 +8,7 @@ from deep_signature.nn.networks import DeepSignatureArcLengthNet
 from deep_signature.nn.losses import ArcLengthLoss
 from deep_signature.nn.trainers import ModelTrainer
 from utils import settings
-from common import utils as common_utils
+from utils import common as common_utils
 from argparse import ArgumentParser
 
 

@@ -38,7 +38,7 @@ def generate_random_similarity_transform_2d(min_scale=0.5, max_scale=3):
     return A
 
 
-def generate_random_equiaffine_transform_2d(max_scale=3, min_cond=2, max_cond=4):
+def generate_random_equiaffine_transform_2d(max_scale=3, min_cond=1.1, max_cond=3):
     while True:
         scale = numpy.random.uniform(low=0, high=max_scale, size=2)
         coeffs = numpy.random.random(size=2)
@@ -56,3 +56,14 @@ def generate_random_affine_transform_2d(max_scale=3, min_cond=1.1, max_cond=3, m
         det = numpy.linalg.det(A)
         if _validate_condition_number(A=A, min_cond=min_cond, max_cond=max_cond) and (det > min_det):
             return A
+
+
+def generate_random_transform_2d(transform_type):
+    if transform_type == 'euclidean':
+        return generate_random_euclidean_transform_2d()
+    elif transform_type == 'similarity':
+        return generate_random_similarity_transform_2d()
+    elif transform_type == 'equiaffine':
+        return generate_random_equiaffine_transform_2d()
+    elif transform_type == 'affine':
+        return generate_random_affine_transform_2d()

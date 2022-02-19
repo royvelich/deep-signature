@@ -381,65 +381,65 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     # ---------------------
     # PLOT ORIGINAL CURVE
     # ---------------------
-    fig = make_subplots(rows=1, cols=1, subplot_titles=['<b>Curve</b>'])
-
-    orig_curve = curve_record['curve']
-    plot_curve_plotly(fig=fig, row=1, col=1, curve=orig_curve, name='Reference Curve', line_width=settings.plotly_graph_line_width, line_color=curve_colors[0])
-    plot_curve_sample_plotly(fig=fig, row=1, col=1, name=f'', curve=orig_curve, curve_sample=numpy.expand_dims(orig_curve[0, :], axis=0), color='black', point_size=int(settings.plotly_sample_point_size * 1.25))
-
-    fig.update_yaxes(
-        scaleanchor=f'x',
-        scaleratio=1,
-        row=1,
-        col=1)
-
-    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
-
-    fig['layout']['xaxis']['title'] = 'X Coordinate'
-    fig['layout']['yaxis']['title'] = 'Y Coordinate'
-
-    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
-
-    fig.update_layout(showlegend=False)
-
-    fig.write_image(os.path.join(dir_name, f'orig_curve{curve_index}.svg'), width=settings.plotly_write_image_height, height=settings.plotly_write_image_height)
-    if plot_to_screen is True:
-        fig.show()
+    # fig = make_subplots(rows=1, cols=1, subplot_titles=['<b>Curve</b>'])
+    #
+    # orig_curve = curve_record['curve']
+    # plot_curve_plotly(fig=fig, row=1, col=1, curve=orig_curve, name='Reference Curve', line_width=settings.plotly_graph_line_width, line_color=curve_colors[0])
+    # plot_curve_sample_plotly(fig=fig, row=1, col=1, name=f'', curve=orig_curve, curve_sample=numpy.expand_dims(orig_curve[0, :], axis=0), color='black', point_size=int(settings.plotly_sample_point_size * 1.25))
+    #
+    # fig.update_yaxes(
+    #     scaleanchor=f'x',
+    #     scaleratio=1,
+    #     row=1,
+    #     col=1)
+    #
+    # fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+    #
+    # fig['layout']['xaxis']['title'] = 'X Coordinate'
+    # fig['layout']['yaxis']['title'] = 'Y Coordinate'
+    #
+    # fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    #
+    # fig.update_layout(showlegend=False)
+    #
+    # fig.write_image(os.path.join(dir_name, f'orig_curve{curve_index}.svg'), width=settings.plotly_write_image_height, height=settings.plotly_write_image_height)
+    # if plot_to_screen is True:
+    #     fig.show()
 
     # -------------------------------
     # PLOT CURVE SAMPLES SIDE BY SIDE
     # -------------------------------
-    fig = make_subplots(rows=1, cols=len(curve_record['comparisons']), subplot_titles=('<b>Sampled Curve #1</b>', '<b>Sampled Curve #2</b>'))
-
-    for i, comparison in enumerate(curve_record['comparisons']):
-        sampled_curve = comparison['sampled_curve']
-        curve = comparison['curve']
-        plot_curve_sample_plotly(fig=fig, row=1, col=i+1, name=f'Sampled Curve {i+1}', curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=settings.plotly_sample_point_size)
-
-    for i in range(len(curve_record['comparisons']) + 1):
-        fig.update_yaxes(
-            scaleanchor=f'x{i+1}',
-            scaleratio=1,
-            row=1,
-            col=i+1)
-
-    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
-    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
-
-    fig['layout']['xaxis']['title'] = 'X Coordinate'
-    fig['layout']['yaxis']['title'] = 'Y Coordinate'
-
-    fig['layout']['xaxis2']['title'] = 'X Coordinate'
-    fig['layout']['yaxis2']['title'] = 'Y Coordinate'
-
-    fig.update_layout(yaxis1=dict(range=get_range()))
-    fig.update_layout(yaxis2=dict(range=get_range()))
-
-    fig.update_layout(showlegend=False)
-
-    fig.write_image(os.path.join(dir_name, f'curve_samples_side_by_side_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
-    if plot_to_screen is True:
-        fig.show()
+    # fig = make_subplots(rows=1, cols=len(curve_record['comparisons']), subplot_titles=('<b>Sampled Curve #1</b>', '<b>Sampled Curve #2</b>'))
+    #
+    # for i, comparison in enumerate(curve_record['comparisons']):
+    #     sampled_curve = comparison['sampled_curve']
+    #     curve = comparison['curve']
+    #     plot_curve_sample_plotly(fig=fig, row=1, col=i+1, name=f'Sampled Curve {i+1}', curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=settings.plotly_sample_point_size)
+    #
+    # for i in range(len(curve_record['comparisons']) + 1):
+    #     fig.update_yaxes(
+    #         scaleanchor=f'x{i+1}',
+    #         scaleratio=1,
+    #         row=1,
+    #         col=i+1)
+    #
+    # fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+    # fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    #
+    # fig['layout']['xaxis']['title'] = 'X Coordinate'
+    # fig['layout']['yaxis']['title'] = 'Y Coordinate'
+    #
+    # fig['layout']['xaxis2']['title'] = 'X Coordinate'
+    # fig['layout']['yaxis2']['title'] = 'Y Coordinate'
+    #
+    # fig.update_layout(yaxis1=dict(range=get_range()))
+    # fig.update_layout(yaxis2=dict(range=get_range()))
+    #
+    # fig.update_layout(showlegend=False)
+    #
+    # fig.write_image(os.path.join(dir_name, f'curve_samples_side_by_side_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    # if plot_to_screen is True:
+    #     fig.show()
 
     # # ----------------------------------------------------------------------------------
     # # PLOT CURVE SAMPLES, ANCHORS AND PREDICTED CURVATURE SIDE BY SIDE (WITHOUT BUTTONS)
@@ -575,27 +575,27 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     # -----------------------------------------
     # CURVATURE VS. ARC-LENGTH OF SAMPLE POINTS
     # -----------------------------------------
-    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Euclidean Curvature as a Function of Euclidean Arc-Length</b>',))
-    for i, comparison in enumerate(curve_record['comparisons']):
-        curvature_comparison = comparison['curvature_comparison']
-        arclength_comparison = comparison['arclength_comparison']
-        predicted_curvature = curvature_comparison['predicted_curvature']
-        predicted_arclength = arclength_comparison['predicted_arclength']
-        true_curvature = curvature_comparison['true_curvature']
-        true_arclength = arclength_comparison['true_arclength']
-
-        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Ground Truth', x=true_arclength[:, 1], y=true_curvature[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[0], mode='lines')
-
-    fig['layout']['xaxis']['title'] = 'Euclidean Arc-Length'
-    fig['layout']['yaxis']['title'] = 'Euclidean Curvature'
-
-    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
-
-    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
-
-    fig.write_image(os.path.join(dir_name, f'euclidean_curvature_as_function_of_arclength_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
-    if plot_to_screen is True:
-        fig.show()
+    # fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Euclidean Curvature as a Function of Euclidean Arc-Length</b>',))
+    # for i, comparison in enumerate(curve_record['comparisons']):
+    #     curvature_comparison = comparison['curvature_comparison']
+    #     arclength_comparison = comparison['arclength_comparison']
+    #     predicted_curvature = curvature_comparison['predicted_curvature']
+    #     predicted_arclength = arclength_comparison['predicted_arclength']
+    #     true_curvature = curvature_comparison['true_curvature']
+    #     true_arclength = arclength_comparison['true_arclength']
+    #
+    #     plot_graph_plotly(fig=fig, row=1, col=1, name=f'Ground Truth', x=true_arclength[:, 1], y=true_curvature[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[0], mode='lines')
+    #
+    # fig['layout']['xaxis']['title'] = 'Euclidean Arc-Length'
+    # fig['layout']['yaxis']['title'] = 'Euclidean Curvature'
+    #
+    # fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+    #
+    # fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    #
+    # fig.write_image(os.path.join(dir_name, f'euclidean_curvature_as_function_of_arclength_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    # if plot_to_screen is True:
+    #     fig.show()
 
 
 def plot_curve_arclength_records(curve_records, true_arclength_colors, predicted_arclength_colors, curve_colors, curve_color='orange', anchor_color='blue', first_anchor_color='cyan', second_anchor_color='magenta'):

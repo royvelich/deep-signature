@@ -23,8 +23,10 @@ dependencies:
   - pytest
   - tqdm
   - opencv
-  - freetype
+  - freetype=2.10.*
   - plotly
   - ipykernel
-  - pip
   - python-kaleido
+  - numba
+  - pip:
+      - hausdorff

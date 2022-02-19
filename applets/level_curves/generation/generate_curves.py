@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     curve_generation.LevelCurvesGenerator.generate_curves(
         dir_path=settings.level_curves_dir_path_validation,
-        curves_count=10000,
+        curves_count=1000,
         images_base_dir_path=settings.images_dir_path_validation,
         sigmas=[2, 4, 8, 16, 32],
         contour_levels=[0.2, 0.5, 0.8],
@@ -27,5 +27,4 @@ if __name__ == '__main__':
         flat_point_threshold=1e-3,
         max_flat_points_ratio=0.03,
         max_abs_kappa=50,
-        chunksize=1000
-    )
+        chunksize=100)
