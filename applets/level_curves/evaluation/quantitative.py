@@ -74,19 +74,38 @@ def calculate_hausdorff_distances(curve1, curve2):
 
 
 if __name__ == '__main__':
-    sampling_ratio = 0.5
+    sampling_ratio = 0.8
     anchors_ratio = 1
-    transform_type = 'equiaffine'
+    transform_type = 'affine'
     curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type)
 
-    image_file_path = os.path.normpath('C:/Users/Roy/OneDrive - Technion/Thesis/1x/cats.png')
-    image = skimage.io.imread(image_file_path)
-    gray_image = skimage.color.rgb2gray(image)
-    contours = skimage.measure.find_contours(gray_image, 0.3)
-    contours.sort(key=lambda contour: contour.shape[0], reverse=True)
-    curves = [contour for contour in contours if 1000 < contour.shape[0]]
-    # numpy.save('cats.npy', contours)
+    # image_file_path = os.path.normpath('C:/Users/Roy/OneDrive - Technion/Thesis/1x/cats.png')
+    # image = skimage.io.imread(image_file_path)
+    # gray_image = skimage.color.rgb2gray(image)
+    # contours = skimage.measure.find_contours(gray_image, 0.3)
+    # contours.sort(key=lambda contour: contour.shape[0], reverse=True)
+    # raw_curves = [contour for contour in contours if 1000 < contour.shape[0]]
+    dataset_name = 'birds'
+    curves = numpy.load(f'C:/deep-signature-data/level-curves/curves/test_raw/{dataset_name}.npy', allow_pickle=True)
 
+    limit = None
+    if dataset_name == 'butterflies':
+        limit = 100
+    elif dataset_name == 'cats':
+        limit = 1000
+    elif dataset_name == 'dogs':
+        limit = 700
+    elif dataset_name == 'trees':
+        limit = 200
+    elif dataset_name == 'chickens':
+        limit = 200
+    elif dataset_name == 'birds':
+        limit = 200
+    elif dataset_name == 'leaves':
+        limit = 100
+
+    if limit is not None:
+        curves = [curve for curve in curves if limit < curve.shape[0]]
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
     # plot_curve(ax=ax, curve=contours[0], color='red', zorder=10)
     # plt.show()
@@ -106,7 +125,23 @@ if __name__ == '__main__':
     # plot_curve(ax=ax, curve=curves[1], color='red', zorder=10)
     # plt.show()
 
-    curves = curves[:20]
+    # raw_curves = raw_curves[:20]
+    # curves = []
+    # for i, curve in enumerate(curves):
+    #     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+    #     plot_curve(ax=ax, curve=curve, color='red', zorder=10)
+    #     plt.show()
+
+        # curve = curve_processing.smooth_curve(
+        #     curve=curve,
+        #     iterations=1,
+        #     window_length=43,
+        #     poly_order=2)
+        # curves.append(curve)
+
+        # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+        # plot_curve(ax=ax, curve=curve, color='red', zorder=10)
+        # plt.show()
 
     correct = 0
     signatures = []
@@ -138,10 +173,19 @@ if __name__ == '__main__':
             anchors_ratio=anchors_ratio,
             curvature_model=curvature_model,
             arclength_model=arclength_model)
+
+        anchor_arc_length = anchor_signature_curve[-1, 0]
         for j, signature_curve in enumerate(signatures):
+            current_arc_length = signature_curve[-1, 0]
             shift_distances1 = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
             shift_distances2 = calculate_hausdorff_distances(curve1=signature_curve, curve2=anchor_signature_curve)
             distances[i, j] = numpy.min([numpy.min(shift_distances1), numpy.min(shift_distances2)])
+            # if numpy.abs(current_arc_length - anchor_arc_length) / anchor_arc_length < 0.1:
+            #     shift_distances1 = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
+            #     shift_distances2 = calculate_hausdorff_distances(curve1=signature_curve, curve2=anchor_signature_curve)
+            #     distances[i, j] = numpy.min([numpy.min(shift_distances1), numpy.min(shift_distances2)])
+            # else:
+            #     distances[i, j] = 100000000
 
         curve_id = numpy.argmin(distances[i, :])
         if curve_id == i:

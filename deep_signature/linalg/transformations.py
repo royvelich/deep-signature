@@ -38,7 +38,7 @@ def generate_random_similarity_transform_2d(min_scale=0.5, max_scale=3):
     return A
 
 
-def generate_random_equiaffine_transform_2d(max_scale=3, min_cond=1.1, max_cond=3):
+def generate_random_equiaffine_transform_2d(max_scale=6, min_cond=1.1, max_cond=6):
     while True:
         scale = numpy.random.uniform(low=0, high=max_scale, size=2)
         coeffs = numpy.random.random(size=2)
