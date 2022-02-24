@@ -74,9 +74,9 @@ def calculate_hausdorff_distances(curve1, curve2):
 
 
 if __name__ == '__main__':
-    sampling_ratio = 0.8
+    sampling_ratio = 0.3
     anchors_ratio = 1
-    transform_type = 'affine'
+    transform_type = 'equiaffine'
     curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type)
 
     # image_file_path = os.path.normpath('C:/Users/Roy/OneDrive - Technion/Thesis/1x/cats.png')
@@ -85,14 +85,14 @@ if __name__ == '__main__':
     # contours = skimage.measure.find_contours(gray_image, 0.3)
     # contours.sort(key=lambda contour: contour.shape[0], reverse=True)
     # raw_curves = [contour for contour in contours if 1000 < contour.shape[0]]
-    dataset_name = 'birds'
+    dataset_name = 'butterflies'
     curves = numpy.load(f'C:/deep-signature-data/level-curves/curves/test_raw/{dataset_name}.npy', allow_pickle=True)
 
     limit = None
     if dataset_name == 'butterflies':
         limit = 100
     elif dataset_name == 'cats':
-        limit = 1000
+        limit = 200
     elif dataset_name == 'dogs':
         limit = 700
     elif dataset_name == 'trees':
@@ -103,6 +103,8 @@ if __name__ == '__main__':
         limit = 200
     elif dataset_name == 'leaves':
         limit = 100
+    elif dataset_name == 'bears':
+        limit = 200
 
     if limit is not None:
         curves = [curve for curve in curves if limit < curve.shape[0]]
@@ -178,8 +180,10 @@ if __name__ == '__main__':
         for j, signature_curve in enumerate(signatures):
             current_arc_length = signature_curve[-1, 0]
             shift_distances1 = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
-            shift_distances2 = calculate_hausdorff_distances(curve1=signature_curve, curve2=anchor_signature_curve)
-            distances[i, j] = numpy.min([numpy.min(shift_distances1), numpy.min(shift_distances2)])
+            # shift_distances2 = calculate_hausdorff_distances(curve1=signature_curve, curve2=anchor_signature_curve)
+            # distances[i, j] = numpy.min([numpy.min(shift_distances1), numpy.min(shift_distances2)])
+            distances[i, j] = numpy.min(shift_distances1)
+
             # if numpy.abs(current_arc_length - anchor_arc_length) / anchor_arc_length < 0.1:
             #     shift_distances1 = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
             #     shift_distances2 = calculate_hausdorff_distances(curve1=signature_curve, curve2=anchor_signature_curve)
