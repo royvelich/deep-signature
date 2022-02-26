@@ -60,10 +60,10 @@ curvature_default_history_size = 1500
 
 # arclength
 arclength_default_continue_training = False
-arclength_default_learning_rate = 0.1
+arclength_default_learning_rate = 1
 arclength_default_validation_split = None
 arclength_default_epochs = None
-arclength_default_train_buffer_size = 190000
+arclength_default_train_buffer_size = 170000
 arclength_default_validation_buffer_size = 50000
 arclength_default_train_batch_size = arclength_default_train_buffer_size
 arclength_default_validation_batch_size = arclength_default_validation_buffer_size
