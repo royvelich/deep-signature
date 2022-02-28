@@ -8,6 +8,11 @@ def _validate_condition_number(A, min_cond, max_cond):
     return ((w[0] > 0) and (w[1] > 0)) and (min_cond < cond < max_cond)
 
 
+def _validate_determinant(A, min_det, max_det):
+    det = numpy.linalg.det(A)
+    return min_det < det < max_det
+
+
 def generate_identity_transform_2d():
     return numpy.array([[1, 0], [0, 1]])
 
@@ -50,12 +55,20 @@ def generate_random_equiaffine_transform_2d(max_scale=6, min_cond=1.1, max_cond=
             return A
 
 
-def generate_random_affine_transform_2d(max_scale=3, min_cond=1.1, max_cond=3, min_det=1.5):
-    while True:
-        A = numpy.random.uniform(low=0, high=max_scale, size=(2,2))
-        det = numpy.linalg.det(A)
-        if _validate_condition_number(A=A, min_cond=min_cond, max_cond=max_cond) and (det > min_det):
-            return A
+def generate_random_affine_transform_2d(max_scale=1, min_cond=1.2, max_cond=4, min_det=1.3, max_det=3):
+    U = generate_random_euclidean_transform_2d()
+    V = generate_random_euclidean_transform_2d()
+    det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
+    cond = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
+    s1 = numpy.sqrt(det / cond)
+    s2 = det / s1
+    S = numpy.array([[s1, 0], [0, s2]])
+    A = numpy.matmul(numpy.matmul(U, S), V)
+    return A
+    # while True:
+    #     A = numpy.random.uniform(low=0, high=max_scale, size=(2, 2))
+    #     if (_validate_condition_number(A=A, min_cond=min_cond, max_cond=max_cond) is True) and (_validate_determinant(A=A, min_det=min_det, max_det=max_det) is True):
+    #         return A
 
 
 def generate_random_transform_2d(transform_type):

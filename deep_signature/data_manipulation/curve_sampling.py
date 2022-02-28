@@ -63,8 +63,10 @@ def sample_curve_neighborhood(curve, center_point_index, indices_pool, supportin
 #     return curve[indices1], curve[indices2]
 
 
-def sample_curve_section_indices(curve, start_point_index, end_point_index, multimodality, supporting_points_count=None, uniform=False):
-    rng = numpy.random.default_rng()
+def sample_curve_section_indices(curve, start_point_index, end_point_index, multimodality, supporting_points_count=None, uniform=False, rng=None):
+    if rng is None:
+        rng = numpy.random.default_rng()
+
     curve_points_count = curve.shape[0]
 
     if start_point_index > end_point_index:

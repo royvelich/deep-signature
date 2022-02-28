@@ -49,9 +49,40 @@ def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=Non
         zorder=zorder)
 
 
-def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_ratio, curvature_model, arclength_model):
+def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_ratio, curvature_model, arclength_model, rng=None, plot=False):
     transform = transformations.generate_random_transform_2d(transform_type=transform_type)
-    transformed_curve = curve_processing.center_curve(curve=curve_processing.transform_curve(curve=curve, transform=transform))
+
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+    # plot_curve(ax=ax, curve=curve, color='red', zorder=10)
+    # plt.show()
+
+    # curve = curve_processing.smooth_curve(
+    #     curve=curve,
+    #     iterations=2,
+    #     window_length=5,
+    #     poly_order=2)
+
+
+
+    transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+
+    if plot is True:
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+        plot_curve(ax=ax, curve=transformed_curve, color='red', zorder=10)
+        plt.show()
+
+    # transformed_curve = curve_processing.smooth_curve(
+    #     curve=transformed_curve,
+    #     iterations=50,
+    #     window_length=99,
+    #     poly_order=2)
+
+    if plot is True:
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+        plot_curve(ax=ax, curve=transformed_curve, color='red', zorder=10)
+        plt.show()
+
+    transformed_curve = curve_processing.center_curve(curve=transformed_curve)
     predicted_curve_invariants = evaluation_utils.predict_curve_invariants(
         curve=transformed_curve,
         arclength_model=arclength_model,
@@ -59,7 +90,8 @@ def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_rat
         sampling_ratio=sampling_ratio,
         anchors_ratio=anchors_ratio,
         neighborhood_supporting_points_count=settings.curvature_default_supporting_points_count,
-        section_supporting_points_count=settings.arclength_default_supporting_points_count)
+        section_supporting_points_count=settings.arclength_default_supporting_points_count,
+        rng=rng)
     signature_curve = predicted_curve_invariants['predicted_signature']
     return signature_curve
 
@@ -74,9 +106,19 @@ def calculate_hausdorff_distances(curve1, curve2):
 
 
 if __name__ == '__main__':
-    numpy.random.seed(30)
-    sampling_ratio = 0.9
-    anchors_ratio = 1
+    # rng = numpy.random.default_rng(seed=8)
+    # indices1 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
+    # indices2 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
+    # indices3 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
+    # indices4 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
+    # indices5 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
+    # indices6 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
+    # indices7 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
+    seed = 30
+    rng = numpy.random.default_rng(seed=seed)
+    numpy.random.seed(seed)
+    sampling_ratio = 1
+    anchors_ratio = None
     transform_type = 'affine'
     curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type)
 
@@ -86,7 +128,7 @@ if __name__ == '__main__':
     # contours = skimage.measure.find_contours(gray_image, 0.3)
     # contours.sort(key=lambda contour: contour.shape[0], reverse=True)
     # raw_curves = [contour for contour in contours if 1000 < contour.shape[0]]
-    dataset_name = 'birds'
+    dataset_name = 'clouds'
     curves = numpy.load(f'C:/deep-signature-data/level-curves/curves/test_raw/{dataset_name}.npy', allow_pickle=True)
 
     limit = None
@@ -149,13 +191,17 @@ if __name__ == '__main__':
     correct = 0
     signatures = []
     for i, curve in enumerate(curves):
+        if i == 5:
+            bla = 5
+
         signature_curve = calculate_signature_curve(
             curve=curve,
             transform_type=transform_type,
             sampling_ratio=sampling_ratio,
             anchors_ratio=anchors_ratio,
             curvature_model=curvature_model,
-            arclength_model=arclength_model)
+            arclength_model=arclength_model,
+            rng=rng)
         signatures.append(signature_curve)
 
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
@@ -175,26 +221,27 @@ if __name__ == '__main__':
             sampling_ratio=sampling_ratio,
             anchors_ratio=anchors_ratio,
             curvature_model=curvature_model,
-            arclength_model=arclength_model)
+            arclength_model=arclength_model,
+            rng=rng)
 
         anchor_arc_length = anchor_signature_curve[-1, 0]
         for j, signature_curve in enumerate(signatures):
             current_arc_length = signature_curve[-1, 0]
-            # shift_distances1 = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
+
+            # shift_distances = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
             # # shift_distances2 = calculate_hausdorff_distances(curve1=signature_curve, curve2=anchor_signature_curve)
             # # distances[i, j] = numpy.min([numpy.min(shift_distances1), numpy.min(shift_distances2)])
-            # distances[i, j] = numpy.min(shift_distances1)
+            # distances[i, j] = numpy.min(shift_distances)
 
             # bla = numpy.abs(current_arc_length - anchor_arc_length) / anchor_arc_length
             # shift_distances = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
             # distances[i, j] = numpy.min(shift_distances) * bla
 
-            if (numpy.abs(current_arc_length - anchor_arc_length) / anchor_arc_length) < 0.1:
+            if (numpy.abs(current_arc_length - anchor_arc_length) / anchor_arc_length) < 0.15:
                 shift_distances = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
-                # shift_distances2 = calculate_hausdorff_distances(curve1=signature_curve, curve2=anchor_signature_curve)
                 distances[i, j] = numpy.min(shift_distances)
             else:
-                distances[i, j] = 100000000
+                distances[i, j] = numpy.inf
 
         curve_id = numpy.argmin(distances[i, :])
         if curve_id == i:
