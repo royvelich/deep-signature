@@ -21,25 +21,25 @@ class TuplesDatasetGenerator:
 class EuclideanTransform:
     @staticmethod
     def _generate_curve_transform():
-        return transformations.generate_random_euclidean_transform_2d()
+        return transformations.generate_random_transform_2d_training(transform_type='euclidean')
 
 
 class SimilarityTransform:
     @staticmethod
     def _generate_curve_transform():
-        return transformations.generate_random_similarity_transform_2d()
+        return transformations.generate_random_transform_2d_training(transform_type='similarity')
 
 
 class EquiaffineTransform:
     @staticmethod
     def _generate_curve_transform():
-        return transformations.generate_random_equiaffine_transform_2d(min_cond=settings.arclength_min_cond_training, max_cond=settings.arclength_max_cond_training)
+        return transformations.generate_random_transform_2d_training(transform_type='equiaffine')
 
 
 class AffineTransform:
     @staticmethod
     def _generate_curve_transform():
-        return transformations.generate_random_affine_transform_2d(min_cond=settings.arclength_min_cond_training, max_cond=settings.arclength_max_cond_training, min_det=settings.arclength_min_det_training, max_det=settings.arclength_max_det_training)
+        return transformations.generate_random_transform_2d_training(transform_type='affine')
 
 
 class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):

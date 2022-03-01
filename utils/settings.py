@@ -73,18 +73,24 @@ arclength_default_multimodality = 5
 arclength_default_supporting_points_count = 5
 arclength_default_min_offset = arclength_default_supporting_points_count - 1
 arclength_default_max_offset = 2 * arclength_default_min_offset
-arclength_default_anchor_points_count = 6
+arclength_default_anchor_points_count = 5
 arclength_default_num_workers_train = 5
 arclength_default_num_workers_validation = 5
 arclength_default_history_size = 2500
-arclength_min_cond_training = 1.3
-arclength_max_cond_training = 2
-arclength_min_det_training = 1.3
-arclength_max_det_training = 2
-arclength_min_cond_evaluation = 1.5
-arclength_max_cond_evaluation = 2
-arclength_min_det_evaluation = 2/3
-arclength_max_det_evaluation = 1.5
+
+equiaffine_arclength_min_cond_training = 1.3
+equiaffine_arclength_max_cond_training = 2
+affine_arclength_min_cond_training = 1.3
+affine_arclength_max_cond_training = 2
+affine_arclength_min_det_training = 1.3
+affine_arclength_max_det_training = 2
+
+equiaffine_arclength_min_cond_evaluation = 1.3
+equiaffine_arclength_max_cond_evaluation = 2
+affine_arclength_min_cond_evaluation = 1.5
+affine_arclength_max_cond_evaluation = 2
+affine_arclength_min_det_evaluation = 1.1
+affine_arclength_max_det_evaluation = 1.6
 
 # plots
 matplotlib_factor = 1

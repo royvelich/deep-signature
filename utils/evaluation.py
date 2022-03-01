@@ -1,47 +1,13 @@
-# python peripherals
-import random
-import pathlib
-import os
-
-# scipy
-import scipy
-
 # numpy
 import numpy
-
-# matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.collections as mcoll
-import matplotlib.ticker as ticker
-import matplotlib.lines
 
 # pytorch
 import torch
 
-# skimage
-from skimage import metrics
-
-# pandas
-import pandas
-
-# ipython
-from IPython.display import display, HTML
-
 # deep signature
 from deep_signature.data_manipulation import curve_sampling
 from deep_signature.data_manipulation import curve_processing
-from deep_signature.linalg import euclidean_transform
-from deep_signature.linalg import affine_transform
 from deep_signature.linalg import transformations
-
-# matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-import matplotlib.lines
-
-# plotly
-from plotly.subplots import make_subplots
-from plotly import graph_objects
 
 # utils
 from utils import common as common_utils
@@ -256,14 +222,7 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
 
         comparison_curves = []
         for i in range(comparison_curves_count):
-            if transform_type == 'euclidean':
-                transform = transformations.generate_random_euclidean_transform_2d()
-            elif transform_type == 'similarity':
-                transform = transformations.generate_random_similarity_transform_2d()
-            elif transform_type == 'equiaffine':
-                transform = transformations.generate_random_equiaffine_transform_2d()
-            elif transform_type == 'affine':
-                transform = transformations.generate_random_affine_transform_2d()
+            transform = transformations.generate_random_transform_2d_evaluation(transform_type=transform_type)
 
             if i == 0:
                 transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)

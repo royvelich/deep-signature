@@ -1,6 +1,8 @@
 # numpy
 import numpy
 
+# deep-signature
+from utils import settings
 
 def _validate_condition_number(A, min_cond, max_cond):
     w, v = numpy.linalg.eig(A)
@@ -43,7 +45,7 @@ def generate_random_similarity_transform_2d(min_scale=0.5, max_scale=3):
     return A
 
 
-def generate_random_equiaffine_transform_2d(min_cond=1.1, max_cond=6):
+def generate_random_equiaffine_transform_2d(min_cond, max_cond):
     return generate_random_affine_transform_2d(min_cond=min_cond, max_cond=max_cond, min_det=1, max_det=1)
     # while True:
     #     scale = numpy.random.uniform(low=0, high=max_scale, size=2)
@@ -56,7 +58,7 @@ def generate_random_equiaffine_transform_2d(min_cond=1.1, max_cond=6):
     #         return A
 
 
-def generate_random_affine_transform_2d(min_cond=1, max_cond=2, min_det=1.1, max_det=2):
+def generate_random_affine_transform_2d(min_cond, max_cond, min_det, max_det):
     U = generate_random_euclidean_transform_2d()
     V = generate_random_euclidean_transform_2d()
     det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
@@ -81,3 +83,25 @@ def generate_random_transform_2d(transform_type, min_cond, max_cond, min_det, ma
         return generate_random_equiaffine_transform_2d(min_cond=min_cond, max_cond=max_cond)
     elif transform_type == 'affine':
         return generate_random_affine_transform_2d(min_cond=min_cond, max_cond=max_cond, min_det=min_det, max_det=max_det)
+
+
+def generate_random_transform_2d_training(transform_type):
+    if transform_type == 'euclidean':
+        return generate_random_euclidean_transform_2d()
+    elif transform_type == 'similarity':
+        return generate_random_similarity_transform_2d()
+    elif transform_type == 'equiaffine':
+        return generate_random_equiaffine_transform_2d(min_cond=settings.equiaffine_arclength_min_cond_training, max_cond=settings.equiaffine_arclength_max_cond_training)
+    elif transform_type == 'affine':
+        return generate_random_affine_transform_2d(min_cond=settings.affine_arclength_min_cond_training, max_cond=settings.affine_arclength_max_cond_training, min_det=settings.affine_arclength_min_det_training, max_det=settings.affine_arclength_max_det_training)
+
+
+def generate_random_transform_2d_evaluation(transform_type):
+    if transform_type == 'euclidean':
+        return generate_random_euclidean_transform_2d()
+    elif transform_type == 'similarity':
+        return generate_random_similarity_transform_2d()
+    elif transform_type == 'equiaffine':
+        return generate_random_equiaffine_transform_2d(min_cond=settings.equiaffine_arclength_min_cond_evaluation, max_cond=settings.equiaffine_arclength_max_cond_evaluation)
+    elif transform_type == 'affine':
+        return generate_random_affine_transform_2d(min_cond=settings.affine_arclength_min_cond_evaluation, max_cond=settings.affine_arclength_max_cond_evaluation, min_det=settings.affine_arclength_min_det_evaluation, max_det=settings.affine_arclength_max_det_evaluation)
