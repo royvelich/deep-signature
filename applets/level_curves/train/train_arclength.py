@@ -36,26 +36,34 @@ if __name__ == '__main__':
     parser.add_argument("--num_workers_train", dest="num_workers_train", default=settings.arclength_default_num_workers_train, type=int)
     parser.add_argument("--num_workers_validation", dest="num_workers_validation", default=settings.arclength_default_num_workers_validation, type=int)
     parser.add_argument("--history_size", dest="history_size", default=settings.arclength_default_history_size, type=int)
+
+    parser.add_argument("--level_curves_euclidean_arclength_tuplets_results_dir_path", dest="level_curves_euclidean_arclength_tuplets_results_dir_path", default=settings.level_curves_euclidean_arclength_tuplets_results_dir_path, type=str)
+    parser.add_argument("--level_curves_similarity_arclength_tuplets_results_dir_path", dest="level_curves_similarity_arclength_tuplets_results_dir_path", default=settings.level_curves_similarity_arclength_tuplets_results_dir_path, type=str)
+    parser.add_argument("--level_curves_equiaffine_arclength_tuplets_results_dir_path", dest="level_curves_equiaffine_arclength_tuplets_results_dir_path", default=settings.level_curves_equiaffine_arclength_tuplets_results_dir_path, type=str)
+    parser.add_argument("--level_curves_affine_arclength_tuplets_results_dir_path", dest="level_curves_affine_arclength_tuplets_results_dir_path", default=settings.level_curves_affine_arclength_tuplets_results_dir_path, type=str)
+    parser.add_argument("--level_curves_dir_path_train", dest="level_curves_dir_path_train", default=settings.level_curves_dir_path_train, type=str)
+    parser.add_argument("--level_curves_dir_path_validation", dest="level_curves_dir_path_validation", default=settings.level_curves_dir_path_validation, type=str)
+
     args = parser.parse_args()
 
     OnlineDataset = None
     results_base_dir_path = None
     if args.group == 'euclidean':
         OnlineDataset = DeepSignatureEuclideanArclengthTupletsOnlineDataset
-        results_base_dir_path = settings.level_curves_euclidean_arclength_tuplets_results_dir_path
+        results_base_dir_path = args.level_curves_euclidean_arclength_tuplets_results_dir_path
     elif args.group == 'similarity':
         OnlineDataset = DeepSignatureSimilarityArclengthTupletsOnlineDataset
-        results_base_dir_path = settings.level_curves_similarity_arclength_tuplets_results_dir_path
+        results_base_dir_path = args.level_curves_similarity_arclength_tuplets_results_dir_path
     elif args.group == 'equiaffine':
         OnlineDataset = DeepSignatureEquiaffineArclengthTupletsOnlineDataset
-        results_base_dir_path = settings.level_curves_equiaffine_arclength_tuplets_results_dir_path
+        results_base_dir_path = args.level_curves_equiaffine_arclength_tuplets_results_dir_path
     elif args.group == 'affine':
         OnlineDataset = DeepSignatureAffineArclengthTupletsOnlineDataset
-        results_base_dir_path = settings.level_curves_affine_arclength_tuplets_results_dir_path
+        results_base_dir_path = args.level_curves_affine_arclength_tuplets_results_dir_path
 
     train_dataset = OnlineDataset(
         dataset_size=args.train_dataset_size,
-        dir_path=settings.level_curves_dir_path_train,
+        dir_path=args.level_curves_dir_path_train,
         multimodality=args.multimodality,
         replace=True,
         buffer_size=args.train_buffer_size,
@@ -67,7 +75,7 @@ if __name__ == '__main__':
 
     validation_dataset = OnlineDataset(
         dataset_size=args.validation_dataset_size,
-        dir_path=settings.level_curves_dir_path_validation,
+        dir_path=args.level_curves_dir_path_validation,
         multimodality=args.multimodality,
         replace=False,
         buffer_size=args.validation_buffer_size,
