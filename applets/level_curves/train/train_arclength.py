@@ -81,7 +81,7 @@ if __name__ == '__main__':
     validation_dataset.stop()
     train_dataset.start()
 
-    model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count, transformation_group_type=args.group).cuda()
+    model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count, transformation_group_type=args.group)
 
     print('')
     print(model)

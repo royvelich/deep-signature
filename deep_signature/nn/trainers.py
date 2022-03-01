@@ -19,11 +19,16 @@ from utils import settings
 
 class ModelTrainer:
     def __init__(self, model, loss_functions, optimizer, device='cuda'):
-        self._model = model
         self._loss_functions = loss_functions
         self._optimizer = optimizer
         self._device = device
-        self._model.to(device)
+
+        if torch.cuda.device_count() > 1:
+            self._model = torch.nn.DataParallel(model)
+        else:
+            self._model = model
+
+        self._model.cuda()
 
     def fit(self, train_dataset, validation_dataset, epochs, train_batch_size, validation_batch_size, results_base_dir_path, epoch_handler=None, validation_split=None, shuffle_dataset=True):
         dataset_size = None
