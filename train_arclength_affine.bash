@@ -8,7 +8,7 @@ cd /workspace/deep-signature
 
 export PYTHONPATH=.
 
-/opt/conda/envs/deep-signature/bin/python ./applets/train/train_arclength.py \
+/opt/conda/envs/deep-signature/bin/python applets/train/train_arclength.py \
 --group "affine" \
 --level_curves_euclidean_arclength_tuplets_results_dir_path 'deep-signature/level-curves/results/tuplets/arclength/euclidean' \
 --level_curves_similarity_arclength_tuplets_results_dir_path 'deep-signature/level-curves/results/tuplets/arclength/similarity' \
