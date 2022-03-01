@@ -1,5 +1,7 @@
 #!/bin/bash
 
+conda activate deep-signature
+
 cat /proc/cpuinfo | grep 'core id'
 
 cd /workspace/deep-signature
