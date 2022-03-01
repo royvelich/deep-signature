@@ -49,8 +49,8 @@ def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=Non
         zorder=zorder)
 
 
-def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_ratio, curvature_model, arclength_model, rng=None, plot=False):
-    transform = transformations.generate_random_transform_2d(transform_type=transform_type)
+def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_ratio, curvature_model, arclength_model, rng=None, plot=False, transform_curve=True):
+
 
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
     # plot_curve(ax=ax, curve=curve, color='red', zorder=10)
@@ -62,13 +62,27 @@ def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_rat
     #     window_length=5,
     #     poly_order=2)
 
+    curve = curve_processing.center_curve(curve=curve)
 
+    if transform_curve is True:
+        transform = transformations.generate_random_transform_2d(
+            transform_type=transform_type,
+            min_cond=settings.arclength_min_cond_evaluation,
+            max_cond=settings.arclength_max_cond_evaluation,
+            min_det=settings.arclength_min_det_evaluation,
+            max_det=settings.arclength_max_det_evaluation)
 
-    transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+        transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+    else:
+        transformed_curve = curve
 
     if plot is True:
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
-        plot_curve(ax=ax, curve=transformed_curve, color='red', zorder=10)
+        plot_curve(ax=ax, curve=curve, color='red', zorder=10, linewidth=10)
+        # plt.show()
+
+        # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+        plot_curve(ax=ax, curve=transformed_curve, color='green', zorder=10, linewidth=10)
         plt.show()
 
     # transformed_curve = curve_processing.smooth_curve(
@@ -77,12 +91,13 @@ def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_rat
     #     window_length=99,
     #     poly_order=2)
 
-    if plot is True:
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
-        plot_curve(ax=ax, curve=transformed_curve, color='red', zorder=10)
-        plt.show()
+    # if plot is True:
+    #     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
+    #     plot_curve(ax=ax, curve=transformed_curve, color='red', zorder=10)
+    #     plt.show()
 
     transformed_curve = curve_processing.center_curve(curve=transformed_curve)
+
     predicted_curve_invariants = evaluation_utils.predict_curve_invariants(
         curve=transformed_curve,
         arclength_model=arclength_model,
@@ -117,7 +132,7 @@ if __name__ == '__main__':
     seed = 30
     rng = numpy.random.default_rng(seed=seed)
     numpy.random.seed(seed)
-    sampling_ratio = 1
+    sampling_ratio = 0.9
     anchors_ratio = None
     transform_type = 'affine'
     curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type)
@@ -128,7 +143,7 @@ if __name__ == '__main__':
     # contours = skimage.measure.find_contours(gray_image, 0.3)
     # contours.sort(key=lambda contour: contour.shape[0], reverse=True)
     # raw_curves = [contour for contour in contours if 1000 < contour.shape[0]]
-    dataset_name = 'clouds'
+    dataset_name = 'birds'
     curves = numpy.load(f'C:/deep-signature-data/level-curves/curves/test_raw/{dataset_name}.npy', allow_pickle=True)
 
     limit = None
@@ -191,9 +206,6 @@ if __name__ == '__main__':
     correct = 0
     signatures = []
     for i, curve in enumerate(curves):
-        if i == 5:
-            bla = 5
-
         signature_curve = calculate_signature_curve(
             curve=curve,
             transform_type=transform_type,
@@ -201,7 +213,9 @@ if __name__ == '__main__':
             anchors_ratio=anchors_ratio,
             curvature_model=curvature_model,
             arclength_model=arclength_model,
-            rng=rng)
+            rng=rng,
+            transform_curve=False)
+
         signatures.append(signature_curve)
 
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
@@ -222,7 +236,8 @@ if __name__ == '__main__':
             anchors_ratio=anchors_ratio,
             curvature_model=curvature_model,
             arclength_model=arclength_model,
-            rng=rng)
+            rng=rng,
+            plot=False)
 
         anchor_arc_length = anchor_signature_curve[-1, 0]
         for j, signature_curve in enumerate(signatures):
@@ -237,7 +252,7 @@ if __name__ == '__main__':
             # shift_distances = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
             # distances[i, j] = numpy.min(shift_distances) * bla
 
-            if (numpy.abs(current_arc_length - anchor_arc_length) / anchor_arc_length) < 0.15:
+            if (numpy.abs(current_arc_length - anchor_arc_length) / anchor_arc_length) < 0.1:
                 shift_distances = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
                 distances[i, j] = numpy.min(shift_distances)
             else:

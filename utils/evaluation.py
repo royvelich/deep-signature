@@ -264,7 +264,12 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
                 transform = transformations.generate_random_equiaffine_transform_2d()
             elif transform_type == 'affine':
                 transform = transformations.generate_random_affine_transform_2d()
-            transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+
+            if i == 0:
+                transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+            else:
+                transformed_curve = curve
+
             comparison_curves.append(curve_processing.center_curve(curve=transformed_curve))
 
         curve_record = {

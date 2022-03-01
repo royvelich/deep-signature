@@ -60,10 +60,10 @@ curvature_default_history_size = 1500
 
 # arclength
 arclength_default_continue_training = False
-arclength_default_learning_rate = 1
+arclength_default_learning_rate = 0.1
 arclength_default_validation_split = None
 arclength_default_epochs = None
-arclength_default_train_buffer_size = 170000
+arclength_default_train_buffer_size = 50000
 arclength_default_validation_buffer_size = 50000
 arclength_default_train_batch_size = arclength_default_train_buffer_size
 arclength_default_validation_batch_size = arclength_default_validation_buffer_size
@@ -73,10 +73,18 @@ arclength_default_multimodality = 5
 arclength_default_supporting_points_count = 5
 arclength_default_min_offset = arclength_default_supporting_points_count - 1
 arclength_default_max_offset = 2 * arclength_default_min_offset
-arclength_default_anchor_points_count = 5
+arclength_default_anchor_points_count = 6
 arclength_default_num_workers_train = 5
 arclength_default_num_workers_validation = 5
 arclength_default_history_size = 2500
+arclength_min_cond_training = 1.3
+arclength_max_cond_training = 2
+arclength_min_det_training = 1.3
+arclength_max_det_training = 2
+arclength_min_cond_evaluation = 1.3
+arclength_max_cond_evaluation = 2
+arclength_min_det_evaluation = 1.1
+arclength_max_det_evaluation = 1.3
 
 # plots
 matplotlib_factor = 1

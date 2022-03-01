@@ -43,19 +43,20 @@ def generate_random_similarity_transform_2d(min_scale=0.5, max_scale=3):
     return A
 
 
-def generate_random_equiaffine_transform_2d(max_scale=6, min_cond=1.1, max_cond=6):
-    while True:
-        scale = numpy.random.uniform(low=0, high=max_scale, size=2)
-        coeffs = numpy.random.random(size=2)
-        entries = scale * coeffs
-        L = numpy.array([[1, 0], [entries[0], 1]])
-        U = numpy.array([[1, entries[1]], [0, 1]])
-        A = numpy.matmul(L, U)
-        if _validate_condition_number(A=A, min_cond=min_cond, max_cond=max_cond):
-            return A
+def generate_random_equiaffine_transform_2d(min_cond=1.1, max_cond=6):
+    return generate_random_affine_transform_2d(min_cond=min_cond, max_cond=max_cond, min_det=1, max_det=1)
+    # while True:
+    #     scale = numpy.random.uniform(low=0, high=max_scale, size=2)
+    #     coeffs = numpy.random.random(size=2)
+    #     entries = scale * coeffs
+    #     L = numpy.array([[1, 0], [entries[0], 1]])
+    #     U = numpy.array([[1, entries[1]], [0, 1]])
+    #     A = numpy.matmul(L, U)
+    #     if _validate_condition_number(A=A, min_cond=min_cond, max_cond=max_cond):
+    #         return A
 
 
-def generate_random_affine_transform_2d(max_scale=1, min_cond=1.2, max_cond=4, min_det=1.3, max_det=3):
+def generate_random_affine_transform_2d(min_cond=1, max_cond=2, min_det=1.1, max_det=2):
     U = generate_random_euclidean_transform_2d()
     V = generate_random_euclidean_transform_2d()
     det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
@@ -71,12 +72,12 @@ def generate_random_affine_transform_2d(max_scale=1, min_cond=1.2, max_cond=4, m
     #         return A
 
 
-def generate_random_transform_2d(transform_type):
+def generate_random_transform_2d(transform_type, min_cond, max_cond, min_det, max_det):
     if transform_type == 'euclidean':
         return generate_random_euclidean_transform_2d()
     elif transform_type == 'similarity':
         return generate_random_similarity_transform_2d()
     elif transform_type == 'equiaffine':
-        return generate_random_equiaffine_transform_2d()
+        return generate_random_equiaffine_transform_2d(min_cond=min_cond, max_cond=max_cond)
     elif transform_type == 'affine':
-        return generate_random_affine_transform_2d()
+        return generate_random_affine_transform_2d(min_cond=min_cond, max_cond=max_cond, min_det=min_det, max_det=max_det)

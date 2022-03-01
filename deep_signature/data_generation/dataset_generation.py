@@ -11,6 +11,7 @@ import numpy
 from deep_signature.data_manipulation import curve_sampling, curve_processing
 from deep_signature.stats import discrete_distribution
 from deep_signature.linalg import transformations
+from utils import settings
 
 
 class TuplesDatasetGenerator:
@@ -32,13 +33,13 @@ class SimilarityTransform:
 class EquiaffineTransform:
     @staticmethod
     def _generate_curve_transform():
-        return transformations.generate_random_equiaffine_transform_2d()
+        return transformations.generate_random_equiaffine_transform_2d(min_cond=settings.arclength_min_cond_training, max_cond=settings.arclength_max_cond_training)
 
 
 class AffineTransform:
     @staticmethod
     def _generate_curve_transform():
-        return transformations.generate_random_affine_transform_2d()
+        return transformations.generate_random_affine_transform_2d(min_cond=settings.arclength_min_cond_training, max_cond=settings.arclength_max_cond_training, min_det=settings.arclength_min_det_training, max_det=settings.arclength_max_det_training)
 
 
 class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
@@ -137,7 +138,8 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         metadata = {}
 
         curve_index = int(numpy.random.randint(curves.shape[0], size=1))
-        curve = curves[curve_index]
+        # curve = curves[curve_index]
+        curve = curve_processing.center_curve(curve=curves[curve_index])
 
         starting_point_index = int(numpy.random.randint(curve.shape[0], size=1))
 
@@ -158,7 +160,8 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         transform1 = cls._generate_curve_transform()
         transform2 = cls._generate_curve_transform()
-        transformed_curve1 = curve_processing.transform_curve(curve=curve, transform=transform1)
+        # transformed_curve1 = curve_processing.transform_curve(curve=curve, transform=transform1)
+        transformed_curve1 = curve
         transformed_curve2 = curve_processing.transform_curve(curve=curve, transform=transform2)
 
         for i in range(2, anchor_points_count):
