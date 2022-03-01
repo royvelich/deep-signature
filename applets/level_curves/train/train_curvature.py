@@ -82,6 +82,8 @@ if __name__ == '__main__':
     train_dataset.start()
 
     model = DeepSignatureCurvatureNet(sample_points=args.sample_points_count).cuda()
+    
+    print('')
     print(model)
 
     if args.continue_training:

@@ -5,11 +5,16 @@ import itertools
 from datetime import datetime
 from pathlib import Path
 from timeit import default_timer as timer
+import json
+import pickle
 
 # torch
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler, SequentialSampler
+
+# deep-signature
+from utils import settings
 
 
 class ModelTrainer:
@@ -51,6 +56,7 @@ class ModelTrainer:
 
         epochs_text = epochs if epochs is not None else 'infinite'
 
+        print('')
         ModelTrainer._print_training_configuration('Epochs', epochs_text)
         ModelTrainer._print_training_configuration('Train Batch size', train_batch_size)
         ModelTrainer._print_training_configuration('Validation Batch size', validation_batch_size)
@@ -66,6 +72,7 @@ class ModelTrainer:
         loss_functions_file_path = os.path.normpath(os.path.join(results_dir_path, 'loss_functions.txt'))
         optimizer_file_path = os.path.normpath(os.path.join(results_dir_path, 'optimizer.txt'))
         trainer_data_file_path = os.path.normpath(os.path.join(results_dir_path, 'trainer_data.txt'))
+        settings_data_file_path = os.path.normpath(os.path.join(results_dir_path, 'settings.txt'))
         Path(results_dir_path).mkdir(parents=True, exist_ok=True)
 
         with open(model_architecture_file_path, "w") as text_file:
@@ -74,7 +81,6 @@ class ModelTrainer:
         with open(loss_functions_file_path, "w") as text_file:
             for loss_function in self._loss_functions:
                 text_file.write(str(loss_function))
-                print('\n')
 
         with open(optimizer_file_path, "w") as text_file:
             text_file.write(str(self._optimizer))
@@ -91,6 +97,12 @@ class ModelTrainer:
                 text_file.write(f'train_dataset_size: {train_dataset_size}\n')
                 text_file.write(f'validation_dataset_size: {validation_dataset_size}\n')
 
+        settings_dict = {key: value for key, value in settings.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
+        with open(settings_data_file_path, "w") as text_file:
+            for key, value in settings_dict.items():
+                text_file.write(f'{key}: {value}\n')
+
+        print('')
         print(f' - Start Training:')
         results = None
         best_validation_average_loss = None

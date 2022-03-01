@@ -206,6 +206,7 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
     def start(self):
         self._workers = [Process(target=self._map_func, args=self._args) for i in range(self._num_workers)]
 
+        print('')
         for i, worker in enumerate(self._workers):
             worker.start()
             print(f'\rWorker Started {i+1} / {self._num_workers}', end='')
@@ -217,6 +218,7 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
                 print(f'\rItem {len(self._items)} / {self._buffer_size}', end='')
                 if len(self._items) == self._buffer_size:
                     break
+        print('')
 
     def stop(self):
         for i, worker in enumerate(self._workers):

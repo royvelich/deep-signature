@@ -81,10 +81,10 @@ arclength_min_cond_training = 1.3
 arclength_max_cond_training = 2
 arclength_min_det_training = 1.3
 arclength_max_det_training = 2
-arclength_min_cond_evaluation = 1.3
+arclength_min_cond_evaluation = 1.5
 arclength_max_cond_evaluation = 2
-arclength_min_det_evaluation = 1.1
-arclength_max_det_evaluation = 1.3
+arclength_min_det_evaluation = 2/3
+arclength_max_det_evaluation = 1.5
 
 # plots
 matplotlib_factor = 1

@@ -82,6 +82,8 @@ if __name__ == '__main__':
     train_dataset.start()
 
     model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count, transformation_group_type=args.group).cuda()
+
+    print('')
     print(model)
 
     if args.continue_training:

@@ -129,6 +129,7 @@ if __name__ == '__main__':
     # indices5 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
     # indices6 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
     # indices7 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
+
     seed = 30
     rng = numpy.random.default_rng(seed=seed)
     numpy.random.seed(seed)
@@ -143,7 +144,7 @@ if __name__ == '__main__':
     # contours = skimage.measure.find_contours(gray_image, 0.3)
     # contours.sort(key=lambda contour: contour.shape[0], reverse=True)
     # raw_curves = [contour for contour in contours if 1000 < contour.shape[0]]
-    dataset_name = 'birds'
+    dataset_name = 'trees'
     curves = numpy.load(f'C:/deep-signature-data/level-curves/curves/test_raw/{dataset_name}.npy', allow_pickle=True)
 
     limit = None
