@@ -24,6 +24,7 @@ class ModelTrainer:
         self._device = device
 
         if torch.cuda.device_count() > 1:
+            print(f'Number of GPUs: {torch.cuda.device_count()}')
             self._model = torch.nn.DataParallel(model)
         else:
             self._model = model

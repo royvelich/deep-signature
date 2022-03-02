@@ -74,8 +74,8 @@ arclength_default_supporting_points_count = 5
 arclength_default_min_offset = arclength_default_supporting_points_count - 1
 arclength_default_max_offset = 2 * arclength_default_min_offset
 arclength_default_anchor_points_count = 5
-arclength_default_num_workers_train = 5
-arclength_default_num_workers_validation = 5
+arclength_default_num_workers_train = 15
+arclength_default_num_workers_validation = 15
 arclength_default_history_size = 2500
 
 equiaffine_arclength_min_cond_training = 1.3
