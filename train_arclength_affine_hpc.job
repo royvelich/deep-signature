@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#SBATCH -p work
+
+#SBATCH --gpus=4
+
+#SBATCH --mem=64g
+
+#SBATCH -o train_clip.%N.%j.out # stdout goes here
+
+#SBATCH -e train_clip.%N.%j.out # stderr goes here
+
+#SBATCH --qos=basic
+
+srun --gpus=4 --container-image=$HOME/nvidia+pytorch+22.02-py3.sqsh --container-save=$HOME/nvidia+pytorch+22.02-py3.sqsh --container-mounts $HOME/deep-signature-data:/deep-signature-data /workspace/deep-signature/train_arclength_affine.bash
