@@ -12,24 +12,29 @@ import pickle
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler, SequentialSampler
+from torch.utils.data.distributed import DistributedSampler
 
 # deep-signature
 from utils import settings
 
 
 class ModelTrainer:
-    def __init__(self, model, loss_functions, optimizer, device='cuda'):
+    def __init__(self, model, loss_functions, optimizer, world_size, rank, gpu):
         self._loss_functions = loss_functions
         self._optimizer = optimizer
-        self._device = device
+        self._world_size = world_size
+        self._rank = rank
+        self._gpu = gpu
 
-        if torch.cuda.device_count() > 1:
-            print(f'Number of GPUs: {torch.cuda.device_count()}')
-            self._model = torch.nn.DataParallel(model)
-        else:
-            self._model = model
+        # if torch.cuda.device_count() > 1:
+        #     print(f'Number of GPUs: {torch.cuda.device_count()}')
+        #     self._model = torch.nn.DataParallel(model)
+        # else:
+        self._model = model.double().cuda(gpu)
+        self._model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self._model)
+        self._model = torch.nn.parallel.DistributedDataParallel(self._model, device_ids=[gpu])
 
-        self._model = self._model.to('cuda:0')
+        # self._model = self._model.to('cuda:0')
 
     def fit(self, train_dataset, validation_dataset, epochs, train_batch_size, validation_batch_size, results_base_dir_path, epoch_handler=None, validation_split=None, shuffle_dataset=True):
         dataset_size = None
@@ -57,7 +62,11 @@ class ModelTrainer:
             train_sampler = SequentialSampler(train_indices)
             validation_sampler = SequentialSampler(validation_indices)
 
-        train_data_loader = DataLoader(actual_train_dataset, batch_size=train_batch_size, sampler=train_sampler, drop_last=False, num_workers=0)
+        # train_sampler = DistributedSampler(actual_train_dataset, shuffle=True, num_replicas=self._world_size, rank=self._rank, seed=30)
+        # validation_sampler = SubsetRandomSampler(validation_indices)
+        # validation_sampler = SubsetRandomSampler(validation_indices)
+
+        train_data_loader = DataLoader(actual_train_dataset, batch_size=train_batch_size, sampler=train_sampler, drop_last=True, num_workers=0)
         validation_data_loader = DataLoader(actual_validation_dataset, batch_size=validation_batch_size, sampler=validation_sampler, drop_last=False, num_workers=0)
 
         epochs_text = epochs if epochs is not None else 'infinite'
@@ -188,8 +197,11 @@ class ModelTrainer:
         # keys.sort()
         input_data = [v for k, v in batch_data.items() if k.startswith('input')]
         # output = self._model(batch_data['input'])
-        output = self._model(*input_data)
-        v = torch.tensor(0).double().to('cuda:0')
+        try:
+            output = self._model(*input_data)
+        except Exception as e:
+            h = 5
+        v = torch.tensor(0).double().cuda(self._gpu)
         for loss_function in self._loss_functions:
             v = v + loss_function(output=output, batch_data=batch_data)
         return v

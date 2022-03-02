@@ -169,13 +169,14 @@ class AffineTuple:
 
 
 class DeepSignatureTupletsOnlineDataset(Dataset):
-    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers):
+    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers, gpu):
         self._curves = curve_generation.CurvesGenerator.load_curves(dir_path)
         self._dataset_size = dataset_size
         self._multimodality = multimodality
         self._replace = replace
         self._buffer_size = buffer_size
         self._num_workers = num_workers
+        self._gpu = gpu
         self._q = Queue(maxsize=dataset_size)
         self._args = [self._curves, self._multimodality, self._q]
         self._items = []
@@ -189,7 +190,7 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
         tuplet = self._items[mod_index]
         for key in tuplet.keys():
             if key == 'input':
-                item[key] = torch.from_numpy(numpy.array(tuplet[key]).astype('float64')).cuda().double()
+                item[key] = torch.from_numpy(numpy.array(tuplet[key]).astype('float64')).cuda(self._gpu).double()
             else:
                 item[key] = tuplet[key]
 
@@ -226,7 +227,7 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
 
 
 class DeepSignatureCurvatureTupletsOnlineDataset(DeepSignatureTupletsOnlineDataset):
-    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers, sampling_ratio, supporting_points_count, offset_length, negative_examples_count):
+    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers, gpu, sampling_ratio, supporting_points_count, offset_length, negative_examples_count):
         DeepSignatureTupletsOnlineDataset.__init__(
             self,
             dataset_size=dataset_size,
@@ -234,7 +235,8 @@ class DeepSignatureCurvatureTupletsOnlineDataset(DeepSignatureTupletsOnlineDatas
             multimodality=multimodality,
             replace=replace,
             buffer_size=buffer_size,
-            num_workers=num_workers)
+            num_workers=num_workers,
+            gpu=gpu)
 
         self._sampling_ratio = sampling_ratio
         self._args.append(sampling_ratio)
@@ -277,7 +279,7 @@ class DeepSignatureAffineCurvatureTupletsOnlineDataset(DeepSignatureCurvatureTup
 
 
 class DeepSignatureArclengthTupletsOnlineDataset(DeepSignatureTupletsOnlineDataset):
-    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers, supporting_points_count, min_offset, max_offset, anchor_points_count):
+    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers, gpu, supporting_points_count, min_offset, max_offset, anchor_points_count):
         DeepSignatureTupletsOnlineDataset.__init__(
             self,
             dataset_size=dataset_size,
@@ -285,7 +287,8 @@ class DeepSignatureArclengthTupletsOnlineDataset(DeepSignatureTupletsOnlineDatas
             multimodality=multimodality,
             replace=replace,
             buffer_size=buffer_size,
-            num_workers=num_workers)
+            num_workers=num_workers,
+            gpu=gpu)
 
         self._supporting_points_count = supporting_points_count
         self._args.append(supporting_points_count)
