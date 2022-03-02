@@ -25,11 +25,11 @@ class ModelTrainer:
 
         if torch.cuda.device_count() > 1:
             print(f'Number of GPUs: {torch.cuda.device_count()}')
-            self._model = torch.nn.parallel.DistributedDataParallel(model)
+            self._model = torch.nn.DataParallel(model)
         else:
             self._model = model
 
-        self._model.cuda()
+        self._model = self._model.to('cuda:0')
 
     def fit(self, train_dataset, validation_dataset, epochs, train_batch_size, validation_batch_size, results_base_dir_path, epoch_handler=None, validation_split=None, shuffle_dataset=True):
         dataset_size = None
@@ -189,7 +189,7 @@ class ModelTrainer:
         input_data = [v for k, v in batch_data.items() if k.startswith('input')]
         # output = self._model(batch_data['input'])
         output = self._model(*input_data)
-        v = torch.tensor(0).cuda().double()
+        v = torch.tensor(0).double().to('cuda:0')
         for loss_function in self._loss_functions:
             v = v + loss_function(output=output, batch_data=batch_data)
         return v
