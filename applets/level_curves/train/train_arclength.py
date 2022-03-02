@@ -40,11 +40,14 @@ def fix_random_seeds(seed=30):
 
 def init_dist_node(args):
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
+    print(f'CUDA_VISIBLE_DEVICES: {args.gpus}')
     args.ngpus_per_node = torch.cuda.device_count()
+    print(f'ngpus_per_node: {args.ngpus_per_node}')
 
     args.rank = 0
     args.dist_url = f'tcp://localhost:{args.port}'
     args.world_size = args.ngpus_per_node
+    print(f'world_size: {args.world_size}')
 
 
 def init_dist_gpu(gpu, args):
@@ -119,7 +122,7 @@ def train(gpu, args):
 
     optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
     # optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count)
+    loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count).cuda(gpu)
 
     model_trainer = ModelTrainer(
         model=model,
