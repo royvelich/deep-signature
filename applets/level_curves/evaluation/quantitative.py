@@ -128,7 +128,7 @@ if __name__ == '__main__':
     seed = 30
     rng = numpy.random.default_rng(seed=seed)
     numpy.random.seed(seed)
-    sampling_ratio = 0.7
+    sampling_ratio = 0.9
     anchors_ratio = None
     transform_type = 'affine'
     curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type)
@@ -139,33 +139,33 @@ if __name__ == '__main__':
     # contours = skimage.measure.find_contours(gray_image, 0.3)
     # contours.sort(key=lambda contour: contour.shape[0], reverse=True)
     # raw_curves = [contour for contour in contours if 1000 < contour.shape[0]]
-    dataset_name = 'clouds'
+    dataset_name = 'profiles'
     curves = numpy.load(f'C:/deep-signature-data/level-curves/curves/test_raw/{dataset_name}.npy', allow_pickle=True)
 
-    limit = None
-    if dataset_name == 'butterflies':
-        limit = 100
-    elif dataset_name == 'cats':
-        limit = 200
-    elif dataset_name == 'dogs':
-        limit = 700
-    elif dataset_name == 'trees':
-        limit = 200
-    elif dataset_name == 'chickens':
-        limit = 200
-    elif dataset_name == 'birds':
-        limit = 200
-    elif dataset_name == 'leaves':
-        limit = 100
-    elif dataset_name == 'bears':
-        limit = 200
-    elif dataset_name == 'insects':
-        limit = 200
-    elif dataset_name == 'basketball':
-        limit = 200
-
-    if limit is not None:
-        curves = [curve for curve in curves if limit < curve.shape[0]]
+    # limit = None
+    # if dataset_name == 'butterflies':
+    #     limit = 100
+    # elif dataset_name == 'cats':
+    #     limit = 200
+    # elif dataset_name == 'dogs':
+    #     limit = 700
+    # elif dataset_name == 'trees':
+    #     limit = 200
+    # elif dataset_name == 'chickens':
+    #     limit = 200
+    # elif dataset_name == 'birds':
+    #     limit = 200
+    # elif dataset_name == 'leaves':
+    #     limit = 100
+    # elif dataset_name == 'bears':
+    #     limit = 200
+    # elif dataset_name == 'insects':
+    #     limit = 200
+    # elif dataset_name == 'basketball':
+    #     limit = 200
+    #
+    # if limit is not None:
+    #     curves = [curve for curve in curves if limit < curve.shape[0]]
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
     # plot_curve(ax=ax, curve=contours[0], color='red', zorder=10)
     # plt.show()
