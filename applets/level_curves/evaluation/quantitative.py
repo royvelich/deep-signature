@@ -130,7 +130,7 @@ if __name__ == '__main__':
     numpy.random.seed(seed)
     sampling_ratio = 0.7
     anchors_ratio = None
-    transform_type = 'equiaffine'
+    transform_type = 'affine'
     curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type)
 
     # image_file_path = os.path.normpath('C:/Users/Roy/OneDrive - Technion/Thesis/1x/cats.png')
@@ -139,7 +139,7 @@ if __name__ == '__main__':
     # contours = skimage.measure.find_contours(gray_image, 0.3)
     # contours.sort(key=lambda contour: contour.shape[0], reverse=True)
     # raw_curves = [contour for contour in contours if 1000 < contour.shape[0]]
-    dataset_name = 'birds'
+    dataset_name = 'clouds'
     curves = numpy.load(f'C:/deep-signature-data/level-curves/curves/test_raw/{dataset_name}.npy', allow_pickle=True)
 
     limit = None
