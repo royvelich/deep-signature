@@ -68,6 +68,7 @@ def generate_random_affine_transform_2d(min_cond, max_cond, min_det, max_det):
     S = numpy.array([[s1, 0], [0, s2]])
     A = numpy.matmul(numpy.matmul(U, S), V)
     return A
+    # return numpy.array([[1, 0], [0, 1]])
     # while True:
     #     A = numpy.random.uniform(low=0, high=max_scale, size=(2, 2))
     #     if (_validate_condition_number(A=A, min_cond=min_cond, max_cond=max_cond) is True) and (_validate_determinant(A=A, min_det=min_det, max_det=max_det) is True):

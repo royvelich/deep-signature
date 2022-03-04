@@ -142,6 +142,27 @@ def normalize_curve(curve, force_ccw=False, force_end_point=False, index1=None, 
     return normalized_curve
 
 
+def normalize_curve2(curve):
+    if not is_ccw2(curve=curve):
+        curve = numpy.flip(m=curve, axis=0)
+
+    curve = translate_curve(curve=curve, offset=-curve[0])
+
+    radians = calculate_secant_angle2(curve=curve, index1=0, index2=1)
+    curve = rotate_curve(curve=curve, radians=-radians)
+
+    end_point = curve[-1]
+    if end_point[0] < 0:
+        transform = euclidean_transform.generate_vertical_reflection_transform_2d()
+        curve = numpy.matmul(curve, transform)
+
+    if end_point[1] < 0:
+        transform = euclidean_transform.generate_horizontal_reflection_transform_2d()
+        curve = numpy.matmul(curve, transform)
+
+    return curve
+
+
 def center_curve(curve):
     return translate_curve(curve=curve, offset=-numpy.mean(curve, axis=0))
 
@@ -200,6 +221,19 @@ def is_ccw(curve, index1=None, index2=None, index3=None):
     return numpy.dot(pointer12, normal01) < 0
 
 
+def is_ccw2(curve):
+    index1 = 0
+    index2 = 1
+    index3 = curve.shape[0] - 1
+    eps = 1e-9
+    pointer01 = curve[index1] - curve[index2]
+    pointer12 = curve[index3] - curve[index2]
+    pointer12 = pointer12 / (numpy.linalg.norm(pointer12) + eps)
+    normal01 = numpy.array([-pointer01[1], pointer01[0]])
+    normal01 = normal01 / (numpy.linalg.norm(normal01) + eps)
+    return numpy.dot(pointer12, normal01) < 0
+
+
 def calculate_secant_angle(curve, index1=None, index2=None):
     if index1 is None:
         index1 = get_leftmost_index(curve)
@@ -215,6 +249,24 @@ def calculate_secant_angle(curve, index1=None, index2=None):
     normal = numpy.array([-axis[1], axis[0]])
     radians = -numpy.sign(numpy.dot(secant, normal)) * numpy.arccos(numpy.dot(secant, axis))
     return radians
+
+
+def calculate_secant_angle2(curve, index1=None, index2=None):
+    if index1 is None:
+        index1 = get_leftmost_index(curve)
+
+    if index2 is None:
+        index2 = get_middle_index(curve)
+
+    # eps = 1e-9
+    secant = curve[index2] - curve[index1]
+    # secant = secant / (numpy.linalg.norm(secant) + eps)
+    # axis = numpy.array([1, 0])
+    # axis = axis / numpy.linalg.norm(axis)
+    # normal = numpy.array([-axis[1], axis[0]])
+    # radians = -numpy.sign(numpy.dot(secant, normal)) * numpy.arccos(numpy.dot(secant, axis))
+    # return radians
+    return numpy.arctan2(secant[1], secant[0])
 
 
 def get_leftmost_index(curve):

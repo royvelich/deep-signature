@@ -19,6 +19,35 @@ from hausdorff import hausdorff_distance
 # https://stackoverflow.com/questions/36074455/python-matplotlib-with-a-line-color-gradient-and-colorbar
 from deep_signature.stats import discrete_distribution
 
+# matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+
+
+def plot_graph(ax, x, y, linewidth=2, color='red', alpha=1, zorder=1, label=None):
+    return ax.plot(x, y, linewidth=linewidth, color=color, alpha=alpha, zorder=zorder, label=label)
+
+
+def plot_curve(ax, curve, linewidth=2, color='red', alpha=1, zorder=1, label=None):
+    x = curve[:, 0]
+    y = curve[:, 1]
+    return plot_graph(ax=ax, x=x, y=y, linewidth=linewidth, color=color, alpha=alpha, zorder=zorder, label=label)
+
+
+def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=None):
+    if sample is not None:
+        x = sample[:, 0]
+        y = sample[:, 1]
+
+    return ax.scatter(
+        x=x,
+        y=y,
+        s=point_size,
+        color=color,
+        alpha=alpha,
+        zorder=zorder)
+
+
 # ---------------------
 # GROUND TRUTH ROUTINES
 # ---------------------
@@ -111,8 +140,8 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
             sampled_section1 = sampled_curve[sampled_indices1]
             sampled_section2 = sampled_curve[sampled_indices2]
 
-            sample1 = curve_processing.normalize_curve(curve=sampled_section1)
-            sample2 = curve_processing.normalize_curve(curve=sampled_section2)
+            sample1 = curve_processing.normalize_curve2(curve=sampled_section1)
+            sample2 = curve_processing.normalize_curve2(curve=sampled_section2)
 
             arclength_batch_data1 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample1).double(), dim=0), dim=0).cuda()
             arclength_batch_data2 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2).double(), dim=0), dim=0).cuda()
@@ -136,7 +165,9 @@ def predict_curve_invariants(curve, arclength_model, curvature_model, sampling_r
     sampling_points_count = int(sampling_ratio * curve_points_count)
     dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=settings.curvature_default_multimodality, max_density=1, count=1)[0]
     indices_pool = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
-    modified_indices_pool = common_utils.insert_sorted(indices_pool, numpy.array([0]))
+    modified_indices_pool = common_utils.insert_sorted(indices_pool, numpy.array([reference_index]))
+    meta_reference_index = int(numpy.where(modified_indices_pool == reference_index)[0])
+    modified_indices_pool = numpy.roll(indices_pool, shift=-meta_reference_index, axis=0)
 
     predicted_arclength = predict_arclength_by_index(
         model=arclength_model,

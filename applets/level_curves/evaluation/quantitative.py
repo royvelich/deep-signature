@@ -1,5 +1,6 @@
 # python peripherals
 import os
+from argparse import ArgumentParser
 
 # numpy
 import numpy
@@ -92,7 +93,7 @@ def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_rat
     #     plt.show()
 
     transformed_curve = curve_processing.center_curve(curve=transformed_curve)
-
+    reference_index = int(numpy.random.randint(transformed_curve.shape[0], size=1))
     predicted_curve_invariants = evaluation_utils.predict_curve_invariants(
         curve=transformed_curve,
         arclength_model=arclength_model,
@@ -101,6 +102,7 @@ def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_rat
         anchors_ratio=anchors_ratio,
         neighborhood_supporting_points_count=settings.curvature_default_supporting_points_count,
         section_supporting_points_count=settings.arclength_default_supporting_points_count,
+        reference_index=reference_index,
         rng=rng)
     signature_curve = predicted_curve_invariants['predicted_signature']
     return signature_curve
@@ -125,91 +127,34 @@ if __name__ == '__main__':
     # indices6 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
     # indices7 = rng.choice(a=[1,2,3,4,5,6,7], size=3, replace=False)
 
+    parser = ArgumentParser()
+    parser.add_argument("--curves_base_dir_path", dest="curves_base_dir_path", type=str)
+    args = parser.parse_args()
+
     seed = 30
     rng = numpy.random.default_rng(seed=seed)
     numpy.random.seed(seed)
+    multimodality = 30
     sampling_ratio = 0.9
-    anchors_ratio = None
-    transform_type = 'affine'
-    curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type)
-
-    # image_file_path = os.path.normpath('C:/Users/Roy/OneDrive - Technion/Thesis/1x/cats.png')
-    # image = skimage.io.imread(image_file_path)
-    # gray_image = skimage.color.rgb2gray(image)
-    # contours = skimage.measure.find_contours(gray_image, 0.3)
-    # contours.sort(key=lambda contour: contour.shape[0], reverse=True)
-    # raw_curves = [contour for contour in contours if 1000 < contour.shape[0]]
     dataset_name = 'profiles'
-    curves = numpy.load(f'C:/deep-signature-data/level-curves/curves/test_raw/{dataset_name}.npy', allow_pickle=True)
+    anchors_ratio = None
+    transform_type = 'equiaffine'
+    curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type)
+    curves_dir_path = os.path.normpath(os.path.join(args.curves_base_dir_path, f'multimodality_{multimodality}'))
+    downsampled_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_{str(sampling_ratio).replace(".", "_")}.npy'))
+    raw_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_1.npy'))
+    # raw_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_{str(sampling_ratio).replace(".", "_")}.npy'))
 
-    # limit = None
-    # if dataset_name == 'butterflies':
-    #     limit = 100
-    # elif dataset_name == 'cats':
-    #     limit = 200
-    # elif dataset_name == 'dogs':
-    #     limit = 700
-    # elif dataset_name == 'trees':
-    #     limit = 200
-    # elif dataset_name == 'chickens':
-    #     limit = 200
-    # elif dataset_name == 'birds':
-    #     limit = 200
-    # elif dataset_name == 'leaves':
-    #     limit = 100
-    # elif dataset_name == 'bears':
-    #     limit = 200
-    # elif dataset_name == 'insects':
-    #     limit = 200
-    # elif dataset_name == 'basketball':
-    #     limit = 200
-    #
-    # if limit is not None:
-    #     curves = [curve for curve in curves if limit < curve.shape[0]]
-    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
-    # plot_curve(ax=ax, curve=contours[0], color='red', zorder=10)
-    # plt.show()
-    #
-    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
-    # plot_curve(ax=ax, curve=contours[1], color='red', zorder=10)
-    # plt.show()
-
-    # curves = LevelCurvesGenerator.load_curves(dir_path=settings.level_curves_dir_path_test)
-    # curves = [curve for curve in curves if 700 < curve.shape[0] < 1100]
-    #
-    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
-    # plot_curve(ax=ax, curve=curves[0], color='red', zorder=10)
-    # plt.show()
-    #
-    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
-    # plot_curve(ax=ax, curve=curves[1], color='red', zorder=10)
-    # plt.show()
-
-    # raw_curves = raw_curves[:20]
-    # curves = []
-    # for i, curve in enumerate(curves):
-    #     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
-    #     plot_curve(ax=ax, curve=curve, color='red', zorder=10)
-    #     plt.show()
-
-        # curve = curve_processing.smooth_curve(
-        #     curve=curve,
-        #     iterations=1,
-        #     window_length=43,
-        #     poly_order=2)
-        # curves.append(curve)
-
-        # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 40))
-        # plot_curve(ax=ax, curve=curve, color='red', zorder=10)
-        # plt.show()
+    downsampled_curves = numpy.load(downsampled_curves_path, allow_pickle=True)
+    raw_curves = numpy.load(raw_curves_path, allow_pickle=True)
 
     correct = 0
     signatures = []
-    for i, curve in enumerate(curves):
+    for i, curve in enumerate(raw_curves):
         signature_curve = calculate_signature_curve(
             curve=curve,
             transform_type=transform_type,
-            sampling_ratio=sampling_ratio,
+            sampling_ratio=1,
             anchors_ratio=anchors_ratio,
             curvature_model=curvature_model,
             arclength_model=arclength_model,
@@ -227,12 +172,12 @@ if __name__ == '__main__':
     # plot_sample(ax=ax, sample=shifted_curve, color='blue', zorder=10, point_size=300)
     # plt.show()
 
-    distances = numpy.zeros((len(curves), len(curves)))
-    for i, curve in enumerate(curves):
+    distances = numpy.zeros((len(downsampled_curves), len(downsampled_curves)))
+    for i, curve in enumerate(downsampled_curves):
         anchor_signature_curve = calculate_signature_curve(
             curve=curve,
             transform_type=transform_type,
-            sampling_ratio=sampling_ratio,
+            sampling_ratio=1,
             anchors_ratio=anchors_ratio,
             curvature_model=curvature_model,
             arclength_model=arclength_model,
@@ -243,20 +188,19 @@ if __name__ == '__main__':
         for j, signature_curve in enumerate(signatures):
             current_arc_length = signature_curve[-1, 0]
 
-            # shift_distances = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
-            # # shift_distances2 = calculate_hausdorff_distances(curve1=signature_curve, curve2=anchor_signature_curve)
-            # # distances[i, j] = numpy.min([numpy.min(shift_distances1), numpy.min(shift_distances2)])
-            # distances[i, j] = numpy.min(shift_distances)
+            arclength_ratio = current_arc_length / anchor_arc_length
 
-            # bla = numpy.abs(current_arc_length - anchor_arc_length) / anchor_arc_length
-            # shift_distances = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
-            # distances[i, j] = numpy.min(shift_distances) * bla
+            anchor_signature_curve_copy = anchor_signature_curve.copy()
+            anchor_signature_curve_copy[:, 0] = anchor_signature_curve_copy[:, 0] * arclength_ratio
 
-            if (numpy.abs(current_arc_length - anchor_arc_length) / anchor_arc_length) < 0.15:
-                shift_distances = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
-                distances[i, j] = numpy.min(shift_distances)
-            else:
-                distances[i, j] = numpy.inf
+            shift_distances = calculate_hausdorff_distances(curve1=anchor_signature_curve_copy, curve2=signature_curve)
+            distances[i, j] = numpy.min(shift_distances)
+
+            # if (numpy.abs(current_arc_length - anchor_arc_length) / anchor_arc_length) < 0.05:
+            #     shift_distances = calculate_hausdorff_distances(curve1=anchor_signature_curve, curve2=signature_curve)
+            #     distances[i, j] = numpy.min(shift_distances)
+            # else:
+            #     distances[i, j] = numpy.inf
 
         curve_id = numpy.argmin(distances[i, :])
         if curve_id == i:
@@ -265,4 +209,4 @@ if __name__ == '__main__':
         else:
             print(f'curve #{i} failed to be identified')
 
-    print(f'{correct} identifications out of {len(curves)}')
+    print(f'{correct} identifications out of {len(downsampled_curves)}')

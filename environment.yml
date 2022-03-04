@@ -28,5 +28,6 @@ dependencies:
   - ipykernel
   - python-kaleido
   - numba
+  - shapely
   - pip:
       - hausdorff
