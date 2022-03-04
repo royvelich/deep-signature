@@ -80,17 +80,17 @@ arclength_default_history_size = 2500
 
 equiaffine_arclength_min_cond_training = 1.2
 equiaffine_arclength_max_cond_training = 3
-affine_arclength_min_cond_training = 1.3
+affine_arclength_min_cond_training = 1.2
 affine_arclength_max_cond_training = 2
 affine_arclength_min_det_training = 1.5
-affine_arclength_max_det_training = 2.1
+affine_arclength_max_det_training = 2
 
 equiaffine_arclength_min_cond_evaluation = 1.3
 equiaffine_arclength_max_cond_evaluation = 2
 affine_arclength_min_cond_evaluation = 1.5
 affine_arclength_max_cond_evaluation = 2
-affine_arclength_min_det_evaluation = 1.1
-affine_arclength_max_det_evaluation = 1.6
+affine_arclength_min_det_evaluation = 1.3
+affine_arclength_max_det_evaluation = 2
 
 # plots
 matplotlib_factor = 1

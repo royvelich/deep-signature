@@ -98,112 +98,104 @@ def predict_curvature_by_index(model, curve_neighborhoods, factor=-1):
     return predicted_curvature
 
 
-def predict_arclength_by_index(model, curve, indices_pool, supporting_points_count, anchor_indices=None, rng=None):
-    anchor_indices = anchor_indices if anchor_indices is not None else indices_pool
-    predicted_arclength = numpy.zeros(anchor_indices.shape[0])
+def predict_arclength_by_index(model, curve, indices_pool, supporting_points_count, rng=None):
+    indices_count = indices_pool.shape[0]
+    predicted_arclength = numpy.zeros(indices_count)
     step = supporting_points_count - 1
     arclength_at_index = {}
-    arclength_at_index[anchor_indices[0]] = 0
-    for i, anchor_index in enumerate(anchor_indices[1:]):
-        modified_indices_pool = common_utils.insert_sorted(indices_pool, numpy.array([anchor_indices[0], anchor_index]))
-        sampled_curve = curve[modified_indices_pool]
-        anchor_meta_index = int(numpy.where(modified_indices_pool == anchor_index)[0])
-        max_index = max(arclength_at_index, key=arclength_at_index.get)
-        # try:
-        max_meta_index = int(numpy.where(modified_indices_pool == max_index)[0])
-        # except:
-        #     bla = 5
-        anchor_arclength = arclength_at_index[max_index]
-        for meta_index in range(max_meta_index, anchor_meta_index):
-            start_meta_index = meta_index - step
-            end_meta_index = meta_index
-            end_meta_index2 = end_meta_index + 1
+    arclength_at_index[0] = 0
+    sampled_curve = curve[indices_pool]
+    for i in range(indices_count - 1):
+        start_meta_index = i - step
+        end_meta_index = i
+        end_meta_index2 = end_meta_index + 1
 
-            sampled_indices1 = curve_sampling.sample_curve_section_indices(
-                curve=sampled_curve,
-                start_point_index=start_meta_index,
-                end_point_index=end_meta_index,
-                multimodality=settings.arclength_default_multimodality,
-                supporting_points_count=supporting_points_count,
-                uniform=True,
-                rng=rng)
+        sampled_indices1 = numpy.mod(numpy.linspace(start=start_meta_index, stop=end_meta_index, num=supporting_points_count, dtype=int, endpoint=True), indices_count)
+        sampled_indices2 = numpy.mod(numpy.linspace(start=start_meta_index, stop=end_meta_index2, num=supporting_points_count+1, dtype=int, endpoint=True), indices_count)
+        sampled_indices2 = numpy.delete(sampled_indices2, supporting_points_count-1)
 
-            sampled_indices2 = curve_sampling.sample_curve_section_indices(
-                curve=sampled_curve,
-                start_point_index=start_meta_index,
-                end_point_index=end_meta_index2,
-                multimodality=settings.arclength_default_multimodality,
-                supporting_points_count=supporting_points_count,
-                uniform=True,
-                rng=rng)
+        # sampled_indices1 = curve_sampling.sample_curve_section_indices(
+        #     curve=sampled_curve,
+        #     start_point_index=start_meta_index,
+        #     end_point_index=end_meta_index,
+        #     multimodality=settings.arclength_default_multimodality,
+        #     supporting_points_count=supporting_points_count,
+        #     uniform=True,
+        #     rng=rng)
+        #
+        # sampled_indices2 = curve_sampling.sample_curve_section_indices(
+        #     curve=sampled_curve,
+        #     start_point_index=start_meta_index,
+        #     end_point_index=end_meta_index2,
+        #     multimodality=settings.arclength_default_multimodality,
+        #     supporting_points_count=supporting_points_count,
+        #     uniform=True,
+        #     rng=rng)
 
-            sampled_section1 = sampled_curve[sampled_indices1]
-            sampled_section2 = sampled_curve[sampled_indices2]
+        sampled_section1 = sampled_curve[sampled_indices1]
+        sampled_section2 = sampled_curve[sampled_indices2]
 
-            sample1 = curve_processing.normalize_curve2(curve=sampled_section1)
-            sample2 = curve_processing.normalize_curve2(curve=sampled_section2)
+        sample1 = curve_processing.normalize_curve2(curve=sampled_section1)
+        sample2 = curve_processing.normalize_curve2(curve=sampled_section2)
 
-            arclength_batch_data1 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample1).double(), dim=0), dim=0).cuda()
-            arclength_batch_data2 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2).double(), dim=0), dim=0).cuda()
+        arclength_batch_data1 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample1).double(), dim=0), dim=0).cuda()
+        arclength_batch_data2 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2).double(), dim=0), dim=0).cuda()
 
-            with torch.no_grad():
-                anchor_arclength = float(anchor_arclength + numpy.abs(torch.squeeze(model(arclength_batch_data1), dim=0).cpu().detach().numpy() - torch.squeeze(model(arclength_batch_data2), dim=0).cpu().detach().numpy()))
-
-            current_index = modified_indices_pool[end_meta_index2]
-            # if current_index != anchor_index:
-            arclength_at_index[current_index] = anchor_arclength
-
-        predicted_arclength[i+1] = anchor_arclength
+        with torch.no_grad():
+            try:
+                predicted_arclength[i + 1] = float(predicted_arclength[i] + numpy.abs(torch.squeeze(model(arclength_batch_data1), dim=0).cpu().detach().numpy() - torch.squeeze(model(arclength_batch_data2), dim=0).cpu().detach().numpy()))
+            except Exception:
+                bla = 6
 
     indices = numpy.array(list(range(predicted_arclength.shape[0])))
     values = predicted_arclength
     return numpy.vstack((indices, values)).transpose()
 
 
-def predict_curve_invariants(curve, arclength_model, curvature_model, sampling_ratio, anchors_ratio, neighborhood_supporting_points_count, section_supporting_points_count, reference_index=0, multimodality=30, anchor_indices=None, rng=None):
+def predict_curve_invariants(curve, arclength_model, curvature_model, sampling_ratio, anchors_ratio, neighborhood_supporting_points_count, section_supporting_points_count, indices_shift=0, multimodality=30, anchor_indices=None, rng=None):
     curve_points_count = curve.shape[0]
     sampling_points_count = int(sampling_ratio * curve_points_count)
     dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=settings.curvature_default_multimodality, max_density=1, count=1)[0]
     indices_pool = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
-    modified_indices_pool = common_utils.insert_sorted(indices_pool, numpy.array([reference_index]))
-    meta_reference_index = int(numpy.where(modified_indices_pool == reference_index)[0])
-    modified_indices_pool = numpy.roll(indices_pool, shift=-meta_reference_index, axis=0)
+    # modified_indices_pool = common_utils.insert_sorted(indices_pool, numpy.array([reference_index]))
+    # meta_reference_index = int(numpy.where(modified_indices_pool == reference_index)[0])
+    indices_pool = numpy.roll(indices_pool, shift=indices_shift, axis=0)
 
     predicted_arclength = predict_arclength_by_index(
         model=arclength_model,
         curve=curve,
-        indices_pool=modified_indices_pool,
+        indices_pool=indices_pool,
         supporting_points_count=section_supporting_points_count,
         rng=rng)
 
     curve_neighborhoods = extract_curve_neighborhoods(
         curve=curve,
-        indices_pool=modified_indices_pool,
+        indices_pool=indices_pool,
         supporting_points_count=neighborhood_supporting_points_count)
 
     predicted_curvature = predict_curvature_by_index(
         model=curvature_model,
         curve_neighborhoods=curve_neighborhoods)
 
-    if anchor_indices is not None:
-        predicted_arclength_with_anchors = predict_arclength_by_index(
-            model=arclength_model,
-            curve=curve,
-            indices_pool=indices_pool,
-            supporting_points_count=section_supporting_points_count,
-            anchor_indices=anchor_indices)
+    # if anchor_indices is not None:
+    #     predicted_arclength_with_anchors = predict_arclength_by_index(
+    #         model=arclength_model,
+    #         curve=curve,
+    #         indices_pool=indices_pool,
+    #         supporting_points_count=section_supporting_points_count,
+    #         anchor_indices=anchor_indices)
+    #
+    #     curve_neighborhoods_with_anchors = extract_curve_neighborhoods(
+    #         curve=curve,
+    #         indices_pool=indices_pool,
+    #         supporting_points_count=neighborhood_supporting_points_count,
+    #         anchor_indices=anchor_indices)
+    #
+    #     predicted_curvature_with_anchors = predict_curvature_by_index(
+    #         model=curvature_model,
+    #         curve_neighborhoods=curve_neighborhoods_with_anchors)
 
-        curve_neighborhoods_with_anchors = extract_curve_neighborhoods(
-            curve=curve,
-            indices_pool=modified_indices_pool,
-            supporting_points_count=neighborhood_supporting_points_count,
-            anchor_indices=anchor_indices)
-
-        predicted_curvature_with_anchors = predict_curvature_by_index(
-            model=curvature_model,
-            curve_neighborhoods=curve_neighborhoods_with_anchors)
-
-    predicted_signature = numpy.zeros((modified_indices_pool.shape[0], 2))
+    predicted_signature = numpy.zeros((indices_pool.shape[0], 2))
     predicted_signature[:, 0] = predicted_arclength[:, 1]
     predicted_signature[:, 1] = predicted_curvature[:, 1]
 
@@ -212,9 +204,9 @@ def predict_curve_invariants(curve, arclength_model, curvature_model, sampling_r
 
     return {
         'predicted_arclength': predicted_arclength,
-        'predicted_arclength_with_anchors': predicted_arclength_with_anchors if anchor_indices is not None else None,
+        # 'predicted_arclength_with_anchors': predicted_arclength_with_anchors if anchor_indices is not None else None,
         'predicted_curvature': predicted_curvature,
-        'predicted_curvature_with_anchors': predicted_curvature_with_anchors if anchor_indices is not None else None,
+        # 'predicted_curvature_with_anchors': predicted_curvature_with_anchors if anchor_indices is not None else None,
         'predicted_signature': predicted_signature,
         'curve_neighborhoods': curve_neighborhoods,
         'sampling_points_count': sampling_points_count,
@@ -290,14 +282,14 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
             arclength_comparison = {
                 'true_arclength': true_curve_invariants['true_arclength'],
                 'predicted_arclength': predicted_curve_invariants['predicted_arclength'],
-                'predicted_arclength_with_anchors': predicted_curve_invariants['predicted_arclength_with_anchors']
+                # 'predicted_arclength_with_anchors': predicted_curve_invariants['predicted_arclength_with_anchors']
             }
 
             curvature_comparison = {
                 'curve_neighborhoods': predicted_curve_invariants['curve_neighborhoods'],
                 'true_curvature': true_curve_invariants['true_curvature'],
                 'predicted_curvature': predicted_curve_invariants['predicted_curvature'],
-                'predicted_curvature_with_anchors': predicted_curve_invariants['predicted_curvature_with_anchors']
+                # 'predicted_curvature_with_anchors': predicted_curve_invariants['predicted_curvature_with_anchors']
             }
 
             curve_record['comparisons'].append({
@@ -325,7 +317,6 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
             model=arclength_model,
             curve=curve,
             indices_pool=all_indices,
-            anchor_indices=all_indices,
             supporting_points_count=section_supporting_points_count)
 
         factor = numpy.mean(true_arclength[1:, 1] / predicted_arclength[1:, 1])
@@ -336,8 +327,8 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
         for curve_record in curve_records:
             for comparison in curve_record['comparisons']:
                 comparison['arclength_comparison']['predicted_arclength'][:, 1] *= factor
-                if comparison['arclength_comparison']['predicted_arclength_with_anchors'] is not None:
-                    comparison['arclength_comparison']['predicted_arclength_with_anchors'][:, 1] *= factor
+                # if comparison['arclength_comparison']['predicted_arclength_with_anchors'] is not None:
+                #     comparison['arclength_comparison']['predicted_arclength_with_anchors'][:, 1] *= factor
 
     return curve_records
 

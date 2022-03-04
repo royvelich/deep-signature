@@ -26,6 +26,7 @@ import matplotlib.ticker as ticker
 # deep-signature
 from deep_signature.data_manipulation import curve_sampling, curve_processing
 from deep_signature.stats import discrete_distribution
+from deep_signature.linalg import transformations
 
 # shapely
 from shapely.geometry import Polygon
@@ -56,35 +57,50 @@ def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=Non
 
 
 def extract_curves(curves, curves_dir, stem):
-    sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-    multimodalies = [10, 15, 20, 25, 30, 35]
-    for multimodality in multimodalies:
-        for sampling_ratio in sampling_ratios:
-            downsampled_curves = []
-            plots_file_path = os.path.normpath(os.path.join(curves_dir, 'plots', stem, f'multimodality_{multimodality}', str(sampling_ratio).replace(".", "_")))
-            pathlib.Path(plots_file_path).mkdir(parents=True, exist_ok=True)
-            for i, curve in enumerate(curves):
-                curve_points_count = curve.shape[0]
-                sampling_points_count = int(sampling_ratio * curve_points_count)
-                dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=multimodality, max_density=1, count=1)[0]
-                indices_pool = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
-                downsampled_curve = curve[indices_pool]
-                downsampled_curves.append(downsampled_curve)
+    sampling_ratios = [1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3]
+    multimodalies = [10, 15, 20, 25, 30, 35, 40, 45]
+    transform_types = ['euclidean', 'equiaffine', 'affine']
 
-                fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 20))
-                plot_sample(ax=ax, sample=downsampled_curve, color='red', zorder=10, point_size=150)
-                plt.axis('off')
-                plot_file_path = os.path.normpath(os.path.join(plots_file_path, f'{stem}_{i}.png'))
-                fig.savefig(plot_file_path)
-                plt.close(fig)
+    for transform_type in transform_types:
+        transformed_curves = []
+        for curve in curves:
+            transform = transformations.generate_random_transform_2d_evaluation(transform_type=transform_type)
+            transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+            transformed_curves.append(transformed_curve)
 
-            curves_base_dir_path = os.path.normpath(os.path.join(curves_dir, f'multimodality_{multimodality}'))
-            pathlib.Path(curves_base_dir_path).mkdir(parents=True, exist_ok=True)
-            curves_file_path = os.path.normpath(os.path.join(curves_base_dir_path, f'{stem}_{str(sampling_ratio).replace(".", "_")}.npy'))
-            numpy.save(curves_file_path, downsampled_curves)
+        for multimodality in multimodalies:
+            for sampling_ratio in sampling_ratios:
+                downsampled_curves = []
+                plots_file_path = os.path.normpath(os.path.join(curves_dir, 'plots', stem, transform_type, f'multimodality_{multimodality}', str(sampling_ratio).replace(".", "_")))
+                pathlib.Path(plots_file_path).mkdir(parents=True, exist_ok=True)
+                current_curves = transformed_curves if sampling_ratio < 1 else curves
+                for i, curve in enumerate(current_curves):
+                    curve_points_count = curve.shape[0]
+                    sampling_points_count = int(sampling_ratio * curve_points_count)
+                    dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=multimodality, max_density=1, count=1)[0]
+                    indices_pool = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
+                    downsampled_curve = curve[indices_pool]
+                    downsampled_curves.append(downsampled_curve)
+
+                    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+                    if sampling_ratio < 1:
+                        plot_sample(ax=ax, sample=curves[i], color='green', zorder=10, point_size=4)
+
+                    plot_sample(ax=ax, sample=downsampled_curve, color='red', zorder=10, point_size=4)
+                    plt.axis('off')
+                    ax.axis('equal')
+                    plot_file_path = os.path.normpath(os.path.join(plots_file_path, f'{stem}_{i}.png'))
+                    fig.savefig(plot_file_path)
+                    plt.close(fig)
+
+                curves_base_dir_path = os.path.normpath(os.path.join(curves_dir, transform_type, f'multimodality_{multimodality}'))
+                pathlib.Path(curves_base_dir_path).mkdir(parents=True, exist_ok=True)
+                curves_file_path = os.path.normpath(os.path.join(curves_base_dir_path, f'{stem}_{str(sampling_ratio).replace(".", "_")}.npy'))
+                numpy.save(curves_file_path, downsampled_curves)
 
 
 if __name__ == '__main__':
+    numpy.random.seed(30)
     parser = ArgumentParser()
     parser.add_argument("--images_dir", dest="images_dir", type=str)
     parser.add_argument("--curves_dir", dest="curves_dir", type=str)
@@ -121,75 +137,8 @@ if __name__ == '__main__':
 
             if not remove:
                 if curve.shape[0] > 200:
-                    external_curves.append(curve)
-
-        # limit = 0
-        # if stem == 'butterflies':
-        #     limit = 57
-        # elif stem == 'cats':
-        #     limit = 7
-        # elif stem == 'dogs':
-        #     limit = 9
-        # elif stem == 'trees':
-        #     limit = 4
-        # elif stem == 'chickens':
-        #     limit = 7
-        # elif stem == 'birds':
-        #     limit = 30
-        # elif stem == 'leaves':
-        #     limit = 35
-        # elif stem == 'bears':
-        #     limit = 5
-        # elif stem == 'insects':
-        #     limit = 300
-        # elif stem == 'basketball':
-        #     limit = 52
-        # elif stem == 'animals':
-        #     limit = 28
-        # elif stem == 'whales':
-        #     limit = 1
-        # elif stem == 'branches':
-        #     limit = 7
-        # elif stem == 'shapes':
-        #     limit = 0
-        # elif stem == 'rats':
-        #     limit = 2
-        # elif stem == 'profiles':
-        #     limit = 1
-        # elif stem == 'clouds':
-        #     limit = 0
-
-        # curves.sort(key=lambda curve: curve.shape[0], reverse=False)
-        # curves = curves[limit:]
+                    centered_curve = curve_processing.center_curve(curve=curve)
+                    external_curves.append(centered_curve)
 
         worker = Process(target=extract_curves, args=(external_curves, args.curves_dir, stem))
         worker.start()
-
-        # curves.sort(key=lambda curve: curve.shape[0], reverse=False)
-        # curves = curves[limit:]
-        # sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-        # multimodalies = [10, 15, 20, 25, 30, 35]
-        # for multimodality in multimodalies:
-        #     for sampling_ratio in sampling_ratios:
-        #         downsampled_curves = []
-        #         plots_file_path = os.path.normpath(os.path.join(args.curves_dir, 'plots', stem, f'multimodality_{multimodality}', str(sampling_ratio).replace(".", "_")))
-        #         pathlib.Path(plots_file_path).mkdir(parents=True, exist_ok=True)
-        #         for i, curve in enumerate(curves):
-        #             curve_points_count = curve.shape[0]
-        #             sampling_points_count = int(sampling_ratio * curve_points_count)
-        #             dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=multimodality, max_density=1, count=1)[0]
-        #             indices_pool = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
-        #             downsampled_curve = curve[indices_pool]
-        #             downsampled_curves.append(downsampled_curve)
-        #
-        #             fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(40, 40))
-        #             plot_sample(ax=ax, sample=downsampled_curve, color='red', zorder=10, point_size=150)
-        #             plt.axis('off')
-        #             plot_file_path = os.path.normpath(os.path.join(plots_file_path, f'{stem}_{i}.png'))
-        #             fig.savefig(plot_file_path)
-        #             plt.close(fig)
-        #
-        #         curves_base_dir_path = os.path.normpath(os.path.join(args.curves_dir, f'multimodality_{multimodality}'))
-        #         pathlib.Path(curves_base_dir_path).mkdir(parents=True, exist_ok=True)
-        #         curves_file_path = os.path.normpath(os.path.join(curves_base_dir_path, f'{stem}_{str(sampling_ratio).replace(".", "_")}.npy'))
-        #         numpy.save(curves_file_path, downsampled_curves)
