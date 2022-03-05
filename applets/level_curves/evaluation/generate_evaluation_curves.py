@@ -114,6 +114,7 @@ if __name__ == '__main__':
 
     for image_file_index, image_file_path in enumerate(image_file_paths):
         stem = Path(image_file_path).stem
+
         image = skimage.io.imread(image_file_path)
         gray_image = skimage.color.rgb2gray(image)
         curves = skimage.measure.find_contours(gray_image)
@@ -123,7 +124,7 @@ if __name__ == '__main__':
             first_point = curve[0]
             last_point = curve[-1]
             distance = numpy.linalg.norm(x=first_point - last_point, ord=2)
-            if distance < 1e-3:
+            if distance < 1:
                 closed_curves.append(curve)
 
         external_curves = []

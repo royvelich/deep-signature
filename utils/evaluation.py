@@ -142,17 +142,14 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
         arclength_batch_data2 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2).double(), dim=0), dim=0).cuda()
 
         with torch.no_grad():
-            try:
-                predicted_arclength[i + 1] = float(predicted_arclength[i] + numpy.abs(torch.squeeze(model(arclength_batch_data1), dim=0).cpu().detach().numpy() - torch.squeeze(model(arclength_batch_data2), dim=0).cpu().detach().numpy()))
-            except Exception:
-                bla = 6
+            predicted_arclength[i + 1] = float(predicted_arclength[i] + numpy.abs(torch.squeeze(model(arclength_batch_data1), dim=0).cpu().detach().numpy() - torch.squeeze(model(arclength_batch_data2), dim=0).cpu().detach().numpy()))
 
     indices = numpy.array(list(range(predicted_arclength.shape[0])))
     values = predicted_arclength
     return numpy.vstack((indices, values)).transpose()
 
 
-def predict_curve_invariants(curve, arclength_model, curvature_model, sampling_ratio, anchors_ratio, neighborhood_supporting_points_count, section_supporting_points_count, indices_shift=0, multimodality=30, anchor_indices=None, rng=None):
+def predict_curve_invariants(curve, arclength_model, curvature_model, sampling_ratio, neighborhood_supporting_points_count, section_supporting_points_count, indices_shift=0, rng=None):
     curve_points_count = curve.shape[0]
     sampling_points_count = int(sampling_ratio * curve_points_count)
     dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=settings.curvature_default_multimodality, max_density=1, count=1)[0]
@@ -270,10 +267,8 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
                 arclength_model=arclength_model,
                 curvature_model=curvature_model,
                 sampling_ratio=sampling_ratio,
-                anchors_ratio=anchors_ratio,
                 neighborhood_supporting_points_count=neighborhood_supporting_points_count,
-                section_supporting_points_count=section_supporting_points_count,
-                anchor_indices=anchor_indices)
+                section_supporting_points_count=section_supporting_points_count)
 
             true_curve_invariants = calculate_curve_invariants(
                 curve=comparison_curve,
@@ -327,6 +322,7 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
         for curve_record in curve_records:
             for comparison in curve_record['comparisons']:
                 comparison['arclength_comparison']['predicted_arclength'][:, 1] *= factor
+                comparison['predicted_signature'][:, 0] *= factor
                 # if comparison['arclength_comparison']['predicted_arclength_with_anchors'] is not None:
                 #     comparison['arclength_comparison']['predicted_arclength_with_anchors'][:, 1] *= factor
 

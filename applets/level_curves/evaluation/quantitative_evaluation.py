@@ -1,6 +1,8 @@
 # python peripherals
 import os
 from argparse import ArgumentParser
+from multiprocessing import Process, Queue, cpu_count
+import multiprocessing
 
 # numpy
 import numpy
@@ -10,6 +12,11 @@ import skimage.io
 import skimage.color
 import skimage.measure
 from skimage import metrics
+
+# pandas
+import bottleneck
+import numexpr
+import pandas
 
 # deep signature
 from deep_signature.data_manipulation import curve_processing
@@ -24,6 +31,9 @@ from utils import settings
 # matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+
+# pytorch
+import torch.multiprocessing as torch_mp
 
 
 def plot_graph(ax, x, y, linewidth=2, color='red', alpha=1, zorder=1, label=None):
@@ -50,7 +60,7 @@ def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=Non
         zorder=zorder)
 
 
-def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_ratio, curvature_model, arclength_model, rng=None, plot=False, transform_curve=True):
+def calculate_signature_curve(curve, transform_type, sampling_ratio, curvature_model, arclength_model, rng=None, plot=False, transform_curve=True):
     curve = curve_processing.center_curve(curve=curve)
 
     if transform_curve is True:
@@ -73,7 +83,6 @@ def calculate_signature_curve(curve, transform_type, sampling_ratio, anchors_rat
         arclength_model=arclength_model,
         curvature_model=curvature_model,
         sampling_ratio=sampling_ratio,
-        anchors_ratio=anchors_ratio,
         neighborhood_supporting_points_count=settings.curvature_default_supporting_points_count,
         section_supporting_points_count=settings.arclength_default_supporting_points_count,
         indices_shift=indices_shift,
@@ -92,26 +101,10 @@ def calculate_hausdorff_distances(curve1, curve2):
     return numpy.array(shift_distances)
 
 
-if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument("--curves_base_dir_path", dest="curves_base_dir_path", type=str)
-    args = parser.parse_args()
-
-    seed = 30
-    rng = numpy.random.default_rng(seed=seed)
-    numpy.random.seed(seed)
-    multimodality = 25
-    sampling_ratio = 0.8
-    dataset_name = 'cartoon'
-    anchors_ratio = None
-    transform_type = 'affine'
-    curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type)
-    curves_dir_path = os.path.normpath(os.path.join(args.curves_base_dir_path, transform_type, f'multimodality_{multimodality}'))
-    downsampled_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_{str(sampling_ratio).replace(".", "_")}.npy'))
-    raw_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_1.npy'))
+def evaluate_signatures_worker(queue, curvature_model, arclength_model, raw_curves, downsampled_curves_path, sampling_ratio, transform_type, dataset_name):
+    print(f'Starting - dataset-name: {dataset_name}, transform-type: {transform_type}, sampling-ratio: {sampling_ratio}')
 
     downsampled_curves = numpy.load(downsampled_curves_path, allow_pickle=True)
-    raw_curves = numpy.load(raw_curves_path, allow_pickle=True)
 
     correct = 0
     signatures = []
@@ -120,10 +113,8 @@ if __name__ == '__main__':
             curve=curve,
             transform_type=transform_type,
             sampling_ratio=1,
-            anchors_ratio=anchors_ratio,
             curvature_model=curvature_model,
             arclength_model=arclength_model,
-            rng=rng,
             transform_curve=False)
 
         signatures.append(signature_curve)
@@ -134,10 +125,8 @@ if __name__ == '__main__':
             curve=curve,
             transform_type=transform_type,
             sampling_ratio=1,
-            anchors_ratio=anchors_ratio,
             curvature_model=curvature_model,
             arclength_model=arclength_model,
-            rng=rng,
             transform_curve=False,
             plot=False)
 
@@ -156,8 +145,146 @@ if __name__ == '__main__':
         curve_id = numpy.argmin(distances[i, :])
         if curve_id == i:
             correct = correct + 1
-            print(f'curve #{i} correctly identified')
+            print(f'dataset-name: {dataset_name}, transform-type: {transform_type}, sampling-ratio: {sampling_ratio}, curve #{i} correctly identified')
         else:
-            print(f'curve #{i} failed to be identified')
+            print(f'dataset-name: {dataset_name}, transform-type: {transform_type}, sampling-ratio: {sampling_ratio}, curve #{i} failed to be identified')
 
-    print(f'{correct} identifications out of {len(downsampled_curves)}')
+    print(f'Finished - dataset-name: {dataset_name}, transform-type: {transform_type}, sampling-ratio: {sampling_ratio}, result: {correct} / {len(downsampled_curves)}')
+
+    queue.put({
+        'dataset_name': dataset_name,
+        'sampling_ratio': sampling_ratio,
+        'transform_type': transform_type,
+        'correct': correct,
+        'curves_count': len(downsampled_curves)
+    })
+
+
+if __name__ == '__main__':
+    torch_mp.set_start_method('spawn', force=True)
+    parser = ArgumentParser()
+    parser.add_argument("--curves_base_dir_path", dest="curves_base_dir_path", type=str)
+    args = parser.parse_args()
+
+    seed = 30
+    rng = numpy.random.default_rng(seed=seed)
+    numpy.random.seed(seed)
+
+    multimodality = 25
+    # sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4]
+    # transform_types = ['euclidean', 'equiaffine', 'affine']
+    # dataset_names = ['animals', 'basketball', 'bats', 'bears', 'birds', 'branches', 'butterflies', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'insects', 'leaves', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
+    # dataset_names = ['cartoon', 'clouds']
+
+    sampling_ratios = [0.8]
+    transform_types = ['equiaffine']
+    # dataset_names = ['animals', 'basketball', 'bats', 'bears', 'birds', 'branches', 'butterflies', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'insects', 'leaves', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
+    dataset_names = ['clouds']
+
+    # sampling_ratio = 0.4
+    # dataset_name = 'cartoon'
+    # anchors_ratio = None
+    # transform_type = 'euclidean'
+
+    dataset_name_col = []
+    sampling_ratio_col = []
+    transform_type_col = []
+    correct_col = []
+    curves_count_col = []
+
+    queue = multiprocessing.Queue()
+    processes = []
+    for transform_type in transform_types:
+        curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type)
+        curvature_model.to('cpu')
+        arclength_model.to('cpu')
+        curvature_model.share_memory()
+        arclength_model.share_memory()
+        curves_dir_path = os.path.normpath(os.path.join(args.curves_base_dir_path, transform_type, f'multimodality_{multimodality}'))
+        for dataset_name in dataset_names:
+            raw_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_1.npy'))
+            raw_curves = numpy.load(raw_curves_path, allow_pickle=True)
+            for sampling_ratio in sampling_ratios:
+                downsampled_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_{str(sampling_ratio).replace(".", "_")}.npy'))
+                p = torch_mp.Process(target=evaluate_signatures_worker, args=(queue, curvature_model, arclength_model, raw_curves, downsampled_curves_path, sampling_ratio, transform_type, dataset_name,))
+                processes.append(p)
+                p.start()
+
+                # print(f'curve #{i} correctly identified')
+                #
+                # downsampled_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_{str(sampling_ratio).replace(".", "_")}.npy'))
+                # downsampled_curves = numpy.load(downsampled_curves_path, allow_pickle=True)
+                #
+                # correct = 0
+                # signatures = []
+                # for i, curve in enumerate(raw_curves):
+                #     signature_curve = calculate_signature_curve(
+                #         curve=curve,
+                #         transform_type=transform_type,
+                #         sampling_ratio=1,
+                #         curvature_model=curvature_model,
+                #         arclength_model=arclength_model,
+                #         rng=rng,
+                #         transform_curve=False)
+                #
+                #     signatures.append(signature_curve)
+                #
+                # distances = numpy.zeros((len(downsampled_curves), len(downsampled_curves)))
+                # for i, curve in enumerate(downsampled_curves):
+                #     anchor_signature_curve = calculate_signature_curve(
+                #         curve=curve,
+                #         transform_type=transform_type,
+                #         sampling_ratio=1,
+                #         curvature_model=curvature_model,
+                #         arclength_model=arclength_model,
+                #         rng=rng,
+                #         transform_curve=False,
+                #         plot=False)
+                #
+                #     anchor_arc_length = anchor_signature_curve[-1, 0]
+                #     for j, signature_curve in enumerate(signatures):
+                #         current_arc_length = signature_curve[-1, 0]
+                #
+                #         arclength_ratio = current_arc_length / anchor_arc_length
+                #
+                #         anchor_signature_curve_copy = anchor_signature_curve.copy()
+                #         anchor_signature_curve_copy[:, 0] = anchor_signature_curve_copy[:, 0] * arclength_ratio
+                #
+                #         shift_distances = calculate_hausdorff_distances(curve1=anchor_signature_curve_copy, curve2=signature_curve)
+                #         distances[i, j] = numpy.min(shift_distances)
+                #
+                #     curve_id = numpy.argmin(distances[i, :])
+                #     if curve_id == i:
+                #         correct = correct + 1
+                #         print(f'curve #{i} correctly identified')
+                #     else:
+                #         print(f'curve #{i} failed to be identified')
+                #
+                # dataset_name_col.append(dataset_name)
+                # sampling_ratio_col.append(sampling_ratio)
+                # transform_type_col.append(transform_type)
+                # correct_col.append(correct)
+                # count_col.append(len(downsampled_curves))
+                # print(f'{correct} identifications out of {len(downsampled_curves)}')
+
+    for p in processes:
+        p.join()
+
+    while queue.empty() is False:
+        result = queue.get()
+        dataset_name_col.append(result['dataset_name'])
+        sampling_ratio_col.append(result['sampling_ratio'])
+        transform_type_col.append(result['transform_type'])
+        correct_col.append(result['correct'])
+        curves_count_col.append(result['curves_count'])
+
+    d = {
+        'dataset_name': dataset_name_col,
+        'sampling_ratio': sampling_ratio_col,
+        'transform_type': transform_type_col,
+        'correct': correct_col,
+        'count': curves_count_col
+    }
+
+    df = pandas.DataFrame(data=d)
+    df.to_excel("output.xlsx")

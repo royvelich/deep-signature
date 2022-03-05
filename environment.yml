@@ -29,5 +29,7 @@ dependencies:
   - python-kaleido
   - numba
   - shapely
+  - numexpr
+  - bottleneck
   - pip:
       - hausdorff
