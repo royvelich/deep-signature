@@ -1,8 +1,7 @@
 # python peripherals
 import os
 from argparse import ArgumentParser
-from multiprocessing import Process, Queue, cpu_count
-import multiprocessing
+import queue
 
 # numpy
 import numpy
@@ -190,18 +189,19 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     seed = 30
+    max_cpu_count = 18
     rng = numpy.random.default_rng(seed=seed)
     numpy.random.seed(seed)
 
-    # multimodality = 25
-    # sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4]
-    # transform_types = ['euclidean', 'equiaffine', 'affine']
-    # dataset_names = ['animals', 'basketball', 'bats', 'bears', 'birds', 'branches', 'butterflies', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'insects', 'leaves', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
-
     multimodality = 25
-    sampling_ratios = [0.5]
-    transform_types = ['euclidean']
-    dataset_names = ['clouds', 'cartoon']
+    sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4]
+    transform_types = ['euclidean', 'equiaffine', 'affine']
+    dataset_names = ['animals', 'basketball', 'bats', 'bears', 'birds', 'branches', 'butterflies', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'insects', 'leaves', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
+
+    # multimodality = 25
+    # sampling_ratios = [0.5]
+    # transform_types = ['euclidean']
+    # dataset_names = ['clouds', 'cartoon']
 
     curvature_models = {}
     arclength_models = {}
@@ -230,6 +230,20 @@ if __name__ == '__main__':
     for transform_type in transform_types:
         curves_dir_path = os.path.normpath(os.path.join(args.curves_base_dir_path, transform_type, f'multimodality_{multimodality}'))
         for dataset_name in dataset_names:
+            if len(processes) >= max_cpu_count:
+                stop = False
+                while not stop:
+                    for i, raw_curves_queue in enumerate(raw_curves_queues):
+                        try:
+                            raw_curves_configs.append(raw_curves_queues[i].get_nowait())
+                            processes[i].join()
+                            del raw_curves_queues[i]
+                            del processes[i]
+                            stop = True
+                            break
+                        except queue.Empty:
+                            continue
+
             raw_curves_queue = torch_mp.Queue()
             raw_curves_queues.append(raw_curves_queue)
             raw_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_1.npy'))
@@ -251,12 +265,27 @@ if __name__ == '__main__':
     curves_count_col = []
     ratio_col = []
     processes = []
+    results = []
     signature_comparison_queues = []
     for raw_curves_config in raw_curves_configs:
         transform_type = raw_curves_config['transform_type']
         dataset_name = raw_curves_config['dataset_name']
         signatures = raw_curves_config['signatures']
         for sampling_ratio in sampling_ratios:
+            if len(processes) >= max_cpu_count:
+                stop = False
+                while not stop:
+                    for i, signature_comparison_queue in enumerate(signature_comparison_queues):
+                        try:
+                            results.append(signature_comparison_queues[i].get_nowait())
+                            processes[i].join()
+                            del signature_comparison_queues[i]
+                            del processes[i]
+                            stop = True
+                            break
+                        except queue.Empty:
+                            continue
+
             signature_comparison_queue = torch_mp.Queue()
             signature_comparison_queues.append(signature_comparison_queue)
             curves_dir_path = os.path.normpath(os.path.join(args.curves_base_dir_path, transform_type, f'multimodality_{multimodality}'))
@@ -266,7 +295,6 @@ if __name__ == '__main__':
             processes.append(p)
             p.start()
 
-    results = []
     for signature_comparison_queue in signature_comparison_queues:
         results.append(signature_comparison_queue.get())
 
