@@ -130,9 +130,7 @@ def get_results_dir_path(transform_type):
 
     return level_curves_curvature_tuplets_results_dir_path, level_curves_arclength_tuplets_results_dir_path
 
-def load_models(transform_type):
-    device = torch.device('cuda')
-
+def load_models(transform_type, device='cuda'):
     level_curves_curvature_tuplets_results_dir_path, level_curves_arclength_tuplets_results_dir_path = get_results_dir_path(transform_type=transform_type)
 
     # if we're in the equiaffine case, snap 'step' to the closest mutiple of 3 (from above)
@@ -143,8 +141,8 @@ def load_models(transform_type):
     torch.set_default_dtype(torch.float64)
 
     # create models
-    curvature_model = DeepSignatureCurvatureNet(sample_points=settings.curvature_default_sample_points_count).cuda()
-    arclength_model = DeepSignatureArcLengthNet(sample_points=settings.arclength_default_supporting_points_count, transformation_group_type=transform_type).cuda()
+    curvature_model = DeepSignatureCurvatureNet(sample_points=settings.curvature_default_sample_points_count).to(device)
+    arclength_model = DeepSignatureArcLengthNet(sample_points=settings.arclength_default_supporting_points_count, transformation_group_type=transform_type).to(device)
 
     # load curvature model state
     latest_subdir = get_latest_subdirectory(level_curves_curvature_tuplets_results_dir_path)

@@ -31,5 +31,6 @@ dependencies:
   - shapely
   - numexpr
   - bottleneck
+  - openpyxl
   - pip:
       - hausdorff
