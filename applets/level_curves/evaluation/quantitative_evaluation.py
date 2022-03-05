@@ -102,12 +102,9 @@ def calculate_hausdorff_distances(curve1, curve2):
     return numpy.array(shift_distances)
 
 
-def evaluate_signatures_worker(queue, curvature_model, arclength_model, raw_curves, downsampled_curves_path, sampling_ratio, transform_type, dataset_name):
-    print(f'Starting - dataset-name: {dataset_name}, transform-type: {transform_type}, sampling-ratio: {sampling_ratio}')
+def evaluate_raw_curves_signatures_worker(queue, curvature_model, arclength_model, raw_curves, transform_type, dataset_name):
+    print(f'Starting - Raw Curves Evaluation - dataset-name: {dataset_name}, transform-type: {transform_type}')
 
-    downsampled_curves = numpy.load(downsampled_curves_path, allow_pickle=True)
-
-    correct = 0
     signatures = []
     for i, curve in enumerate(raw_curves):
         signature_curve = calculate_signature_curve(
@@ -119,6 +116,31 @@ def evaluate_signatures_worker(queue, curvature_model, arclength_model, raw_curv
             transform_curve=False)
 
         signatures.append(signature_curve)
+
+    print(f'Finished - Raw Curves Evaluation - dataset-name: {dataset_name}, transform-type: {transform_type}')
+
+    queue.put({
+        'dataset_name': dataset_name,
+        'transform_type': transform_type,
+        'signatures': signatures,
+    })
+
+
+def compare_signatures_worker(queue, curvature_model, arclength_model, raw_curves_signatures, downsampled_curves, sampling_ratio, transform_type, dataset_name):
+    print(f'Starting - Signature Comparison - dataset-name: {dataset_name}, transform-type: {transform_type}, sampling-ratio: {sampling_ratio}')
+
+    correct = 0
+    # signatures = []
+    # for i, curve in enumerate(raw_curves):
+    #     signature_curve = calculate_signature_curve(
+    #         curve=curve,
+    #         transform_type=transform_type,
+    #         sampling_ratio=1,
+    #         curvature_model=curvature_model,
+    #         arclength_model=arclength_model,
+    #         transform_curve=False)
+    #
+    #     signatures.append(signature_curve)
 
     distances = numpy.zeros((len(downsampled_curves), len(downsampled_curves)))
     for i, curve in enumerate(downsampled_curves):
@@ -132,7 +154,7 @@ def evaluate_signatures_worker(queue, curvature_model, arclength_model, raw_curv
             plot=False)
 
         anchor_arc_length = anchor_signature_curve[-1, 0]
-        for j, signature_curve in enumerate(signatures):
+        for j, signature_curve in enumerate(raw_curves_signatures):
             current_arc_length = signature_curve[-1, 0]
 
             arclength_ratio = current_arc_length / anchor_arc_length
@@ -150,7 +172,7 @@ def evaluate_signatures_worker(queue, curvature_model, arclength_model, raw_curv
         else:
             print(f'dataset-name: {dataset_name}, transform-type: {transform_type}, sampling-ratio: {sampling_ratio}, curve #{i} failed to be identified')
 
-    print(f'Finished - dataset-name: {dataset_name}, transform-type: {transform_type}, sampling-ratio: {sampling_ratio}, result: {correct} / {len(downsampled_curves)}')
+    print(f'Finished - Signature Comparison - dataset-name: {dataset_name}, transform-type: {transform_type}, sampling-ratio: {sampling_ratio}, result: {correct} / {len(downsampled_curves)}')
 
     queue.put({
         'dataset_name': dataset_name,
@@ -171,10 +193,56 @@ if __name__ == '__main__':
     rng = numpy.random.default_rng(seed=seed)
     numpy.random.seed(seed)
 
+    # multimodality = 25
+    # sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4]
+    # transform_types = ['euclidean', 'equiaffine', 'affine']
+    # dataset_names = ['animals', 'basketball', 'bats', 'bears', 'birds', 'branches', 'butterflies', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'insects', 'leaves', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
+
     multimodality = 25
-    sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4]
-    transform_types = ['euclidean', 'equiaffine', 'affine']
-    dataset_names = ['animals', 'basketball', 'bats', 'bears', 'birds', 'branches', 'butterflies', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'insects', 'leaves', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
+    sampling_ratios = [0.5]
+    transform_types = ['euclidean']
+    dataset_names = ['clouds', 'cartoon']
+
+    curvature_models = {}
+    arclength_models = {}
+
+    curvature_model, arclength_model = common_utils.load_models(transform_type='euclidean', device='cpu')
+    curvature_model.share_memory()
+    arclength_model.share_memory()
+    curvature_models['euclidean'] = curvature_model
+    arclength_models['euclidean'] = arclength_model
+
+    curvature_model, arclength_model = common_utils.load_models(transform_type='equiaffine', device='cpu')
+    curvature_model.share_memory()
+    arclength_model.share_memory()
+    curvature_models['equiaffine'] = curvature_model
+    arclength_models['equiaffine'] = arclength_model
+
+    curvature_model, arclength_model = common_utils.load_models(transform_type='affine', device='cpu')
+    curvature_model.share_memory()
+    arclength_model.share_memory()
+    curvature_models['affine'] = curvature_model
+    arclength_models['affine'] = arclength_model
+
+    raw_curves_queues = []
+    processes = []
+    raw_curves_configs = []
+    for transform_type in transform_types:
+        curves_dir_path = os.path.normpath(os.path.join(args.curves_base_dir_path, transform_type, f'multimodality_{multimodality}'))
+        for dataset_name in dataset_names:
+            raw_curves_queue = torch_mp.Queue()
+            raw_curves_queues.append(raw_curves_queue)
+            raw_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_1.npy'))
+            raw_curves = numpy.load(raw_curves_path, allow_pickle=True)
+            p = torch_mp.Process(target=evaluate_raw_curves_signatures_worker, args=(raw_curves_queue, curvature_models[transform_type], arclength_models[transform_type], raw_curves, transform_type, dataset_name,))
+            processes.append(p)
+            p.start()
+
+    for raw_curves_queue in raw_curves_queues:
+        raw_curves_configs.append(raw_curves_queue.get())
+
+    for p in processes:
+        p.join()
 
     dataset_name_col = []
     sampling_ratio_col = []
@@ -182,28 +250,30 @@ if __name__ == '__main__':
     correct_col = []
     curves_count_col = []
     ratio_col = []
-
-    queue = torch_mp.Queue()
     processes = []
-    for transform_type in transform_types:
-        curvature_model, arclength_model = common_utils.load_models(transform_type=transform_type, device='cpu')
-        curvature_model.share_memory()
-        arclength_model.share_memory()
-        curves_dir_path = os.path.normpath(os.path.join(args.curves_base_dir_path, transform_type, f'multimodality_{multimodality}'))
-        for dataset_name in dataset_names:
-            raw_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_1.npy'))
-            raw_curves = numpy.load(raw_curves_path, allow_pickle=True)
-            for sampling_ratio in sampling_ratios:
-                downsampled_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_{str(sampling_ratio).replace(".", "_")}.npy'))
-                p = torch_mp.Process(target=evaluate_signatures_worker, args=(queue, curvature_model, arclength_model, raw_curves, downsampled_curves_path, sampling_ratio, transform_type, dataset_name,))
-                processes.append(p)
-                p.start()
+    signature_comparison_queues = []
+    for raw_curves_config in raw_curves_configs:
+        transform_type = raw_curves_config['transform_type']
+        dataset_name = raw_curves_config['dataset_name']
+        signatures = raw_curves_config['signatures']
+        for sampling_ratio in sampling_ratios:
+            signature_comparison_queue = torch_mp.Queue()
+            signature_comparison_queues.append(signature_comparison_queue)
+            curves_dir_path = os.path.normpath(os.path.join(args.curves_base_dir_path, transform_type, f'multimodality_{multimodality}'))
+            downsampled_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_{str(sampling_ratio).replace(".", "_")}.npy'))
+            downsampled_curves = numpy.load(downsampled_curves_path, allow_pickle=True)
+            p = torch_mp.Process(target=compare_signatures_worker, args=(signature_comparison_queue, curvature_models[transform_type], arclength_models[transform_type], signatures, downsampled_curves, sampling_ratio, transform_type, dataset_name,))
+            processes.append(p)
+            p.start()
+
+    results = []
+    for signature_comparison_queue in signature_comparison_queues:
+        results.append(signature_comparison_queue.get())
 
     for p in processes:
         p.join()
 
-    while queue.empty() is False:
-        result = queue.get()
+    for result in results:
         dataset_name_col.append(result['dataset_name'])
         sampling_ratio_col.append(result['sampling_ratio'])
         transform_type_col.append(result['transform_type'])
