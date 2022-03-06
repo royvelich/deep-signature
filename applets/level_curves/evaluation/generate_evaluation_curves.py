@@ -57,8 +57,8 @@ def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=Non
 
 
 def extract_curves(curves, curves_dir, stem):
-    sampling_ratios = [1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3]
-    multimodalies = [10, 15, 20, 25, 30, 35, 40, 45]
+    sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
+    multimodalies = [10, 15, 20, 25, 30, 35]
     transform_types = ['euclidean', 'equiaffine', 'affine']
 
     for transform_type in transform_types:
