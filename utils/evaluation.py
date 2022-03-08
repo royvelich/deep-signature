@@ -152,7 +152,7 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
 def predict_curve_invariants(curve, arclength_model, curvature_model, sampling_ratio, neighborhood_supporting_points_count, section_supporting_points_count, indices_shift=0, device='cuda', rng=None):
     curve_points_count = curve.shape[0]
     sampling_points_count = int(sampling_ratio * curve_points_count)
-    dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=settings.curvature_default_multimodality, max_density=1, count=1)[0]
+    dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=settings.curvature_default_multimodality_evaluation, max_density=1, count=1)[0]
     indices_pool = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
     # modified_indices_pool = common_utils.insert_sorted(indices_pool, numpy.array([reference_index]))
     # meta_reference_index = int(numpy.where(modified_indices_pool == reference_index)[0])
@@ -237,19 +237,26 @@ def calculate_curve_invariants(curve, transform_type, anchor_indices=None):
 # --------------------------
 # RECORD GENERATION ROUTINES
 # --------------------------
-def generate_curve_records(arclength_model, curvature_model, curves, factor_extraction_curves, transform_type, comparison_curves_count, sampling_ratio, anchors_ratio, neighborhood_supporting_points_count, section_supporting_points_count):
+def generate_curve_records(arclength_model, curvature_model, curves, factor_extraction_curves, transform_type, comparison_curves_count, sampling_ratio, anchors_ratio, neighborhood_supporting_points_count, section_supporting_points_count, do_not_transform_first=True, do_not_downsample_first=False, rotation=True, first_curve_index=None):
     curve_records = []
     for curve_index, curve in enumerate(curves):
         curve = curve_processing.enforce_cw(curve=curve)
 
         comparison_curves = []
         for i in range(comparison_curves_count):
-            transform = transformations.generate_random_transform_2d_evaluation(transform_type=transform_type)
+            current_curve = curve
+            if i == 0 and first_curve_index is not None:
+                current_curve = curve_processing.enforce_cw(curve=curves[first_curve_index])
 
             if i == 0:
-                transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+                transform = transformations.generate_random_transform_2d_evaluation(transform_type=transform_type, rotation=rotation)
             else:
-                transformed_curve = curve
+                transform = transformations.generate_random_transform_2d_evaluation(transform_type=transform_type)
+
+            if i == 0 and do_not_transform_first is True:
+                transformed_curve = current_curve
+            else:
+                transformed_curve = curve_processing.transform_curve(curve=current_curve, transform=transform)
 
             comparison_curves.append(curve_processing.center_curve(curve=transformed_curve))
 
@@ -268,7 +275,7 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
                 curve=comparison_curve,
                 arclength_model=arclength_model,
                 curvature_model=curvature_model,
-                sampling_ratio=sampling_ratio,
+                sampling_ratio=1 if (do_not_downsample_first is True and i == 0) else sampling_ratio,
                 neighborhood_supporting_points_count=neighborhood_supporting_points_count,
                 section_supporting_points_count=section_supporting_points_count)
 
@@ -302,31 +309,30 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
 
         curve_records.append(curve_record)
 
-    factors = []
-    for curve_index, curve in enumerate(factor_extraction_curves):
-        all_indices = numpy.array(list(range(curve.shape[0])))
-        true_arclength = calculate_arclength_by_index(
-            curve=curve,
-            anchor_indices=all_indices,
-            transform_type=transform_type)
+    if len(factor_extraction_curves) > 0:
+        factors = []
+        for curve_index, curve in enumerate(factor_extraction_curves):
+            all_indices = numpy.array(list(range(curve.shape[0])))
+            true_arclength = calculate_arclength_by_index(
+                curve=curve,
+                anchor_indices=all_indices,
+                transform_type=transform_type)
 
-        predicted_arclength = predict_arclength_by_index(
-            model=arclength_model,
-            curve=curve,
-            indices_pool=all_indices,
-            supporting_points_count=section_supporting_points_count)
+            predicted_arclength = predict_arclength_by_index(
+                model=arclength_model,
+                curve=curve,
+                indices_pool=all_indices,
+                supporting_points_count=section_supporting_points_count)
 
-        factor = numpy.mean(true_arclength[1:, 1] / predicted_arclength[1:, 1])
-        factors.append(factor)
+            factor = numpy.mean(true_arclength[1:, 1] / predicted_arclength[1:, 1])
+            factors.append(factor)
 
-    if transform_type != 'affine' and transform_type != 'similarity':
-        factor = numpy.mean(numpy.array(factors))
-        for curve_record in curve_records:
-            for comparison in curve_record['comparisons']:
-                comparison['arclength_comparison']['predicted_arclength'][:, 1] *= factor
-                comparison['predicted_signature'][:, 0] *= factor
-                # if comparison['arclength_comparison']['predicted_arclength_with_anchors'] is not None:
-                #     comparison['arclength_comparison']['predicted_arclength_with_anchors'][:, 1] *= factor
+        if transform_type != 'affine' and transform_type != 'similarity':
+            factor = numpy.mean(numpy.array(factors))
+            for curve_record in curve_records:
+                for comparison in curve_record['comparisons']:
+                    comparison['arclength_comparison']['predicted_arclength'][:, 1] *= factor
+                    comparison['predicted_signature'][:, 0] *= factor
 
     return curve_records
 

@@ -52,6 +52,7 @@ curvature_default_supporting_points_count = 3
 curvature_default_sample_points_count = 2 * curvature_default_supporting_points_count + 1
 curvature_default_sampling_ratio = 0.5
 curvature_default_multimodality = 30
+curvature_default_multimodality_evaluation = 25
 curvature_default_offset_length = 50
 curvature_default_num_workers_train = 10
 curvature_default_num_workers_validation = 10

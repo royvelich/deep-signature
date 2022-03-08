@@ -58,7 +58,7 @@ def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=Non
 
 def extract_curves(curves, curves_dir, stem):
     sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-    multimodalies = [10, 15, 20, 25, 30, 35]
+    multimodalies = [10, 15, 20, 25, 30]
     transform_types = ['euclidean', 'equiaffine', 'affine']
 
     for transform_type in transform_types:
@@ -84,9 +84,9 @@ def extract_curves(curves, curves_dir, stem):
 
                     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
                     if sampling_ratio < 1:
-                        plot_sample(ax=ax, sample=curves[i], color='green', zorder=10, point_size=4)
+                        plot_sample(ax=ax, sample=curves[i], color='green', zorder=10, point_size=2)
 
-                    plot_sample(ax=ax, sample=downsampled_curve, color='red', zorder=10, point_size=4)
+                    plot_sample(ax=ax, sample=downsampled_curve, color='red', zorder=10, point_size=2)
                     plt.axis('off')
                     ax.axis('equal')
                     plot_file_path = os.path.normpath(os.path.join(plots_file_path, f'{stem}_{i}.png'))

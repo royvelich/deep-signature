@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/applets/level_curves/evaluation/generate_evaluation_curves.py" />
-    <option name="PARAMETERS" value="--images_dir &quot;$PROJECT_DIR$/../../deep-signature-data/images/test_raw&quot; --curves_dir &quot;$PROJECT_DIR$/../../deep-signature-data/level-curves/curves/test_raw&quot;" />
+    <option name="PARAMETERS" value="--images_dir &quot;$PROJECT_DIR$/../../deep-signature-data/vector-images/yellow_background/2x&quot; --curves_dir &quot;$PROJECT_DIR$/../../deep-signature-data/level-curves/curves/test_raw&quot;" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="true" />
     <option name="MODULE_MODE" value="false" />

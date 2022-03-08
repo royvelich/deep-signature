@@ -141,6 +141,8 @@ def compare_signatures_worker(queue, curvature_model, arclength_model, raw_curve
     #
     #     signatures.append(signature_curve)
 
+    matches = []
+
     distances = numpy.zeros((len(downsampled_curves), len(downsampled_curves)))
     for i, curve in enumerate(downsampled_curves):
         anchor_signature_curve = calculate_signature_curve(
@@ -165,6 +167,7 @@ def compare_signatures_worker(queue, curvature_model, arclength_model, raw_curve
             distances[i, j] = numpy.min(shift_distances)
 
         curve_id = numpy.argmin(distances[i, :])
+        matches.append((i, curve_id))
         if curve_id == i:
             correct = correct + 1
             print(f'dataset-name: {dataset_name}, transform-type: {transform_type}, sampling-ratio: {sampling_ratio}, curve #{i} correctly identified')
@@ -178,8 +181,40 @@ def compare_signatures_worker(queue, curvature_model, arclength_model, raw_curve
         'sampling_ratio': sampling_ratio,
         'transform_type': transform_type,
         'correct': correct,
-        'curves_count': len(downsampled_curves)
+        'curves_count': len(downsampled_curves),
+        'matches': str(matches)
     })
+
+
+def save_excel_file(results, file_name):
+    dataset_name_col = []
+    sampling_ratio_col = []
+    transform_type_col = []
+    correct_col = []
+    curves_count_col = []
+    ratio_col = []
+    matches_col = []
+    for result in results:
+        dataset_name_col.append(result['dataset_name'])
+        sampling_ratio_col.append(result['sampling_ratio'])
+        transform_type_col.append(result['transform_type'])
+        correct_col.append(result['correct'])
+        curves_count_col.append(result['curves_count'])
+        ratio_col.append(f'{(result["correct"] / result["curves_count"]):.3f}')
+        matches_col.append(result['matches'])
+
+    d = {
+        'dataset_name': dataset_name_col,
+        'sampling_ratio': sampling_ratio_col,
+        'transform_type': transform_type_col,
+        'correct': correct_col,
+        'count': curves_count_col,
+        'ratio': ratio_col,
+        'matches': matches_col
+    }
+
+    df = pandas.DataFrame(data=d)
+    df.to_excel(file_name)
 
 
 if __name__ == '__main__':
@@ -189,14 +224,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     seed = 30
-    max_cpu_count = 18
+    max_cpu_count = 16
     rng = numpy.random.default_rng(seed=seed)
     numpy.random.seed(seed)
 
+    resolution = '@2x'
     multimodality = 25
-    sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4]
-    transform_types = ['euclidean', 'equiaffine', 'affine']
-    dataset_names = ['animals', 'basketball', 'bats', 'bears', 'birds', 'branches', 'butterflies', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'insects', 'leaves', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
+    sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5]
+    transform_types = ['affine', 'equiaffine', 'euclidean']
+    dataset_names = ['basketball', 'bats', 'bears', 'birds', 'branches', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
 
     # multimodality = 25
     # sampling_ratios = [0.5]
@@ -246,7 +282,7 @@ if __name__ == '__main__':
 
             raw_curves_queue = torch_mp.Queue()
             raw_curves_queues.append(raw_curves_queue)
-            raw_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_1.npy'))
+            raw_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}{resolution}_1.npy'))
             raw_curves = numpy.load(raw_curves_path, allow_pickle=True)
             p = torch_mp.Process(target=evaluate_raw_curves_signatures_worker, args=(raw_curves_queue, curvature_models[transform_type], arclength_models[transform_type], raw_curves, transform_type, dataset_name,))
             processes.append(p)
@@ -258,12 +294,6 @@ if __name__ == '__main__':
     for p in processes:
         p.join()
 
-    dataset_name_col = []
-    sampling_ratio_col = []
-    transform_type_col = []
-    correct_col = []
-    curves_count_col = []
-    ratio_col = []
     processes = []
     results = []
     signature_comparison_queues = []
@@ -282,6 +312,7 @@ if __name__ == '__main__':
                             del signature_comparison_queues[i]
                             del processes[i]
                             stop = True
+                            save_excel_file(results=results, file_name='output.xlsx')
                             break
                         except queue.Empty:
                             continue
@@ -289,7 +320,7 @@ if __name__ == '__main__':
             signature_comparison_queue = torch_mp.Queue()
             signature_comparison_queues.append(signature_comparison_queue)
             curves_dir_path = os.path.normpath(os.path.join(args.curves_base_dir_path, transform_type, f'multimodality_{multimodality}'))
-            downsampled_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}_{str(sampling_ratio).replace(".", "_")}.npy'))
+            downsampled_curves_path = os.path.normpath(os.path.join(curves_dir_path, f'{dataset_name}{resolution}_{str(sampling_ratio).replace(".", "_")}.npy'))
             downsampled_curves = numpy.load(downsampled_curves_path, allow_pickle=True)
             p = torch_mp.Process(target=compare_signatures_worker, args=(signature_comparison_queue, curvature_models[transform_type], arclength_models[transform_type], signatures, downsampled_curves, sampling_ratio, transform_type, dataset_name,))
             processes.append(p)
@@ -301,22 +332,4 @@ if __name__ == '__main__':
     for p in processes:
         p.join()
 
-    for result in results:
-        dataset_name_col.append(result['dataset_name'])
-        sampling_ratio_col.append(result['sampling_ratio'])
-        transform_type_col.append(result['transform_type'])
-        correct_col.append(result['correct'])
-        curves_count_col.append(result['curves_count'])
-        ratio_col.append(f'{(result["correct"] / result["curves_count"]):.3f}')
-
-    d = {
-        'dataset_name': dataset_name_col,
-        'sampling_ratio': sampling_ratio_col,
-        'transform_type': transform_type_col,
-        'correct': correct_col,
-        'count': curves_count_col,
-        'ratio': ratio_col
-    }
-
-    df = pandas.DataFrame(data=d)
-    df.to_excel("output.xlsx")
+    save_excel_file(results=results, file_name='output.xlsx')

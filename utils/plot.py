@@ -292,7 +292,7 @@ def plot_sample(ax, sample, color, zorder, point_size=10, alpha=1, x=None, y=Non
 # -------------
 # PLOT ROUTINES
 # -------------
-def plot_curve_comparisons(curve_records, curve_colors, sampling_ratio, transformation_group_type, plot_to_screen=True):
+def plot_curve_comparisons(curve_records, curve_colors, sampling_ratio, transformation_group_type, normalize_signature=False, plot_to_screen=True, plots_dir_name='signature_plots'):
     for i, curve_record in enumerate(curve_records):
         display(HTML(f'<H1>Curve {i+1} - Comparison</H1>'))
         plot_curve_comparison(
@@ -301,12 +301,14 @@ def plot_curve_comparisons(curve_records, curve_colors, sampling_ratio, transfor
             curve_colors=curve_colors,
             sampling_ratio=sampling_ratio,
             transformation_group_type=transformation_group_type,
-            plot_to_screen=plot_to_screen)
+            plot_to_screen=plot_to_screen,
+            normalize_signature=normalize_signature,
+            plots_dir_name=plots_dir_name)
 
 
-def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_ratio, transformation_group_type, plot_to_screen):
-    dir_name = os.path.normpath(os.path.join(settings.plots_dir, f"./signature_plots_{sampling_ratio}_{transformation_group_type}"))
-    pathlib.Path(dir_name).mkdir(parents=True, exist_ok=True)
+def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_ratio, transformation_group_type, plot_to_screen, normalize_signature=False, plots_dir_name='signature_plots'):
+    plots_dir_path = os.path.normpath(os.path.join(settings.plots_dir, f"./{plots_dir_name}_{sampling_ratio}_{transformation_group_type}"))
+    pathlib.Path(plots_dir_path).mkdir(parents=True, exist_ok=True)
     factor = 1.3
 
     def get_range():
@@ -345,8 +347,8 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
         # plot_curve_sample_plotly(fig=fig, row=1, col=i + 2, name=f'', curve=orig_curve, curve_sample=numpy.expand_dims(orig_curve[200,:], axis=0), color='black', point_size=settings.plotly_sample_point_size)
 
         # plot_curve_plotly(fig=fig, row=1, col=4, curve=curve, name='', line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
-        plot_curve_sample_plotly(fig=fig, row=1, col=4, name='', curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=int(settings.plotly_sample_point_size * 0.4))
-        plot_curve_sample_plotly(fig=fig, row=1, col=4, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[0, :], axis=0), color='black', point_size=settings.plotly_sample_point_size)
+        plot_curve_sample_plotly(fig=fig, row=1, col=4, name='', curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=int(settings.plotly_sample_point_size * 0.7))
+        plot_curve_sample_plotly(fig=fig, row=1, col=4, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[0, :], axis=0), color='black', point_size=int(settings.plotly_sample_point_size * 1.2))
 
     for i in range(len(curve_record['comparisons']) + 2):
         fig.update_yaxes(
@@ -374,9 +376,50 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
 
     fig.update_layout(showlegend=False)
 
-    fig.write_image(os.path.join(dir_name, f'curves_together_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    fig.write_image(os.path.join(plots_dir_path, f'curves_together_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     if plot_to_screen is True:
         fig.show()
+
+
+
+
+
+    # ----------------------
+    # PLOT CURVES TOGETHER 2
+    # ----------------------
+    fig = make_subplots(rows=1, cols=1, subplot_titles=(''))
+    for i, comparison in enumerate(curve_record['comparisons']):
+        curve = comparison['curve']
+        if i == 0:
+            plot_curve_plotly(fig=fig, row=1, col=1, curve=curve, name='', line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1])
+        else:
+            sampled_curve = comparison['sampled_curve']
+            plot_curve_sample_plotly(fig=fig, row=1, col=1, name='', curve=curve, curve_sample=sampled_curve, color='black', point_size=int(settings.plotly_sample_point_size * 0.8))
+            # plot_curve_sample_plotly(fig=fig, row=1, col=1, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[0, :], axis=0), color='black', point_size=settings.plotly_sample_point_size)
+
+    fig.update_yaxes(
+        scaleanchor='x1',
+        scaleratio=1,
+        row=1,
+        col=1)
+
+    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+
+    fig.update_layout(yaxis1=dict(range=get_range()))
+
+    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+
+    fig.update_layout(showlegend=False)
+
+    fig.write_image(os.path.join(plots_dir_path, f'curves_together2_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    if plot_to_screen is True:
+        fig.show()
+
+
+
+
+
+
 
     # ---------------------
     # PLOT ORIGINAL CURVE
@@ -402,7 +445,7 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     #
     # fig.update_layout(showlegend=False)
     #
-    # fig.write_image(os.path.join(dir_name, f'orig_curve{curve_index}.svg'), width=settings.plotly_write_image_height, height=settings.plotly_write_image_height)
+    # fig.write_image(os.path.join(plots_dir_path, f'orig_curve{curve_index}.svg'), width=settings.plotly_write_image_height, height=settings.plotly_write_image_height)
     # if plot_to_screen is True:
     #     fig.show()
 
@@ -437,7 +480,7 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     #
     # fig.update_layout(showlegend=False)
     #
-    # fig.write_image(os.path.join(dir_name, f'curve_samples_side_by_side_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    # fig.write_image(os.path.join(plots_dir_path, f'curve_samples_side_by_side_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     # if plot_to_screen is True:
     #     fig.show()
 
@@ -487,7 +530,7 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     #
     #     fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
     #
-    #     fig.write_image(os.path.join(dir_name, f'curve_samples_and_predicted_curvature_{curve_index}_{i}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    #     fig.write_image(os.path.join(plots_dir_path, f'curve_samples_and_predicted_curvature_{curve_index}_{i}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     #     if plot_to_screen is True:
     #         fig.show()
     #
@@ -509,7 +552,7 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     #
     # fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
     #
-    # fig.write_image(os.path.join(dir_name, f'predicted_curves_together_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    # fig.write_image(os.path.join(plots_dir_path, f'predicted_curves_together_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     # fig.show()
 
     # ------------------------------------
@@ -529,7 +572,7 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
 
     fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
 
-    fig.write_image(os.path.join(dir_name, f'predicted_curvature_as_function_of_index_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    fig.write_image(os.path.join(plots_dir_path, f'predicted_curvature_as_function_of_index_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     if plot_to_screen is True:
         fig.show()
 
@@ -537,7 +580,8 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     # CURVATURE VS. ARC-LENGTH OF SAMPLE POINTS
     # -----------------------------------------
     fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted Curvature as a Function of Predicted Arc-Length</b>',))
-    for i, comparison in enumerate(curve_record['comparisons']):
+    comparisons = curve_record['comparisons']
+    for i, comparison in enumerate(comparisons):
         curvature_comparison = comparison['curvature_comparison']
         arclength_comparison = comparison['arclength_comparison']
         predicted_curvature = curvature_comparison['predicted_curvature']
@@ -555,11 +599,16 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
                 elif transformation_group_type == 'euclidean':
                     ratio = float(numpy.max(numpy.abs(true_curvature[:, 1])) / numpy.max(numpy.abs(predicted_curvature[:, 1])))
 
-                plot_graph_plotly(fig=fig, row=1, col=1, name=f'Ground Truth', x=true_arclength[:, 1], y=true_curvature[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1], mode='markers')
+                plot_graph_plotly(fig=fig, row=1, col=1, name=f'Ground Truth', x=true_arclength[:, 1], y=true_curvature[:, 1], point_size=int(settings.plotly_sample_point_size * 1.3), line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1], mode='markers')
         else:
             ratio = 1
 
-        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=predicted_signature[:, 0], y=ratio*predicted_signature[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
+        signature_arclength = predicted_signature[:, 0].copy()
+        if normalize_signature is True:
+            predicted_signature_1 = comparisons[1]['predicted_signature']
+            signature_arclength = signature_arclength * (predicted_signature_1[-1, 0] / predicted_signature[-1, 0])
+
+        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=signature_arclength, y=ratio*predicted_signature[:, 1], point_size=int(settings.plotly_sample_point_size * 1.3), line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
 
     fig['layout']['xaxis']['title'] = 'Predicted Arc-Length'
     fig['layout']['yaxis']['title'] = 'Predicted Curvature'
@@ -568,7 +617,7 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
 
     fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
 
-    fig.write_image(os.path.join(dir_name, f'predicted_curvature_as_function_of_arclength_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    fig.write_image(os.path.join(plots_dir_path, f'predicted_curvature_as_function_of_arclength_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     if plot_to_screen is True:
         fig.show()
 
@@ -593,7 +642,7 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     #
     # fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
     #
-    # fig.write_image(os.path.join(dir_name, f'euclidean_curvature_as_function_of_arclength_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    # fig.write_image(os.path.join(plots_dir_path, f'euclidean_curvature_as_function_of_arclength_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
     # if plot_to_screen is True:
     #     fig.show()
 
@@ -644,22 +693,17 @@ def plot_curve_arclength_record(curve_index, curve_arclength_record, true_arclen
     plt.show()
 
 
-def plot_curve_signature_comparisons(curve_records, true_signature_colors, predicted_signature_colors, sample_colors, curve_color='orange', anchor_color='blue', first_anchor_color='black', second_anchor_color='pink'):
+def plot_curve_signature_comparisons(curve_records, true_signature_colors, predicted_signature_colors):
     for i, curve_record in enumerate(curve_records):
         display(HTML(f'<H1>Curve {i+1} - Signature Comparison</H1>'))
         plot_curve_signature_comparision(
             curve_index=i,
             curve_record=curve_record,
             true_signature_colors=true_signature_colors,
-            predicted_signature_colors=predicted_signature_colors,
-            sample_colors=sample_colors,
-            curve_color=curve_color,
-            anchor_color=anchor_color,
-            first_anchor_color=first_anchor_color,
-            second_anchor_color=second_anchor_color)
+            predicted_signature_colors=predicted_signature_colors)
 
 
-def plot_curve_signature_comparision(curve_index, curve_record, true_signature_colors, predicted_signature_colors, sample_colors, curve_color, anchor_color, first_anchor_color, second_anchor_color):
+def plot_curve_signature_comparision(curve_index, curve_record, true_signature_colors, predicted_signature_colors):
     dir_name = "./signature_comparison"
     pathlib.Path(dir_name).mkdir(parents=True, exist_ok=True)
 
@@ -671,7 +715,8 @@ def plot_curve_signature_comparision(curve_index, curve_record, true_signature_c
     axis.set_xlabel('Arc-Length', fontsize=settings.matplotlib_axis_title_label_fontsize)
     axis.set_ylabel('Curvature', fontsize=settings.matplotlib_axis_title_label_fontsize)
 
-    for i, comparision in enumerate(curve_record['comparisons']):
+    comparisons = curve_record['comparisons']
+    for i, comparision in enumerate(comparisons):
         arclength_comparison = comparision['arclength_comparison']
         curvature_comparison = comparision['curvature_comparison']
         predicted_arclength = arclength_comparison['predicted_arclength'][:, 1]
