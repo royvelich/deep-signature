@@ -17,6 +17,9 @@ circles_section_tuplets_results_dir_path = os.path.normpath(os.path.join(data_di
 circles_triangle_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "circles/results/tuplets/triangles"))
 
 # level-curves
+level_curves_raw_dir_path_train = os.path.normpath(os.path.join(data_dir, "level-curves/curves_raw/train"))
+level_curves_raw_dir_path_validation = os.path.normpath(os.path.join(data_dir, "level-curves_raw/curves/validation"))
+level_curves_raw_dir_path_test = os.path.normpath(os.path.join(data_dir, "level-curves/curves_raw/test"))
 level_curves_dir_path_train = os.path.normpath(os.path.join(data_dir, "level-curves/curves/train"))
 level_curves_dir_path_validation = os.path.normpath(os.path.join(data_dir, "level-curves/curves/validation"))
 level_curves_dir_path_test = os.path.normpath(os.path.join(data_dir, "level-curves/curves/test"))
