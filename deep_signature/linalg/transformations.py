@@ -71,7 +71,8 @@ def generate_random_affine_transform_2d(min_cond, max_cond, min_det, max_det, ro
     det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
     cond = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
     s1 = numpy.sqrt(det / cond)
-    s2 = det / s1
+    # s2 = det / s1
+    s2 = numpy.sqrt(det * cond)
     S = numpy.array([[s1, 0], [0, s2]])
     A = numpy.matmul(numpy.matmul(U, S), V)
     return A

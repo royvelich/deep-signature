@@ -164,8 +164,10 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
         transformed_curve1 = curve
         transformed_curve2 = curve_processing.transform_curve(curve=curve, transform=transform2)
 
+        # print(f'indices: {indices}')
         for i in range(2, anchor_points_count):
             for index1, index2 in zip(indices, indices[i:]):
+                # print(f'A: index1: {indices.index(index1)}, index2: {indices.index(index2)}')
                 sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
                     curve=transformed_curve1,
                     start_point_index=index1,
@@ -175,6 +177,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
                 input.append(sample)
 
         for index1, index2 in zip(indices, indices[1:]):
+            # print(f'B: index1: {indices.index(index1)}, index2: {indices.index(index2)}')
             sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
                 curve=transformed_curve2,
                 start_point_index=index1,

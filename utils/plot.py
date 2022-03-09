@@ -100,6 +100,9 @@ def plot_curve_plotly(fig, row, col, curve, name, point_size=2, line_width=2, li
     plot_graph_plotly(fig=fig, row=row, col=col, x=x, y=y, name=name, point_size=point_size, line_width=line_width, line_color=line_color, mode=mode)
 
 
+def plot_curve_plotly2(fig, row, col, x, y, name, point_size=2, line_width=2, line_color='green', mode='lines+markers'):
+    plot_graph_plotly(fig=fig, row=row, col=col, x=x, y=y, name=name, point_size=point_size, line_width=line_width, line_color=line_color, mode=mode)
+
 
 def plot_curvature_plotly(fig, row, col, name, curvature, line_width=2, line_color='green'):
     x = numpy.array(range(curvature.shape[0]))
@@ -591,24 +594,25 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
         true_arclength = arclength_comparison['true_arclength']
 
         # if transformation_group_type != 'affine':
-        if transformation_group_type == 'euclidean':
-            if i == 0:
-                if transformation_group_type == 'equiaffine':
-                    true_curvature[:, 1] = numpy.clip(true_curvature[:, 1], a_min=numpy.min(predicted_curvature[:, 1]), a_max=numpy.max(predicted_curvature[:, 1]))
-                    ratio = 1
-                elif transformation_group_type == 'euclidean':
-                    ratio = float(numpy.max(numpy.abs(true_curvature[:, 1])) / numpy.max(numpy.abs(predicted_curvature[:, 1])))
-
-                plot_graph_plotly(fig=fig, row=1, col=1, name=f'Ground Truth', x=true_arclength[:, 1], y=true_curvature[:, 1], point_size=int(settings.plotly_sample_point_size * 1.3), line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1], mode='markers')
-        else:
-            ratio = 1
+        # if transformation_group_type == 'euclidean':
+        #     if i == 0:
+        #         if transformation_group_type == 'equiaffine':
+        #             true_curvature[:, 1] = numpy.clip(true_curvature[:, 1], a_min=numpy.min(predicted_curvature[:, 1]), a_max=numpy.max(predicted_curvature[:, 1]))
+        #             ratio = 1
+        #         elif transformation_group_type == 'euclidean':
+        #             ratio = float(numpy.max(numpy.abs(true_curvature[:, 1])) / numpy.max(numpy.abs(predicted_curvature[:, 1])))
+        #
+        #         plot_graph_plotly(fig=fig, row=1, col=1, name=f'Ground Truth', x=true_arclength[:, 1], y=true_curvature[:, 1], point_size=int(settings.plotly_sample_point_size * 1.3), line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1], mode='markers')
+        # else:
+        #     ratio = 1
 
         signature_arclength = predicted_signature[:, 0].copy()
-        if normalize_signature is True:
-            predicted_signature_1 = comparisons[1]['predicted_signature']
-            signature_arclength = signature_arclength * (predicted_signature_1[-1, 0] / predicted_signature[-1, 0])
+        # if normalize_signature is True:
+        #     predicted_signature_1 = comparisons[1]['predicted_signature']
+        #     signature_arclength = signature_arclength * (predicted_signature_1[-1, 0] / predicted_signature[-1, 0])
 
-        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=signature_arclength, y=ratio*predicted_signature[:, 1], point_size=int(settings.plotly_sample_point_size * 1.3), line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
+        # plot_curve_plotly2(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=signature_arclength, y=ratio*predicted_signature[:, 1], line_color=curve_colors[i], mode='lines')
+        plot_curve_plotly2(fig=fig, row=1, col=1, name=f'Sampled Curve #{i + 1}', x=signature_arclength, y=predicted_signature[:, 1], line_color=curve_colors[i], mode='lines')
 
     fig['layout']['xaxis']['title'] = 'Predicted Arc-Length'
     fig['layout']['yaxis']['title'] = 'Predicted Curvature'

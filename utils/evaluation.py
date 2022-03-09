@@ -244,19 +244,20 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
 
         comparison_curves = []
         for i in range(comparison_curves_count):
-            current_curve = curve
-            if i == 0 and first_curve_index is not None:
-                current_curve = curve_processing.enforce_cw(curve=curves[first_curve_index])
+            # current_curve = curve
+            # if i == 0 and first_curve_index is not None:
+            #     current_curve = curve_processing.enforce_cw(curve=curves[first_curve_index])
+            #
+            # if i == 0:
+            #     transform = transformations.generate_random_transform_2d_evaluation(transform_type=transform_type, rotation=rotation)
+            # else:
+            #     transform = transformations.generate_random_transform_2d_evaluation(transform_type=transform_type)
 
             if i == 0:
-                transform = transformations.generate_random_transform_2d_evaluation(transform_type=transform_type, rotation=rotation)
+                transformed_curve = curve
             else:
                 transform = transformations.generate_random_transform_2d_evaluation(transform_type=transform_type)
-
-            if i == 0 and do_not_transform_first is True:
-                transformed_curve = current_curve
-            else:
-                transformed_curve = curve_processing.transform_curve(curve=current_curve, transform=transform)
+                transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
 
             comparison_curves.append(curve_processing.center_curve(curve=transformed_curve))
 

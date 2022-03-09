@@ -47,11 +47,12 @@ class DeepSignatureCurvatureNet(torch.nn.Module):
     def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
-        out_features = 100
+        out_features = 128
         p = None
         while out_features > 10:
             linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
-            linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+            # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+            # linear_modules.extend(DeepSignatureCurvatureNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
             in_features = out_features
             out_features = int(out_features / 2)
 
@@ -69,8 +70,8 @@ class DeepSignatureCurvatureNet(torch.nn.Module):
         if use_batch_norm:
             linear_modules.append(torch.nn.BatchNorm1d(out_features))
 
-        linear_modules.append(Sine())
-        # linear_modules.append(torch.nn.ReLU())
+        # linear_modules.append(Sine())
+        linear_modules.append(torch.nn.ReLU())
 
         if p is not None:
             linear_modules.append(torch.nn.Dropout(p))
@@ -86,7 +87,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
     def forward(self, input):
         features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
         output = self._regressor(features).reshape([input.shape[0], input.shape[1], 1])
-        return output.abs()
+        return output
 
     @staticmethod
     def _create_regressor(in_features, transformation_group_type):
@@ -100,7 +101,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         out_features = 128
 
         p = None
-        while out_features > 8:
+        while out_features > 2:
             linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True))
             linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True))
             # if transformation_group_type == 'affine' or transformation_group_type == 'similarity':
