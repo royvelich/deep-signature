@@ -128,7 +128,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             supporting_points_count=supporting_points_count,
             uniform=True)
 
-        sample = curve_processing.normalize_curve2(curve=sample)
+        sample = curve_processing.normalize_curve(curve=sample)
         return sample
 
     @classmethod
