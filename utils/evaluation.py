@@ -90,7 +90,7 @@ def predict_curvature_by_index(model, curve_neighborhoods, device='cuda', factor
     predicted_curvature = numpy.zeros([len(sampled_neighborhoods), 2])
     for point_index, sampled_neighborhood in enumerate(sampled_neighborhoods):
         for (indices, sample) in zip(sampled_neighborhood['indices'], sampled_neighborhood['samples']):
-            sample = curve_processing.normalize_curve(curve=sample)
+            sample = curve_processing.normalize_curve_curvature(curve=sample)
             curvature_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample).double(), dim=0), dim=0).to(device)
             with torch.no_grad():
                 predicted_curvature[point_index, 0] = point_index
@@ -114,29 +114,11 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
         sampled_indices2 = numpy.mod(numpy.linspace(start=start_meta_index, stop=end_meta_index2, num=supporting_points_count+1, dtype=int, endpoint=True), indices_count)
         sampled_indices2 = numpy.delete(sampled_indices2, supporting_points_count-1)
 
-        # sampled_indices1 = curve_sampling.sample_curve_section_indices(
-        #     curve=sampled_curve,
-        #     start_point_index=start_meta_index,
-        #     end_point_index=end_meta_index,
-        #     multimodality=settings.arclength_default_multimodality,
-        #     supporting_points_count=supporting_points_count,
-        #     uniform=True,
-        #     rng=rng)
-        #
-        # sampled_indices2 = curve_sampling.sample_curve_section_indices(
-        #     curve=sampled_curve,
-        #     start_point_index=start_meta_index,
-        #     end_point_index=end_meta_index2,
-        #     multimodality=settings.arclength_default_multimodality,
-        #     supporting_points_count=supporting_points_count,
-        #     uniform=True,
-        #     rng=rng)
-
         sampled_section1 = sampled_curve[sampled_indices1]
         sampled_section2 = sampled_curve[sampled_indices2]
 
-        sample1 = curve_processing.normalize_curve2(curve=sampled_section1)
-        sample2 = curve_processing.normalize_curve2(curve=sampled_section2)
+        sample1 = curve_processing.normalize_curve_arclength(curve=sampled_section1)
+        sample2 = curve_processing.normalize_curve_arclength(curve=sampled_section2)
 
         arclength_batch_data1 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample1).double(), dim=0), dim=0).to(device)
         arclength_batch_data2 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2).double(), dim=0), dim=0).to(device)

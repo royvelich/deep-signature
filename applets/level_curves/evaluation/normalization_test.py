@@ -55,13 +55,27 @@ if __name__ == '__main__':
     transform_horz = euclidean_transform.generate_horizontal_reflection_transform_2d()
     transform_vert = euclidean_transform.generate_vertical_reflection_transform_2d()
 
-    curve = numpy.array([[1, 2], [2, 4], [3, 4], [4, 3]])
-    curve = curve_processing.translate_curve(curve=curve, offset=-curve[0])
+    orig_curve = numpy.array([[1, 2], [2, 4], [3, 4], [4, 3]])
+    orig_curve = curve_processing.translate_curve(curve=orig_curve, offset=-orig_curve[0])
+
+    curves = []
+    for i in range(10):
+        curves.append(curve_processing.rotate_curve(orig_curve, i * (numpy.pi / 4)))
+
+    for i in range(10):
+        curves.append(numpy.flip(m=curves[i], axis=0))
+
+    for i in range(10):
+        curves.append(curve_processing.flip_horizontally_curve(curve=curves[i]))
+        curves.append(curve_processing.flip_vertically_curve(curve=curves[i]))
+        curves.append(curve_processing.flip_horizontally_curve(curve_processing.flip_vertically_curve(curve=curves[i])))
+
+
     # curve1 = numpy.matmul(curve, transform_horz)
     # curve2 = numpy.matmul(curve, transform_vert)
     # curve3 = numpy.matmul(numpy.matmul(curve, transform_horz), transform_vert)
     # curve4 = numpy.matmul(numpy.matmul(curve, transform_vert), transform_horz)
-    curve_flipped = numpy.flip(m=curve, axis=0)
+
     # curve1_flipped = numpy.matmul(curve_flipped, transform_horz)
     # curve2_flipped = numpy.matmul(curve_flipped, transform_vert)
     # curve3_flipped = numpy.matmul(numpy.matmul(curve_flipped, transform_horz), transform_vert)
@@ -72,16 +86,25 @@ if __name__ == '__main__':
     # norm_curve_flipped = curve_processing.normalize_curve2(curve=curve_flipped)
 
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
-    plot_sample(ax=ax, sample=curve, color='red', zorder=10, point_size=100)
+    plot_sample(ax=ax, sample=orig_curve, color='red', zorder=10, point_size=100)
     plt.show()
 
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
-    plot_sample(ax=ax, sample=curve_processing.normalize_curve2(curve=curve), color='red', zorder=10, point_size=100)
-    plt.show()
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    # plot_sample(ax=ax, sample=curve_processing.normalize_curve_arclength(curve=numpy.flip(m=orig_curve, axis=0)), color='red', zorder=10, point_size=100)
+    # plt.show()
 
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
-    plot_sample(ax=ax, sample=curve_processing.normalize_curve2(curve=curve_flipped), color='red', zorder=10, point_size=100)
-    plt.show()
+    for curve in curves:
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+        plot_sample(ax=ax, sample=curve_processing.normalize_curve_arclength(curve=curve), color='red', zorder=10, point_size=100)
+        plt.show()
+
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    # plot_sample(ax=ax, sample=curve_processing.normalize_curve_arclength(curve=curve), color='red', zorder=10, point_size=100)
+    # plt.show()
+    #
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    # plot_sample(ax=ax, sample=curve_processing.normalize_curve_arclength(curve=curve_flipped), color='red', zorder=10, point_size=100)
+    # plt.show()
 
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
     # plot_sample(ax=ax, sample=curve_processing.normalize_curve2(curve=curve2), color='red', zorder=10, point_size=100)

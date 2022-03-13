@@ -66,24 +66,20 @@ def generate_random_equiaffine_transform_2d(min_cond, max_cond, rotation=True):
 
 
 def generate_random_affine_transform_2d(min_cond, max_cond, min_det, max_det, rotation=True):
-    U = generate_random_euclidean_transform_2d(rotation=rotation)
-    V = generate_random_euclidean_transform_2d(rotation=rotation)
-    det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
-    cond = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
-    s1 = numpy.sqrt(det / cond)
-    # s2 = det / s1
-    s2 = numpy.sqrt(det * cond)
-    S = numpy.array([[s1, 0], [0, s2]])
-    A = numpy.matmul(numpy.matmul(U, S), V)
-    return A
-
-    # B = generate_rotation_transform_2d(float(numpy.pi / 5))
-    # return numpy.matmul(numpy.array([[1.3, 0], [0, 2.3]]), B)
-    # return numpy.array([[1.5, 0], [0, 2.2]])
-    # while True:
-    #     A = numpy.random.uniform(low=0, high=max_scale, size=(2, 2))
-    #     if (_validate_condition_number(A=A, min_cond=min_cond, max_cond=max_cond) is True) and (_validate_determinant(A=A, min_det=min_det, max_det=max_det) is True):
-    #         return A
+    # U = generate_random_euclidean_transform_2d(rotation=rotation)
+    # V = generate_random_euclidean_transform_2d(rotation=rotation)
+    # det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
+    # cond = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
+    # s1 = numpy.sqrt(det / cond)
+    # s2 = numpy.sqrt(det * cond)
+    # S = numpy.array([[s1, 0], [0, s2]])
+    # A = numpy.matmul(numpy.matmul(U, S), V)
+    # return A
+    while True:
+        A = numpy.random.uniform(low=0, high=3, size=(2, 2))
+        det = numpy.linalg.det(A)
+        if _validate_condition_number(A=A, min_cond=1, max_cond=3) and (det > 2):
+            return A
 
 
 def generate_random_transform_2d(transform_type, min_cond, max_cond, min_det, max_det, rotation=True):

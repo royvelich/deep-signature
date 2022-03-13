@@ -68,12 +68,12 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
                 indices_pool=indices_pool,
                 supporting_points_count=supporting_points_count)
 
-            sample = curve_processing.normalize_curve(curve=sample)
+            sample = curve_processing.normalize_curve_curvature(curve=sample)
             input.append(sample)
             dist_index = dist_index + 1
 
         flipped_anchor = numpy.flip(m=input[0], axis=0).copy()
-        sample = curve_processing.normalize_curve(curve=flipped_anchor)
+        sample = curve_processing.normalize_curve_curvature(curve=flipped_anchor)
         input.append(sample)
 
         for i in range(negative_examples_count):
@@ -94,7 +94,7 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
                 indices_pool=indices_pool,
                 supporting_points_count=supporting_points_count)
 
-            sample = curve_processing.normalize_curve(curve=sample)
+            sample = curve_processing.normalize_curve_curvature(curve=sample)
             input.append(sample)
             dist_index = dist_index + 1
 
@@ -128,7 +128,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
             supporting_points_count=supporting_points_count,
             uniform=True)
 
-        sample = curve_processing.normalize_curve2(curve=sample)
+        sample = curve_processing.normalize_curve_arclength(curve=sample)
         return sample
 
     @classmethod
@@ -160,8 +160,8 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         transform1 = cls._generate_curve_transform()
         transform2 = cls._generate_curve_transform()
-        # transformed_curve1 = curve_processing.transform_curve(curve=curve, transform=transform1)
-        transformed_curve1 = curve
+        transformed_curve1 = curve_processing.transform_curve(curve=curve, transform=transform1)
+        # transformed_curve1 = curve
         transformed_curve2 = curve_processing.transform_curve(curve=curve, transform=transform2)
 
         # print(f'indices: {indices}')

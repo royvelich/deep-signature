@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     train_dataset = OnlineDataset(
         dataset_size=args.train_dataset_size,
-        dir_path=settings.level_curves_raw_dir_path_train,
+        dir_path=settings.level_curves_dir_path_train,
         multimodality=args.multimodality,
         replace=True,
         buffer_size=args.train_buffer_size,
@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
     validation_dataset = OnlineDataset(
         dataset_size=args.validation_dataset_size,
-        dir_path=settings.level_curves_raw_dir_path_validation,
+        dir_path=settings.level_curves_dir_path_validation,
         multimodality=args.multimodality,
         replace=False,
         buffer_size=args.validation_buffer_size,
