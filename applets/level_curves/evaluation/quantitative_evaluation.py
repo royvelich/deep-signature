@@ -222,9 +222,9 @@ if __name__ == '__main__':
     # transform_types = ['affine', 'equiaffine', 'euclidean']
     # dataset_names = ['basketball', 'bats', 'bears', 'birds', 'branches', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
 
-    sampling_ratios = [1, 0.9]
+    sampling_ratios = [0.8]
     transform_types = ['affine']
-    dataset_names = ['basketball', 'bats']
+    dataset_names = ['clouds', 'profiles']
 
     # multimodality = 25
     # sampling_ratios = [0.5]

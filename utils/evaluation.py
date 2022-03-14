@@ -117,8 +117,8 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
         sampled_section1 = sampled_curve[sampled_indices1]
         sampled_section2 = sampled_curve[sampled_indices2]
 
-        sample1 = curve_processing.normalize_curve(curve=sampled_section1)
-        sample2 = curve_processing.normalize_curve(curve=sampled_section2)
+        sample1 = curve_processing.normalize_curve2(curve=sampled_section1)
+        sample2 = curve_processing.normalize_curve2(curve=sampled_section2)
 
         arclength_batch_data1 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample1).double(), dim=0), dim=0).to(device)
         arclength_batch_data2 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2).double(), dim=0), dim=0).to(device)
