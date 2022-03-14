@@ -74,6 +74,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print(os.environ['SLURM_LAUNCH_NODE_IPADDR'])
+    os.environ['MASTER_ADDR'] = os.environ['SLURM_LAUNCH_NODE_IPADDR']
 
     if "SLURM_PROCID" in os.environ:
         print(f"SLURM_PROCID: {os.environ['SLURM_PROCID']}")
