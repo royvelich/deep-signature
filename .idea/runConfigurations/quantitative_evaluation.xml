@@ -12,8 +12,8 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../../deep-signature/applets/level_curves/evaluation/quantitative_evaluation.py" />
-    <option name="PARAMETERS" value="--curves_base_dir_path $PROJECT_DIR$/../../../deep-signature-data/latest-models/test_raw_old" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/applets/level_curves/evaluation/quantitative_evaluation.py" />
+    <option name="PARAMETERS" value="--curves_base_dir_path $PROJECT_DIR$/../../../../deep-signature-data/latest-models/test_raw_old" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="true" />
     <option name="MODULE_MODE" value="false" />

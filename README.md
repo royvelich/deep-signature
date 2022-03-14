@@ -9,4 +9,5 @@
 5. Make sure that the values of `arclength_default_num_workers_train`, `arclength_default_num_workers_validation`, `curvature_default_num_workers_train`, and `arclength_default_num_workers_validation` in `settings.py` do not exceed the maximal number of processor cores on your machine.
 6. To train a curvature approximation model, run `python.exe ./applets/level_curves/train/train_curvature.py --group GROUP`, where `GROUP` can take the values `euclidean`, `equiaffine`, or `affine`.
 7. To train an arc-length approximation model, run `python.exe ./applets/level_curves/train/train_arclength.py --group GROUP`, where `GROUP` can take the values `euclidean`, `equiaffine`, or `affine`.
-8. Evaluate results by running `qualitative_evaluation.ipynb`.
+8. Evaluate qualitative results by running `qualitative_evaluation.ipynb`.
+8. Evaluate quantitative results by running `quantitative_evaluation.py`. Note that you will have to set the input parameter `--curves_base_dir_path` to the root path of the provided boundary curves evaluation dataset.
