@@ -115,6 +115,8 @@ if __name__ == '__main__':
     print(f'args.gpu: {args.gpu}')
     print(f'torch.cuda.device_count(): {torch.cuda.device_count()}')
 
+    fix_random_seeds(args.rank)
+
     OnlineDataset = None
     results_base_dir_path = None
     if args.group == 'euclidean':
