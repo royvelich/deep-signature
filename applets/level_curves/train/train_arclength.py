@@ -16,6 +16,7 @@ import torch.multiprocessing as mp
 import torch.distributed as dist
 import torch.backends.cudnn as cudnn
 import builtins
+import warnings
 
 
 def fix_random_seeds(seed=30):
@@ -36,6 +37,7 @@ def convert_models_to_fp32(model):
 
 
 if __name__ == '__main__':
+    warnings.filterwarnings('error')
     # torch.multiprocessing.set_start_method("spawn")
     torch.set_default_dtype(torch.float64)
 
@@ -111,6 +113,7 @@ if __name__ == '__main__':
 
     print(f'args.rank: {args.rank}')
     print(f'args.gpu: {args.gpu}')
+    print(f'torch.cuda.device_count(): {torch.cuda.device_count()}')
 
     OnlineDataset = None
     results_base_dir_path = None
