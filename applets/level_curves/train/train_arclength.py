@@ -69,7 +69,7 @@ if __name__ == '__main__':
     parser.add_argument('--world-size', default=-1, type=int)
     parser.add_argument('--rank', default=-1, type=int)
     parser.add_argument('--dist-url', default='env://', type=str)
-    parser.add_argument('--dist-backend', default='nccl')
+    parser.add_argument('--dist-backend', default='gloo')
     parser.add_argument('--local-rank', default=-1, type=int)
     args = parser.parse_args()
 
