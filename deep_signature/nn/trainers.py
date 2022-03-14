@@ -134,10 +134,10 @@ class ModelTrainer:
                 print(f'    - Training Epoch #{epoch_index+1}:')
 
             train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
-            print('-------------------------------------------------------------------------------')
-            print(train_loss.shape)
-            print(train_loss)
-            print('-------------------------------------------------------------------------------')
+            # print('-------------------------------------------------------------------------------')
+            # print(train_loss.shape)
+            # print(train_loss)
+            # print('-------------------------------------------------------------------------------')
             train_loss_array = numpy.append(train_loss_array, [numpy.mean(train_loss)])
 
             if self._rank == 0:
@@ -219,9 +219,9 @@ class ModelTrainer:
     def _epoch(epoch_index, data_loader, process_batch_fn):
         loss_array = numpy.array([])
         start = timer()
-        print('START TRAIN EPOCH')
+        # print('START TRAIN EPOCH')
         for batch_index, batch_data in enumerate(data_loader, 0):
-            print(f'batch_index: {batch_index}')
+            # print(f'batch_index: {batch_index}')
             batch_loss = process_batch_fn(batch_data)
             loss_array = numpy.append(loss_array, [batch_loss])
             end = timer()
@@ -237,9 +237,9 @@ class ModelTrainer:
                 batch_count=len(data_loader),
                 batch_duration=end-start)
             start = timer()
-        print('END TRAIN EPOCH')
-        print(f'len(data_loader): {len(data_loader)}')
-        print(f'len(data_loader.dataset): {len(data_loader.dataset)}')
+        # print('END TRAIN EPOCH')
+        # print(f'len(data_loader): {len(data_loader)}')
+        # print(f'len(data_loader.dataset): {len(data_loader.dataset)}')
         return loss_array
 
     @staticmethod
