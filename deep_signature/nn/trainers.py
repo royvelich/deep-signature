@@ -134,6 +134,10 @@ class ModelTrainer:
                 print(f'    - Training Epoch #{epoch_index+1}:')
 
             train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
+            print('-------------------------------------------------------------------------------')
+            print(train_loss.shape)
+            print(train_loss)
+            print('-------------------------------------------------------------------------------')
             train_loss_array = numpy.append(train_loss_array, [numpy.mean(train_loss)])
 
             if self._rank == 0:
