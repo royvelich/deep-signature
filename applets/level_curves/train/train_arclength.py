@@ -69,9 +69,11 @@ if __name__ == '__main__':
     parser.add_argument('--world-size', default=-1, type=int)
     parser.add_argument('--rank', default=-1, type=int)
     parser.add_argument('--dist-url', default='env://', type=str)
-    parser.add_argument('--dist-backend', default='gloo')
+    parser.add_argument('--dist-backend', default='nccl')
     parser.add_argument('--local-rank', default=-1, type=int)
     args = parser.parse_args()
+
+    print(os.environ['SLURM_LAUNCH_NODE_IPADDR'])
 
     if "SLURM_PROCID" in os.environ:
         print(f"SLURM_PROCID: {os.environ['SLURM_PROCID']}")
@@ -87,6 +89,7 @@ if __name__ == '__main__':
 
     if "WORLD_SIZE" in os.environ:
         args.world_size = int(os.environ["WORLD_SIZE"])
+
     args.distributed = args.world_size > 1
     ngpus_per_node = torch.cuda.device_count()
 
@@ -97,8 +100,8 @@ if __name__ == '__main__':
     elif 'SLURM_PROCID' in os.environ: # for slurm scheduler
         args.rank = int(os.environ['SLURM_PROCID'])
         args.gpu = args.rank % torch.cuda.device_count()
-    # dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
-    dist.init_process_group(backend=args.dist_backend, init_method='tcp://localhost:12000', world_size=args.world_size, rank=args.rank)
+    dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
+    # dist.init_process_group(backend=args.dist_backend, init_method='tcp://localhost:12000', world_size=args.world_size, rank=args.rank)
 
     # suppress printing if not on master gpu
     # if args.rank != 0:
