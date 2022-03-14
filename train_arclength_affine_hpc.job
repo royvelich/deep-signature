@@ -1,23 +1,4 @@
 #!/bin/bash
-
-#SBATCH -p work
-
-#SBATCH --gpus=4
-
-#SBATCH --mem=64g
-
-#SBATCH -o train_clip.%N.%j.out # stdout goes here
-
-#SBATCH -e train_clip.%N.%j.out # stderr goes here
-
-#SBATCH --qos=normal
-
-srun --gpus=4 --container-image=$HOME/nvidia+pytorch+22.02-py3.sqsh --container-save=$HOME/nvidia+pytorch+22.02-py3.sqsh --container-mounts $HOME/deep-signature-data:/deep-signature-data /workspace/deep-signature/train_arclength_affine.bash
-
-
-
-
-#!/bin/bash
 #SBATCH --job-name=royve_test
 #SBATCH --partition=gpu
 #SBATCH --time=72:00:00
@@ -31,6 +12,7 @@ srun --gpus=4 --container-image=$HOME/nvidia+pytorch+22.02-py3.sqsh --container-
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64gb
 #SBATCH --output=%x-%j.out
+#SBATCH --qos=normal
 
 ### change 5-digit MASTER_PORT as you wish, slurm will raise Error if duplicated with others
 ### change WORLD_SIZE as gpus/node * num_nodes
