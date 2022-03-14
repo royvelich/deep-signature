@@ -101,10 +101,10 @@ if __name__ == '__main__':
                             world_size=args.world_size, rank=args.rank)
 
     # suppress printing if not on master gpu
-    if args.rank != 0:
-        def print_pass(*args):
-            pass
-        builtins.print = print_pass
+    # if args.rank != 0:
+    #     def print_pass(*args):
+    #         pass
+    #     builtins.print = print_pass
 
     OnlineDataset = None
     results_base_dir_path = None
