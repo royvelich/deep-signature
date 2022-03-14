@@ -15,21 +15,7 @@ from argparse import ArgumentParser
 import torch.multiprocessing as mp
 import torch.distributed as dist
 import torch.backends.cudnn as cudnn
-
-
-def setup_for_distributed(is_master):
-    """
-    This function disables printing when not in master process
-    """
-    import builtins as __builtin__
-    builtin_print = __builtin__.print
-
-    def print(*args, **kwargs):
-        force = kwargs.pop('force', False)
-        if is_master or force:
-            builtin_print(*args, **kwargs)
-
-    __builtin__.print = print
+import builtins
 
 
 def fix_random_seeds(seed=30):
@@ -38,32 +24,87 @@ def fix_random_seeds(seed=30):
     numpy.random.seed(seed)
 
 
-def init_dist_node(args):
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
-    print(f'CUDA_VISIBLE_DEVICES: {args.gpus}')
-    args.ngpus_per_node = torch.cuda.device_count()
-    print(f'ngpus_per_node: {args.ngpus_per_node}')
-
-    args.rank = 0
-    args.dist_url = f'tcp://localhost:{args.port}'
-    args.world_size = args.ngpus_per_node
-    print(f'world_size: {args.world_size}')
+def convert_models_to_fp32(model):
+    for p in model.parameters():
+        p.data = p.data.float()
+        if p.grad:
+            p.grad.data = p.grad.data.float()
 
 
-def init_dist_gpu(gpu, args):
-    args.gpu = gpu
-    args.rank += gpu
-    dist.init_process_group(backend='gloo', init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
-    fix_random_seeds()
-    torch.cuda.set_device(args.gpu)
-    cudnn.benchmark = True
-    dist.barrier()
-    args.main = (args.rank == 0)
-    setup_for_distributed(args.main)
+# def train(gpu, ngpus_per_node, args):
+#
 
 
-def train(gpu, args):
-    init_dist_gpu(gpu, args)
+if __name__ == '__main__':
+    # torch.multiprocessing.set_start_method("spawn")
+    torch.set_default_dtype(torch.float64)
+
+    parser = ArgumentParser()
+    parser.add_argument("--group")
+    parser.add_argument("--epochs", default=settings.arclength_default_epochs, type=int)
+    parser.add_argument("--continue-training", default=settings.arclength_default_continue_training, type=bool)
+    parser.add_argument("--train-buffer-size", default=settings.arclength_default_train_buffer_size, type=int)
+    parser.add_argument("--validation-buffer-size", default=settings.arclength_default_validation_buffer_size, type=int)
+    parser.add_argument("--train-batch-size", default=settings.arclength_default_train_batch_size, type=int)
+    parser.add_argument("--validation-batch-size", default=settings.arclength_default_validation_batch_size, type=int)
+    parser.add_argument("--train-dataset-size", default=settings.arclength_default_train_dataset_size, type=int)
+    parser.add_argument("--validation-dataset-size", default=settings.arclength_default_validation_dataset_size, type=int)
+    parser.add_argument("--learning-rate", default=settings.arclength_default_learning_rate, type=float)
+    parser.add_argument("--validation-split", default=settings.arclength_default_validation_split, type=float)
+    parser.add_argument("--supporting-points-count", default=settings.arclength_default_supporting_points_count, type=int)
+    parser.add_argument("--anchor-points-count", default=settings.arclength_default_anchor_points_count, type=int)
+    parser.add_argument("--multimodality", default=settings.arclength_default_multimodality, type=int)
+    parser.add_argument("--min-offset", default=settings.arclength_default_min_offset, type=int)
+    parser.add_argument("--max-offset", default=settings.arclength_default_max_offset, type=int)
+    parser.add_argument("--num-workers-train", default=settings.arclength_default_num_workers_train, type=int)
+    parser.add_argument("--num-workers-validation", default=settings.arclength_default_num_workers_validation, type=int)
+    parser.add_argument("--history-size", default=settings.arclength_default_history_size, type=int)
+    parser.add_argument("--level-curves-euclidean-arclength-tuplets-results-dir-path", default=settings.level_curves_euclidean_arclength_tuplets_results_dir_path, type=str)
+    parser.add_argument("--level-curves-similarity-arclength-tuplets-results-dir-path", default=settings.level_curves_similarity_arclength_tuplets_results_dir_path, type=str)
+    parser.add_argument("--level-curves-equiaffine-arclength-tuplets-results-dir-path", default=settings.level_curves_equiaffine_arclength_tuplets_results_dir_path, type=str)
+    parser.add_argument("--level-curves-affine-arclength-tuplets_results-dir-path", default=settings.level_curves_affine_arclength_tuplets_results_dir_path, type=str)
+    parser.add_argument("--level-curves-dir-path-train", default=settings.level_curves_dir_path_train, type=str)
+    parser.add_argument("--level-curves-dir-path-validation", default=settings.level_curves_dir_path_validation, type=str)
+    parser.add_argument('--gpu', default=None, type=int)
+    parser.add_argument('--world-size', default=-1, type=int)
+    parser.add_argument('--rank', default=-1, type=int)
+    parser.add_argument('--dist-url', default='env://', type=str)
+    parser.add_argument('--dist-backend', default='nccl')
+    parser.add_argument('--local-rank', default=-1, type=int)
+    args = parser.parse_args()
+
+    if "SLURM_PROCID" in os.environ:
+        print(f"SLURM_PROCID: {os.environ['SLURM_PROCID']}")
+
+    if "WORLD_SIZE" in os.environ:
+        print(f"WORLD_SIZE: {os.environ['WORLD_SIZE']}")
+
+    if "MASTER_ADDR" in os.environ:
+        print(f"MASTER_ADDR: {os.environ['MASTER_ADDR']}")
+
+    if "MASTER_PORT" in os.environ:
+        print(f"MASTER_PORT: {os.environ['MASTER_PORT']}")
+
+    if "WORLD_SIZE" in os.environ:
+        args.world_size = int(os.environ["WORLD_SIZE"])
+    args.distributed = args.world_size > 1
+    ngpus_per_node = torch.cuda.device_count()
+
+    # if args.distributed:
+    if args.local_rank != -1: # for torch.distributed.launch
+        args.rank = args.local_rank
+        args.gpu = args.local_rank
+    elif 'SLURM_PROCID' in os.environ: # for slurm scheduler
+        args.rank = int(os.environ['SLURM_PROCID'])
+        args.gpu = args.rank % torch.cuda.device_count()
+    dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
+                            world_size=args.world_size, rank=args.rank)
+
+    # suppress printing if not on master gpu
+    if args.rank != 0:
+        def print_pass(*args):
+            pass
+        builtins.print = print_pass
 
     OnlineDataset = None
     results_base_dir_path = None
@@ -112,6 +153,12 @@ def train(gpu, args):
 
     model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count, transformation_group_type=args.group)
 
+    torch.cuda.set_device(args.gpu)
+    model.cuda(args.gpu)
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
+    model_without_ddp = model.module
+
     print('')
     print(model)
 
@@ -121,8 +168,7 @@ def train(gpu, args):
         model.load_state_dict(torch.load(results['model_file_path'], map_location=torch.device('cuda')))
 
     optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count).cuda(gpu)
+    loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count).cuda(args.gpu)
 
     model_trainer = ModelTrainer(
         model=model,
@@ -140,48 +186,5 @@ def train(gpu, args):
         validation_batch_size=args.validation_batch_size,
         validation_split=args.validation_split,
         results_base_dir_path=results_base_dir_path)
-
-
-if __name__ == '__main__':
-
-    torch.set_default_dtype(torch.float64)
-
-    parser = ArgumentParser()
-    parser.add_argument("--group", dest="group")
-    parser.add_argument("--epochs", dest="epochs", default=settings.arclength_default_epochs, type=int)
-    parser.add_argument("--continue_training", dest="continue_training", default=settings.arclength_default_continue_training, type=bool)
-    parser.add_argument("--train_buffer_size", dest="train_buffer_size", default=settings.arclength_default_train_buffer_size, type=int)
-    parser.add_argument("--validation_buffer_size", dest="validation_buffer_size", default=settings.arclength_default_validation_buffer_size, type=int)
-    parser.add_argument("--train_batch_size", dest="train_batch_size", default=settings.arclength_default_train_batch_size, type=int)
-    parser.add_argument("--validation_batch_size", dest="validation_batch_size", default=settings.arclength_default_validation_batch_size, type=int)
-    parser.add_argument("--train_dataset_size", dest="train_dataset_size", default=settings.arclength_default_train_dataset_size, type=int)
-    parser.add_argument("--validation_dataset_size", dest="validation_dataset_size", default=settings.arclength_default_validation_dataset_size, type=int)
-    parser.add_argument("--learning_rate", dest="learning_rate", default=settings.arclength_default_learning_rate, type=float)
-    parser.add_argument("--validation_split", dest="validation_split", default=settings.arclength_default_validation_split, type=float)
-    parser.add_argument("--supporting_points_count", dest="supporting_points_count", default=settings.arclength_default_supporting_points_count, type=int)
-    parser.add_argument("--anchor_points_count", dest="anchor_points_count", default=settings.arclength_default_anchor_points_count, type=int)
-    parser.add_argument("--multimodality", dest="multimodality", default=settings.arclength_default_multimodality, type=int)
-    parser.add_argument("--min_offset", dest="min_offset", default=settings.arclength_default_min_offset, type=int)
-    parser.add_argument("--max_offset", dest="max_offset", default=settings.arclength_default_max_offset, type=int)
-    parser.add_argument("--num_workers_train", dest="num_workers_train", default=settings.arclength_default_num_workers_train, type=int)
-    parser.add_argument("--num_workers_validation", dest="num_workers_validation", default=settings.arclength_default_num_workers_validation, type=int)
-    parser.add_argument("--history_size", dest="history_size", default=settings.arclength_default_history_size, type=int)
-
-    parser.add_argument("--ngpus_per_node", dest="ngpus_per_node", type=int)
-    parser.add_argument("--gpus", dest="gpus", default='0', type=str)
-
-    parser.add_argument("--level_curves_euclidean_arclength_tuplets_results_dir_path", dest="level_curves_euclidean_arclength_tuplets_results_dir_path", default=settings.level_curves_euclidean_arclength_tuplets_results_dir_path, type=str)
-    parser.add_argument("--level_curves_similarity_arclength_tuplets_results_dir_path", dest="level_curves_similarity_arclength_tuplets_results_dir_path", default=settings.level_curves_similarity_arclength_tuplets_results_dir_path, type=str)
-    parser.add_argument("--level_curves_equiaffine_arclength_tuplets_results_dir_path", dest="level_curves_equiaffine_arclength_tuplets_results_dir_path", default=settings.level_curves_equiaffine_arclength_tuplets_results_dir_path, type=str)
-    parser.add_argument("--level_curves_affine_arclength_tuplets_results_dir_path", dest="level_curves_affine_arclength_tuplets_results_dir_path", default=settings.level_curves_affine_arclength_tuplets_results_dir_path, type=str)
-    parser.add_argument("--level_curves_dir_path_train", dest="level_curves_dir_path_train", default=settings.level_curves_dir_path_train, type=str)
-    parser.add_argument("--level_curves_dir_path_validation", dest="level_curves_dir_path_validation", default=settings.level_curves_dir_path_validation, type=str)
-
-    args = parser.parse_args()
-
-    args.port = random.randint(49152, 65535)
-
-    init_dist_node(args)
-    mp.spawn(train, args=(args,), nprocs=args.ngpus_per_node)
 
 

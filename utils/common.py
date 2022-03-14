@@ -11,6 +11,7 @@ from utils import settings
 
 # pytorch
 import torch
+import torch.distributed as dist
 
 # sklearn
 
@@ -142,9 +143,13 @@ def load_models(transform_type):
     # package settings
     torch.set_default_dtype(torch.float64)
 
+    dist.init_process_group(backend='gloo', init_method='env://', world_size=1, rank=0)
+
     # create models
     curvature_model = DeepSignatureCurvatureNet(sample_points=settings.curvature_default_sample_points_count).cuda()
-    arclength_model = DeepSignatureArcLengthNet(sample_points=settings.arclength_default_supporting_points_count, transformation_group_type=transform_type).cuda()
+    arclength_model = DeepSignatureArcLengthNet(sample_points=settings.arclength_default_supporting_points_count, transformation_group_type=transform_type).cuda(0)
+    arclength_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(arclength_model)
+    arclength_model = torch.nn.parallel.DistributedDataParallel(arclength_model, device_ids=[0])
 
     # load curvature model state
     latest_subdir = get_latest_subdirectory(level_curves_curvature_tuplets_results_dir_path)

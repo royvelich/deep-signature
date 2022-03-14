@@ -97,7 +97,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         #     out_features = 60
         # else:
         # out_features = 100
-        out_features = 128
+        out_features = 64
 
         p = None
         while out_features > 8:
@@ -105,7 +105,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
             linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True))
             # if transformation_group_type == 'affine' or transformation_group_type == 'similarity':
             # linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True))
-            # linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True))
+            linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True))
             # linear_modules.extend(DeepSignatureArcLengthNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True))
             in_features = out_features
             out_features = int(out_features / 2)
@@ -122,8 +122,8 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
 
         # linear_modules.append(torch.nn.PReLU(num_parameters=out_features))
         # linear_modules.append(torch.nn.LeakyReLU())
-        linear_modules.append(torch.nn.ReLU())
-        # linear_modules.append(torch.nn.GELU())
+        # linear_modules.append(torch.nn.ReLU())
+        linear_modules.append(torch.nn.GELU())
         # linear_modules.append(Sine())
 
         if p is not None:

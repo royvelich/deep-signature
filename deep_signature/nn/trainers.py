@@ -25,14 +25,15 @@ class ModelTrainer:
         self._world_size = world_size
         self._rank = rank
         self._gpu = gpu
+        self._model = model
 
         # if torch.cuda.device_count() > 1:
         #     print(f'Number of GPUs: {torch.cuda.device_count()}')
         #     self._model = torch.nn.DataParallel(model)
         # else:
-        self._model = model.double().cuda(gpu)
-        self._model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self._model)
-        self._model = torch.nn.parallel.DistributedDataParallel(self._model, device_ids=[gpu])
+        # self._model = model.double().cuda(gpu)
+        # self._model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self._model)
+        # self._model = torch.nn.parallel.DistributedDataParallel(self._model, device_ids=[gpu])
 
         # self._model = self._model.to('cuda:0')
 
@@ -55,12 +56,12 @@ class ModelTrainer:
             actual_train_dataset = train_dataset
             actual_validation_dataset = validation_dataset
 
-        if shuffle_dataset is True:
-            train_sampler = SubsetRandomSampler(train_indices)
-            validation_sampler = SubsetRandomSampler(validation_indices)
-        else:
-            train_sampler = SequentialSampler(train_indices)
-            validation_sampler = SequentialSampler(validation_indices)
+        # if shuffle_dataset is True:
+        #     train_sampler = SubsetRandomSampler(train_indices)
+        #     validation_sampler = SubsetRandomSampler(validation_indices)
+        # else:
+        train_sampler = DistributedSampler(dataset=actual_train_dataset, shuffle=True)
+        validation_sampler = SequentialSampler(validation_indices)
 
         # train_sampler = DistributedSampler(actual_train_dataset, shuffle=True, num_replicas=self._world_size, rank=self._rank, seed=30)
         # validation_sampler = SubsetRandomSampler(validation_indices)
@@ -71,14 +72,15 @@ class ModelTrainer:
 
         epochs_text = epochs if epochs is not None else 'infinite'
 
-        print('')
-        ModelTrainer._print_training_configuration('Epochs', epochs_text)
-        ModelTrainer._print_training_configuration('Train Batch size', train_batch_size)
-        ModelTrainer._print_training_configuration('Validation Batch size', validation_batch_size)
-        ModelTrainer._print_training_configuration('Training dataset length', len(train_indices))
-        ModelTrainer._print_training_configuration('Training batches per epoch', int(numpy.ceil(len(train_indices) / train_batch_size)))
-        ModelTrainer._print_training_configuration('Validation dataset length', len(validation_indices))
-        ModelTrainer._print_training_configuration('Validation batches per epoch', int(numpy.ceil(len(validation_indices) / validation_batch_size)))
+        if self._gpu == 0:
+            print('')
+            ModelTrainer._print_training_configuration('Epochs', epochs_text)
+            ModelTrainer._print_training_configuration('Train Batch size', train_batch_size)
+            ModelTrainer._print_training_configuration('Validation Batch size', validation_batch_size)
+            ModelTrainer._print_training_configuration('Training dataset length', len(train_indices))
+            ModelTrainer._print_training_configuration('Training batches per epoch', int(numpy.ceil(len(train_indices) / train_batch_size)))
+            ModelTrainer._print_training_configuration('Validation dataset length', len(validation_indices))
+            ModelTrainer._print_training_configuration('Validation batches per epoch', int(numpy.ceil(len(validation_indices) / validation_batch_size)))
 
         results_dir_path = os.path.normpath(os.path.join(results_base_dir_path, datetime.now().strftime('%Y-%m-%d-%H-%M-%S')))
         model_file_path = os.path.normpath(os.path.join(results_dir_path, 'model.pt'))
@@ -90,76 +92,82 @@ class ModelTrainer:
         settings_data_file_path = os.path.normpath(os.path.join(results_dir_path, 'settings.txt'))
         Path(results_dir_path).mkdir(parents=True, exist_ok=True)
 
-        with open(model_architecture_file_path, "w") as text_file:
-            text_file.write(str(self._model))
+        if self._gpu == 0:
+            with open(model_architecture_file_path, "w") as text_file:
+                text_file.write(str(self._model))
 
-        with open(loss_functions_file_path, "w") as text_file:
-            for loss_function in self._loss_functions:
-                text_file.write(str(loss_function))
+            with open(loss_functions_file_path, "w") as text_file:
+                for loss_function in self._loss_functions:
+                    text_file.write(str(loss_function))
 
-        with open(optimizer_file_path, "w") as text_file:
-            text_file.write(str(self._optimizer))
+            with open(optimizer_file_path, "w") as text_file:
+                text_file.write(str(self._optimizer))
 
-        with open(trainer_data_file_path, "w") as text_file:
-            text_file.write(f'train_batch_size: {train_batch_size}\n')
-            text_file.write(f'validation_batch_size: {validation_batch_size}\n')
-            text_file.write(f'epochs: {epochs_text}\n')
-            text_file.write(f'results_dir_path: {results_dir_path}\n')
-            if validation_split is not None:
-                text_file.write(f'validation_split: {validation_split}\n')
-                text_file.write(f'dataset_size: {dataset_size}\n')
-            else:
-                text_file.write(f'train_dataset_size: {train_dataset_size}\n')
-                text_file.write(f'validation_dataset_size: {validation_dataset_size}\n')
+            with open(trainer_data_file_path, "w") as text_file:
+                text_file.write(f'train_batch_size: {train_batch_size}\n')
+                text_file.write(f'validation_batch_size: {validation_batch_size}\n')
+                text_file.write(f'epochs: {epochs_text}\n')
+                text_file.write(f'results_dir_path: {results_dir_path}\n')
+                if validation_split is not None:
+                    text_file.write(f'validation_split: {validation_split}\n')
+                    text_file.write(f'dataset_size: {dataset_size}\n')
+                else:
+                    text_file.write(f'train_dataset_size: {train_dataset_size}\n')
+                    text_file.write(f'validation_dataset_size: {validation_dataset_size}\n')
 
-        settings_dict = {key: value for key, value in settings.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
-        with open(settings_data_file_path, "w") as text_file:
-            for key, value in settings_dict.items():
-                text_file.write(f'{key}: {value}\n')
+            settings_dict = {key: value for key, value in settings.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
+            with open(settings_data_file_path, "w") as text_file:
+                for key, value in settings_dict.items():
+                    text_file.write(f'{key}: {value}\n')
 
-        print('')
-        print(f' - Start Training:')
+            print('')
+            print(f' - Start Training:')
+
         results = None
         best_validation_average_loss = None
         train_loss_array = numpy.array([])
         validation_loss_array = numpy.array([])
         for epoch_index in itertools.count():
-            print(f'    - Training Epoch #{epoch_index+1}:')
+            if self._gpu == 0:
+                print(f'    - Training Epoch #{epoch_index+1}:')
+
             train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
             train_loss_array = numpy.append(train_loss_array, [numpy.mean(train_loss)])
-            print(f'    - Validation Epoch #{epoch_index+1}:')
-            validation_loss = self._validation_epoch(epoch_index=epoch_index, data_loader=validation_data_loader)
-            validation_loss_array = numpy.append(validation_loss_array, [numpy.mean(validation_loss)])
 
-            if best_validation_average_loss is None:
-                torch.save(self._model.state_dict(), model_file_path)
-                best_validation_average_loss = numpy.mean(validation_loss)
-            else:
-                validation_average_loss = numpy.mean(validation_loss)
-                if validation_average_loss < best_validation_average_loss:
+            if self._gpu == 0:
+                print(f'    - Validation Epoch #{epoch_index+1}:')
+                validation_loss = self._validation_epoch(epoch_index=epoch_index, data_loader=validation_data_loader)
+                validation_loss_array = numpy.append(validation_loss_array, [numpy.mean(validation_loss)])
+
+                if best_validation_average_loss is None:
                     torch.save(self._model.state_dict(), model_file_path)
-                    best_validation_average_loss = validation_average_loss
+                    best_validation_average_loss = numpy.mean(validation_loss)
+                else:
+                    validation_average_loss = numpy.mean(validation_loss)
+                    if validation_average_loss < best_validation_average_loss:
+                        torch.save(self._model.state_dict(), model_file_path)
+                        best_validation_average_loss = validation_average_loss
 
-            lastest_model_path = os.path.normpath(os.path.join(results_dir_path, f'model_{epoch_index}.pt'))
-            torch.save(self._model.state_dict(), lastest_model_path)
+                lastest_model_path = os.path.normpath(os.path.join(results_dir_path, f'model_{epoch_index}.pt'))
+                torch.save(self._model.state_dict(), lastest_model_path)
 
-            if epoch_handler is not None:
-                epoch_handler(epoch_index)
+                if epoch_handler is not None:
+                    epoch_handler(epoch_index)
 
-            results = {
-                'train_loss_array': train_loss_array,
-                'validation_loss_array': validation_loss_array,
-                'epochs': epochs_text,
-                'train_batch_size': train_batch_size,
-                'validation_batch_size': validation_batch_size,
-                'model_file_path': model_file_path,
-                'results_file_path': results_file_path
-            }
+                results = {
+                    'train_loss_array': train_loss_array,
+                    'validation_loss_array': validation_loss_array,
+                    'epochs': epochs_text,
+                    'train_batch_size': train_batch_size,
+                    'validation_batch_size': validation_batch_size,
+                    'model_file_path': model_file_path,
+                    'results_file_path': results_file_path
+                }
 
-            numpy.save(file=results_file_path, arr=results, allow_pickle=True)
+                numpy.save(file=results_file_path, arr=results, allow_pickle=True)
 
-            if (epochs is not None) and (epoch_index + 1 == epochs):
-                break
+                if (epochs is not None) and (epoch_index + 1 == epochs):
+                    break
 
         return results
 
@@ -193,15 +201,10 @@ class ModelTrainer:
         return loss.item()
 
     def _evaluate_loss(self, batch_data):
-        # keys = [k for k, v in batch_data.items() if k.startswith('input')]
-        # keys.sort()
         input_data = [v for k, v in batch_data.items() if k.startswith('input')]
-        # output = self._model(batch_data['input'])
-        try:
-            output = self._model(*input_data)
-        except Exception as e:
-            h = 5
-        v = torch.tensor(0).double().cuda(self._gpu)
+        output = self._model(*input_data)
+        # v = torch.tensor(0).cuda(self._gpu)
+        v = torch.tensor(0).cuda(self._gpu)
         for loss_function in self._loss_functions:
             v = v + loss_function(output=output, batch_data=batch_data)
         return v
