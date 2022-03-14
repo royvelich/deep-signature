@@ -72,7 +72,7 @@ class ModelTrainer:
 
         epochs_text = epochs if epochs is not None else 'infinite'
 
-        if self._gpu == 0:
+        if self._rank == 0:
             print('')
             print(f'GPU: {self._gpu}')
             ModelTrainer._print_training_configuration('Epochs', epochs_text)
@@ -93,7 +93,7 @@ class ModelTrainer:
         settings_data_file_path = os.path.normpath(os.path.join(results_dir_path, 'settings.txt'))
         Path(results_dir_path).mkdir(parents=True, exist_ok=True)
 
-        if self._gpu == 0:
+        if self._rank == 0:
             print(f'GPU: {self._gpu}')
             with open(model_architecture_file_path, "w") as text_file:
                 text_file.write(str(self._model))
@@ -130,13 +130,13 @@ class ModelTrainer:
         train_loss_array = numpy.array([])
         validation_loss_array = numpy.array([])
         for epoch_index in itertools.count():
-            if self._gpu == 0:
+            if self._rank == 0:
                 print(f'    - Training Epoch #{epoch_index+1}:')
 
             train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
             train_loss_array = numpy.append(train_loss_array, [numpy.mean(train_loss)])
 
-            if self._gpu == 0:
+            if self._rank == 0:
                 print(f'    - Validation Epoch #{epoch_index+1}:')
                 validation_loss = self._validation_epoch(epoch_index=epoch_index, data_loader=validation_data_loader)
                 validation_loss_array = numpy.append(validation_loss_array, [numpy.mean(validation_loss)])
