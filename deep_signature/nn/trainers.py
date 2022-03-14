@@ -74,6 +74,7 @@ class ModelTrainer:
 
         if self._gpu == 0:
             print('')
+            print(f'GPU: {self._gpu}')
             ModelTrainer._print_training_configuration('Epochs', epochs_text)
             ModelTrainer._print_training_configuration('Train Batch size', train_batch_size)
             ModelTrainer._print_training_configuration('Validation Batch size', validation_batch_size)
@@ -93,6 +94,7 @@ class ModelTrainer:
         Path(results_dir_path).mkdir(parents=True, exist_ok=True)
 
         if self._gpu == 0:
+            print(f'GPU: {self._gpu}')
             with open(model_architecture_file_path, "w") as text_file:
                 text_file.write(str(self._model))
 

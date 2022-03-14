@@ -73,7 +73,6 @@ if __name__ == '__main__':
     parser.add_argument('--local-rank', default=-1, type=int)
     args = parser.parse_args()
 
-    print(os.environ['SLURM_LAUNCH_NODE_IPADDR'])
     os.environ['MASTER_ADDR'] = os.environ['SLURM_LAUNCH_NODE_IPADDR']
 
     if "SLURM_PROCID" in os.environ:
@@ -109,6 +108,9 @@ if __name__ == '__main__':
     #     def print_pass(*args):
     #         pass
     #     builtins.print = print_pass
+
+    print(f'args.rank: {args.rank}')
+    print(f'args.gpu: {args.gpu}')
 
     OnlineDataset = None
     results_base_dir_path = None
@@ -182,13 +184,13 @@ if __name__ == '__main__':
         rank=args.rank,
         gpu=args.gpu)
 
-    model_trainer.fit(
-        train_dataset=train_dataset,
-        validation_dataset=validation_dataset,
-        epochs=args.epochs,
-        train_batch_size=args.train_batch_size,
-        validation_batch_size=args.validation_batch_size,
-        validation_split=args.validation_split,
-        results_base_dir_path=results_base_dir_path)
+    # model_trainer.fit(
+    #     train_dataset=train_dataset,
+    #     validation_dataset=validation_dataset,
+    #     epochs=args.epochs,
+    #     train_batch_size=args.train_batch_size,
+    #     validation_batch_size=args.validation_batch_size,
+    #     validation_split=args.validation_split,
+    #     results_base_dir_path=results_base_dir_path)
 
 
