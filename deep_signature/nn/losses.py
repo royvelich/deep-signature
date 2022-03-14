@@ -53,77 +53,6 @@ class ArcLengthLoss(torch.nn.Module):
                 # print(f'[{index1 + 1}, {index2 + 1}] - [{index1 + 1}, {index2 + 2}]')
                 A.append((section_approx[(index1, index2)] - section_approx[(index1, index2 + 1)]))
 
-        for endpoints in itertools.combinations(indices, 2):
-            if endpoints[1] - endpoints[0] > 1:
-                B_aux = []
-                adj_indices = list(range(endpoints[0], endpoints[1] + 1))
-                for index1, index2 in zip(adj_indices, adj_indices[1:]):
-                    B_aux.append(section_approx[(index1, index2)])
-                    # print(f'[{index1 + 1}, {index2 + 1}]', end='')
-
-                B_aux_sum = torch.sum(torch.cat(B_aux, dim=1), dim=1).unsqueeze(dim=1)
-                B.append(section_approx[(endpoints[0], endpoints[-1])])
-                B.append(B_aux_sum)
-                # print(f'[{endpoints[0] + 1}, {endpoints[-1] + 1}]')
-
-        # for i in range(3, self._anchor_points_count+1):
-        #     for endpoints in itertools.combinations(indices, i):
-        #         B_aux = []
-        #         for index1, index2 in zip(endpoints, endpoints[1:]):
-        #             B_aux.append(section_approx[(index1, index2)])
-        #             print(f'[{index1 + 1}, {index2 + 1}]', end='')
-        #
-        #         B_aux_sum = torch.sum(torch.cat(B_aux, dim=1), dim=1).unsqueeze(dim=1)
-        #         B.append(section_approx[(endpoints[0], endpoints[-1])])
-        #         B.append(B_aux_sum)
-        #         print(f'[{endpoints[0] + 1}, {endpoints[-1] + 1}]')
-
-        A_eval = torch.cat(A, dim=1)
-        A_eval_mean = A_eval.mean(dim=1)
-        A_eval_mean_exp = A_eval_mean.exp()
-        # A_eval_mean_exp = torch.pow(5, A_eval_mean)
-
-        B_eval = torch.cat(B, dim=1).abs()
-        B_eval1 = B_eval[:, 0::2]
-        B_eval2 = B_eval[:, 1::2]
-        B_eval_diff = (B_eval1 - B_eval2).abs()
-        B_eval_diff_mean = B_eval_diff.mean(dim=1)
-
-        loss_eval = (A_eval_mean_exp + B_eval_diff_mean).mean(dim=0)
-
-        return loss_eval
-
-
-class ArcLengthLoss2(torch.nn.Module):
-    def __init__(self, anchor_points_count):
-        self._anchor_points_count = anchor_points_count
-        super(ArcLengthLoss2, self).__init__()
-
-    def forward(self, output, batch_data):
-        sample_index = 0
-        nu = 1e-2
-        w = 0.7
-        section_approx = {}
-        indices = list(range(self._anchor_points_count))
-
-        for i in range(2, self._anchor_points_count):
-            for index1, index2 in zip(indices, indices[i:]):
-                section_approx[(index1, index2)] = output[:, sample_index, :]
-                sample_index = sample_index + 1
-
-        for index1, index2 in zip(indices, indices[1:]):
-            section_approx[(index1, index2)] = output[:, sample_index, :]
-            sample_index = sample_index + 1
-
-        A = []
-        B = []
-
-        for index1 in range(self._anchor_points_count - 2):
-            for index2 in range(index1+1, self._anchor_points_count - 1):
-                # print(f'[{index1 + 1}, {index2 + 1}] - [{index1 + 1}, {index2 + 2}]')
-                shape = section_approx[(index1, index2 + 1)].shape
-                A.append(torch.maximum((section_approx[(index1, index2)] + nu) - section_approx[(index1, index2 + 1)], torch.zeros((shape[0], 1)).cuda().double()))
-
         for i in range(3, self._anchor_points_count+1):
             for endpoints in itertools.combinations(indices, i):
                 B_aux = []
@@ -138,6 +67,8 @@ class ArcLengthLoss2(torch.nn.Module):
 
         A_eval = torch.cat(A, dim=1)
         A_eval_mean = A_eval.mean(dim=1)
+        A_eval_mean_exp = A_eval_mean.exp()
+        # A_eval_mean_exp = torch.pow(5, A_eval_mean)
 
         B_eval = torch.cat(B, dim=1).abs()
         B_eval1 = B_eval[:, 0::2]
@@ -145,6 +76,6 @@ class ArcLengthLoss2(torch.nn.Module):
         B_eval_diff = (B_eval1 - B_eval2).abs()
         B_eval_diff_mean = B_eval_diff.mean(dim=1)
 
-        loss_eval = (A_eval_mean + B_eval_diff_mean).mean(dim=0)
+        loss_eval = (A_eval_mean_exp + B_eval_diff_mean).mean(dim=0)
 
         return loss_eval

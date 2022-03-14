@@ -129,18 +129,6 @@ def compare_signatures_worker(queue, curvature_model, arclength_model, raw_curve
     print(f'Starting - Signature Comparison - dataset-name: {dataset_name}, transform-type: {transform_type}, sampling-ratio: {sampling_ratio}')
 
     correct = 0
-    # signatures = []
-    # for i, curve in enumerate(raw_curves):
-    #     signature_curve = calculate_signature_curve(
-    #         curve=curve,
-    #         transform_type=transform_type,
-    #         sampling_ratio=1,
-    #         curvature_model=curvature_model,
-    #         arclength_model=arclength_model,
-    #         transform_curve=False)
-    #
-    #     signatures.append(signature_curve)
-
     matches = []
 
     distances = numpy.zeros((len(downsampled_curves), len(downsampled_curves)))
@@ -228,11 +216,15 @@ if __name__ == '__main__':
     rng = numpy.random.default_rng(seed=seed)
     numpy.random.seed(seed)
 
-    resolution = '@2x'
+    resolution = ''
     multimodality = 25
-    sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5]
-    transform_types = ['affine', 'equiaffine', 'euclidean']
-    dataset_names = ['basketball', 'bats', 'bears', 'birds', 'branches', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
+    # sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5]
+    # transform_types = ['affine', 'equiaffine', 'euclidean']
+    # dataset_names = ['basketball', 'bats', 'bears', 'birds', 'branches', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
+
+    sampling_ratios = [1, 0.9]
+    transform_types = ['affine']
+    dataset_names = ['basketball', 'bats']
 
     # multimodality = 25
     # sampling_ratios = [0.5]
