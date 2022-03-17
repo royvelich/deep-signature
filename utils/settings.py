@@ -8,34 +8,41 @@ images_dir_path_validation = os.path.normpath(os.path.join(data_dir, "images/val
 images_dir_path_test = os.path.normpath(os.path.join(data_dir, "images/test"))
 plots_dir = os.path.normpath(os.path.join(data_dir, "plots"))
 
-# circles
-circles_dir_path_train = os.path.normpath(os.path.join(data_dir, "circles/curves/train"))
-circles_dir_path_test = os.path.normpath(os.path.join(data_dir, "circles/curves/test"))
-circles_section_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "circles/datasets/tuplets/sections"))
-circles_triangle_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "circles/datasets/tuplets/triangles"))
-circles_section_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "circles/results/tuplets/sections"))
-circles_triangle_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "circles/results/tuplets/triangles"))
-
 # level-curves
-level_curves_dir_path_train = os.path.normpath(os.path.join(data_dir, "level-curves/curves/train"))
-level_curves_dir_path_validation = os.path.normpath(os.path.join(data_dir, "level-curves/curves/validation"))
-level_curves_dir_path_test = os.path.normpath(os.path.join(data_dir, "level-curves/curves/test"))
-level_curves_euclidean_curvature_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/datasets/tuplets/curvature/euclidean"))
-level_curves_euclidean_curvature_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/curvature/euclidean"))
-level_curves_equiaffine_curvature_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/datasets/tuplets/curvature/equiaffine"))
-level_curves_equiaffine_curvature_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/curvature/equiaffine"))
-level_curves_similarity_curvature_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/datasets/tuplets/curvature/similarity"))
-level_curves_similarity_curvature_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/curvature/similarity"))
-level_curves_affine_curvature_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/datasets/tuplets/curvature/affine"))
-level_curves_affine_curvature_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/curvature/affine"))
-level_curves_euclidean_arclength_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/datasets/tuplets/arclength/euclidean"))
-level_curves_euclidean_arclength_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/arclength/euclidean"))
-level_curves_similarity_arclength_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/datasets/tuplets/arclength/similarity"))
-level_curves_similarity_arclength_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/arclength/similarity"))
-level_curves_equiaffine_arclength_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/datasets/tuplets/arclength/equiaffine"))
-level_curves_equiaffine_arclength_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/arclength/equiaffine"))
-level_curves_affine_arclength_tuplets_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/datasets/tuplets/arclength/affine"))
-level_curves_affine_arclength_tuplets_results_dir_path = os.path.normpath(os.path.join(data_dir, "level-curves/results/tuplets/arclength/affine"))
+level_curves_dir_path_train = os.path.normpath(os.path.join(data_dir, "curves/train"))
+level_curves_dir_path_validation = os.path.normpath(os.path.join(data_dir, "curves/validation"))
+level_curves_dir_path_test = os.path.normpath(os.path.join(data_dir, "curves/test"))
+
+dataset_dir_path_template = os.path.normpath(os.path.join(data_dir, "datasets/%s/%s/%s"))
+results_dir_path_template = os.path.normpath(os.path.join(data_dir, "results/%s/%s"))
+
+# equiaffine_curvature_train_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/curvature/equiaffine/train"))
+# equiaffine_curvature_validation_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/curvature/equiaffine/validation"))
+# equiaffine_curvature_results_dir_path = os.path.normpath(os.path.join(data_dir, "results/curvature/equiaffine"))
+#
+# similarity_curvature_train_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/curvature/similarity/train"))
+# similarity_curvature_validation_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/curvature/similarity/validation"))
+# similarity_curvature_results_dir_path = os.path.normpath(os.path.join(data_dir, "results/curvature/similarity"))
+#
+# affine_curvature_train_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/curvature/affine/train"))
+# affine_curvature_validation_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/curvature/affine/validation"))
+# affine_curvature_results_dir_path = os.path.normpath(os.path.join(data_dir, "results/curvature/affine"))
+#
+# euclidean_arclength_train_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/arclength/euclidean/train"))
+# euclidean_arclength_validation_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/arclength/euclidean"))
+# euclidean_arclength_results_dir_path = os.path.normpath(os.path.join(data_dir, "results/arclength/euclidean"))
+#
+# similarity_arclength_train_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/arclength/similarity/train"))
+# similarity_arclength_validation_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/arclength/similarity"))
+# similarity_arclength_results_dir_path = os.path.normpath(os.path.join(data_dir, "results/arclength/similarity"))
+#
+# equiaffine_arclength_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/arclength/equiaffine/train"))
+# equiaffine_arclength_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/arclength/equiaffine/validation"))
+# equiaffine_arclength_results_dir_path = os.path.normpath(os.path.join(data_dir, "results/arclength/equiaffine"))
+#
+# affine_arclength_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/arclength/affine"))
+# affine_arclength_dataset_dir_path = os.path.normpath(os.path.join(data_dir, "datasets/arclength/affine"))
+# affine_arclength_results_dir_path = os.path.normpath(os.path.join(data_dir, "results/arclength/affine"))
 
 # curvature
 curvature_default_continue_training = False
@@ -63,7 +70,7 @@ arclength_default_continue_training = False
 arclength_default_learning_rate = 0.1
 arclength_default_validation_split = None
 arclength_default_epochs = None
-arclength_default_train_buffer_size = 50000
+arclength_default_train_buffer_size = 100000
 arclength_default_validation_buffer_size = 50000
 arclength_default_train_batch_size = arclength_default_train_buffer_size
 arclength_default_validation_batch_size = arclength_default_validation_buffer_size

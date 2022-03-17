@@ -133,25 +133,14 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
     @classmethod
     def generate_tuple(cls, curves, min_offset, max_offset, multimodality, supporting_points_count, anchor_points_count):
-        input = []
-        factors = []
-        metadata = {}
+        tuplets = []
 
         curve_index = int(numpy.random.randint(curves.shape[0], size=1))
-        # curve = curves[curve_index]
         curve = curve_processing.center_curve(curve=curves[curve_index])
 
         starting_point_index = int(numpy.random.randint(curve.shape[0], size=1))
 
-        tuplet = {
-            'input': input,
-            'factors': factors,
-            'metadata': metadata
-        }
-
         # anchor_points_count = 5
-        metadata['anchor_points_count'] = anchor_points_count
-        metadata['supporting_points_count'] = supporting_points_count
         raw_offset = numpy.random.randint(max_offset, size=anchor_points_count-1)
         offset = numpy.maximum(raw_offset, [min_offset] * (anchor_points_count-1))
         indices = [starting_point_index]
@@ -171,7 +160,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
                     end_point_index=index2,
                     multimodality=multimodality,
                     supporting_points_count=supporting_points_count)
-                input.append(sample)
+                tuplets.append(sample)
 
         for index1, index2 in zip(indices, indices[1:]):
             sample = ArcLengthTupletsDatasetGenerator._sample_curve_section(
@@ -180,9 +169,9 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
                 end_point_index=index2,
                 multimodality=multimodality,
                 supporting_points_count=supporting_points_count)
-            input.append(sample)
+            tuplets.append(sample)
 
-        return tuplet
+        return tuplets
 
 
 class EuclideanArcLengthTupletsDatasetGenerator(ArcLengthTupletsDatasetGenerator, EuclideanTransform):

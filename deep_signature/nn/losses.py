@@ -31,7 +31,7 @@ class ArcLengthLoss(torch.nn.Module):
         self._anchor_points_count = anchor_points_count
         super(ArcLengthLoss, self).__init__()
 
-    def forward(self, output, batch_data):
+    def forward(self, output):
         v_1_3 = output[:, 0, :].unsqueeze(dim=1)  # 1:3
         v_2_4 = output[:, 1, :].unsqueeze(dim=1)  # 2:4
         v_3_5 = output[:, 2, :].unsqueeze(dim=1)  # 3:5

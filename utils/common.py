@@ -89,76 +89,39 @@ def get_latest_subdirectory(base_dir='.'):
     subdirectories = list_subdirectories(base_dir)
     return os.path.normpath(max(subdirectories, key=os.path.getmtime))
 
-def get_tuplets_dir_path(transform_type):
-    if transform_type == 'euclidean':
-        level_curves_curvature_tuplets_dir_path = settings.level_curves_euclidean_curvature_tuplets_dir_path
-    elif transform_type == 'similarity':
-        level_curves_curvature_tuplets_dir_path = settings.level_curves_similarity_curvature_tuplets_dir_path
-    elif transform_type == 'equiaffine':
-        level_curves_curvature_tuplets_dir_path = settings.level_curves_equiaffine_curvature_tuplets_dir_path
-    elif transform_type == 'affine':
-        level_curves_curvature_tuplets_dir_path = settings.level_curves_affine_curvature_tuplets_dir_path
 
-    if transform_type == 'euclidean':
-        level_curves_arclength_tuplets_dir_path = settings.level_curves_euclidean_arclength_tuplets_dir_path
-    elif transform_type == 'similarity':
-        level_curves_arclength_tuplets_dir_path = settings.level_curves_similarity_arclength_tuplets_dir_path
-    elif transform_type == 'equiaffine':
-        level_curves_arclength_tuplets_dir_path = settings.level_curves_equiaffine_arclength_tuplets_dir_path
-    elif transform_type == 'affine':
-        level_curves_arclength_tuplets_dir_path = settings.level_curves_affine_arclength_tuplets_dir_path
+def get_train_dataset_dir(invariant, group):
+    return settings.dataset_dir_path_template % (invariant, group, 'train')
 
-    return level_curves_curvature_tuplets_dir_path, level_curves_arclength_tuplets_dir_path
 
-def get_results_dir_path(transform_type):
-    if transform_type == 'euclidean':
-        level_curves_arclength_tuplets_results_dir_path = settings.level_curves_euclidean_arclength_tuplets_results_dir_path
-    elif transform_type == 'similarity':
-        level_curves_arclength_tuplets_results_dir_path = settings.level_curves_similarity_arclength_tuplets_results_dir_path
-    elif transform_type == 'equiaffine':
-        level_curves_arclength_tuplets_results_dir_path = settings.level_curves_equiaffine_arclength_tuplets_results_dir_path
-    elif transform_type == 'affine':
-        level_curves_arclength_tuplets_results_dir_path = settings.level_curves_affine_arclength_tuplets_results_dir_path
+def get_validation_dataset_dir(invariant, group):
+    return settings.dataset_dir_path_template % (invariant, group, 'validation')
 
-    if transform_type == 'euclidean':
-        level_curves_curvature_tuplets_results_dir_path = settings.level_curves_euclidean_curvature_tuplets_results_dir_path
-    elif transform_type == 'similarity':
-        level_curves_curvature_tuplets_results_dir_path = settings.level_curves_similarity_curvature_tuplets_results_dir_path
-    elif transform_type == 'equiaffine':
-        level_curves_curvature_tuplets_results_dir_path = settings.level_curves_equiaffine_curvature_tuplets_results_dir_path
-    elif transform_type == 'affine':
-        level_curves_curvature_tuplets_results_dir_path = settings.level_curves_affine_curvature_tuplets_results_dir_path
 
-    return level_curves_curvature_tuplets_results_dir_path, level_curves_arclength_tuplets_results_dir_path
+def get_results_dir(invariant, group):
+    return settings.results_dir_path_template % (invariant, group)
 
-def load_models(transform_type):
-    device = torch.device('cuda')
 
-    level_curves_curvature_tuplets_results_dir_path, level_curves_arclength_tuplets_results_dir_path = get_results_dir_path(transform_type=transform_type)
-
-    # if we're in the equiaffine case, snap 'step' to the closest mutiple of 3 (from above)
-    # if transform_type == "equiaffine":
-    #     step = int(3 * numpy.ceil(step / 3))
-
-    # package settings
-    torch.set_default_dtype(torch.float64)
-
-    dist.init_process_group(backend='gloo', init_method='env://', world_size=1, rank=0)
+def load_models(group, device=torch.device('cuda')):
+    curvature_results_dir_path = get_results_dir(invariant='curvature', group=group)
+    arclength_results_dir_path = get_results_dir(invariant='arclength', group=group)
 
     # create models
     curvature_model = DeepSignatureCurvatureNet(sample_points=settings.curvature_default_sample_points_count).cuda()
-    arclength_model = DeepSignatureArcLengthNet(sample_points=settings.arclength_default_supporting_points_count, transformation_group_type=transform_type).cuda(0)
+
+    dist.init_process_group(backend='gloo', init_method='env://', world_size=1, rank=0)
+    arclength_model = DeepSignatureArcLengthNet(sample_points=settings.arclength_default_supporting_points_count).cuda()
     arclength_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(arclength_model)
-    arclength_model = torch.nn.parallel.DistributedDataParallel(arclength_model, device_ids=[0])
+    arclength_model = torch.nn.parallel.DistributedDataParallel(arclength_model)
 
     # load curvature model state
-    latest_subdir = get_latest_subdirectory(level_curves_curvature_tuplets_results_dir_path)
+    latest_subdir = get_latest_subdirectory(curvature_results_dir_path)
     results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
     curvature_model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['model_file_path']).name}", map_location=device))
     curvature_model.eval()
 
     # load arclength model state
-    latest_subdir = get_latest_subdirectory(level_curves_arclength_tuplets_results_dir_path)
+    latest_subdir = get_latest_subdirectory(arclength_results_dir_path)
     results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
     arclength_model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['model_file_path']).name}", map_location=device))
     arclength_model.eval()

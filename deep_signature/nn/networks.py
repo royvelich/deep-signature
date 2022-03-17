@@ -79,9 +79,9 @@ class DeepSignatureCurvatureNet(torch.nn.Module):
 
 
 class DeepSignatureArcLengthNet(torch.nn.Module):
-    def __init__(self, sample_points, transformation_group_type):
+    def __init__(self, sample_points):
         super(DeepSignatureArcLengthNet, self).__init__()
-        self._regressor = DeepSignatureArcLengthNet._create_regressor(in_features=2 * sample_points, transformation_group_type=transformation_group_type)
+        self._regressor = DeepSignatureArcLengthNet._create_regressor(in_features=2 * sample_points)
 
     def forward(self, input):
         features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
@@ -89,7 +89,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         return output.abs()
 
     @staticmethod
-    def _create_regressor(in_features, transformation_group_type):
+    def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
 

@@ -4,6 +4,7 @@ import numpy
 import random
 import queue
 from multiprocessing import Process, Queue, cpu_count
+from pathlib import Path
 
 # torch
 import torch
@@ -170,6 +171,7 @@ class AffineTuple:
 
 class DeepSignatureTupletsOnlineDataset(Dataset):
     def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers, gpu):
+        self._online = False
         self._curves = curve_generation.CurvesGenerator.load_curves(dir_path)
         self._dataset_size = dataset_size
         self._multimodality = multimodality
@@ -179,30 +181,30 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
         self._gpu = gpu
         self._q = Queue(maxsize=dataset_size)
         self._args = [self._curves, self._multimodality, self._q]
-        self._items = []
+        self._tuplets = []
 
     def __len__(self):
-        return self._dataset_size
+        if self._online is True:
+            return self._dataset_size
+        else:
+            return len(self._tuplets)
 
     def __getitem__(self, index):
-        item = {}
-        mod_index = numpy.mod(index, self._buffer_size)
-        tuplet = self._items[mod_index]
-        for key in tuplet.keys():
-            if key == 'input':
-                item[key] = torch.from_numpy(numpy.array(tuplet[key]).astype('float64')).cuda(self._gpu).double()
-            else:
-                item[key] = tuplet[key]
+        if self._online is True:
+            mod_index = numpy.mod(index, self._buffer_size)
+            tuplet = torch.from_numpy(numpy.array(self._tuplets[mod_index])).cuda(self._gpu)
 
-        if self._replace is True:
-            try:
-                new_tuplet = self._q.get_nowait()
-                rand_index = int(numpy.random.randint(self._buffer_size, size=1))
-                self._items[rand_index] = new_tuplet
-            except queue.Empty:
-                pass
+            if self._replace is True:
+                try:
+                    new_tuplet = self._q.get_nowait()
+                    rand_index = int(numpy.random.randint(self._buffer_size, size=1))
+                    self._tuplets[rand_index] = new_tuplet
+                except queue.Empty:
+                    pass
 
-        return item
+            return tuplet
+        else:
+            return self._tuplets[index]
 
     def start(self):
         self._workers = [Process(target=self._map_func, args=self._args) for i in range(self._num_workers)]
@@ -212,18 +214,29 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
             worker.start()
             print(f'\rWorker Started {i+1} / {self._num_workers}', end='')
 
-        print(f'\nItem {len(self._items)} / {self._buffer_size}', end='')
+        print(f'\nItem {len(self._tuplets)} / {self._buffer_size}', end='')
         while True:
             if self._q.empty() is False:
-                self._items.append(self._q.get())
-                print(f'\rItem {len(self._items)} / {self._buffer_size}', end='')
-                if len(self._items) == self._buffer_size:
+                self._tuplets.append(self._q.get())
+                print(f'\rItem {len(self._tuplets)} / {self._buffer_size}', end='')
+                if len(self._tuplets) == self._buffer_size:
                     break
+
         print('')
+        self._online = True
 
     def stop(self):
         for i, worker in enumerate(self._workers):
             worker.terminate()
+
+        self._online = False
+
+    def save(self, dataset_dir_path):
+        Path(dataset_dir_path).mkdir(parents=True, exist_ok=True)
+        numpy.save(file=os.path.join(dataset_dir_path, 'tuplets.npy'), arr=self._tuplets, allow_pickle=True)
+
+    def load(self, dataset_dir_path):
+        self._tuplets = numpy.load(file=os.path.join(dataset_dir_path, 'tuplets.npy'), allow_pickle=True)
 
 
 class DeepSignatureCurvatureTupletsOnlineDataset(DeepSignatureTupletsOnlineDataset):
