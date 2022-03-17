@@ -77,7 +77,7 @@ if __name__ == '__main__':
         args.gpu = args.rank % torch.cuda.device_count()
 
     dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
-    dist.barrier()
+    # dist.barrier()
 
     slurm_props = ['SLURM_GPUS_PER_NODE',
                    'SLURM_GPUS_ON_NODE',
@@ -198,22 +198,21 @@ if __name__ == '__main__':
     optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
     loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count).cuda(args.gpu)
 
-    dist.barrier()
+    # dist.barrier()
 
-    if args.rank == 0:
-        model_trainer = ModelTrainer(
-            model=model,
-            loss_functions=[loss_fn],
-            optimizer=optimizer,
-            world_size=args.world_size,
-            rank=args.rank,
-            gpu=args.gpu)
+    model_trainer = ModelTrainer(
+        model=model,
+        loss_functions=[loss_fn],
+        optimizer=optimizer,
+        world_size=args.world_size,
+        rank=args.rank,
+        gpu=args.gpu)
 
-        model_trainer.fit(
-            train_dataset=train_dataset,
-            validation_dataset=validation_dataset,
-            epochs=args.epochs,
-            train_batch_size=args.train_batch_size,
-            validation_batch_size=args.validation_batch_size,
-            validation_split=args.validation_split,
-            results_base_dir_path=results_base_dir_path)
+    model_trainer.fit(
+        train_dataset=train_dataset,
+        validation_dataset=validation_dataset,
+        epochs=args.epochs,
+        train_batch_size=args.train_batch_size,
+        validation_batch_size=args.validation_batch_size,
+        validation_split=args.validation_split,
+        results_base_dir_path=results_base_dir_path)

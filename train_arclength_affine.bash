@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /workspace/deep-signature
+cd /deep-signature
 
 export PYTHONPATH=.
 
