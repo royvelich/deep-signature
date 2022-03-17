@@ -24,4 +24,4 @@ echo "MASTER_PORT="${MASTER_PORT}
 echo "WORLD_SIZE="${WORLD_SIZE}
 
 ### the command to run
-srun --gpus=2 --ntasks=2 --container-image=$HOME/nvidia+pytorch+22.02-py3.sqsh --container-mounts $HOME/deep-signature-data:/deep-signature-data,$HOME/deep-signature:/deep-signature /deep-signature/train_arclength_affine.bash
+srun --gpus=2 --container-image=$HOME/nvidia+pytorch+22.02-py3.sqsh --container-mounts $HOME/deep-signature-data:/deep-signature-data,$HOME/deep-signature:/deep-signature /deep-signature/train_arclength_affine.bash
