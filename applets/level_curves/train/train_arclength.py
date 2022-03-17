@@ -63,10 +63,21 @@ if __name__ == '__main__':
     parser.add_argument('--world-size', default=-1, type=int)
     parser.add_argument('--rank', default=-1, type=int)
     parser.add_argument('--dist-url', default='env://', type=str)
-    parser.add_argument('--dist-backend', default='nccl')
+    parser.add_argument('--dist-backend', default='gloo')
     parser.add_argument('--local-rank', default=-1, type=int)
 
     args = parser.parse_args()
+
+    # if args.distributed:
+    if args.local_rank != -1: # for torch.distributed.launch
+        args.rank = args.local_rank
+        args.gpu = args.local_rank
+    elif 'SLURM_PROCID' in os.environ: # for slurm scheduler
+        args.rank = int(os.environ['SLURM_PROCID'])
+        args.gpu = args.rank % torch.cuda.device_count()
+
+    dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
+    dist.barrier()
 
     slurm_props = ['SLURM_GPUS_PER_NODE',
                    'SLURM_GPUS_ON_NODE',
@@ -105,25 +116,12 @@ if __name__ == '__main__':
     os.environ['MASTER_ADDR'] = os.environ['SLURM_LAUNCH_NODE_IPADDR']
     print('-------------------------------------------------------')
 
-    # args.distributed = args.world_size > 1
-    # ngpus_per_node = torch.cuda.device_count()
-    #
-    # # if args.distributed:
-    # if args.local_rank != -1: # for torch.distributed.launch
-    #     args.rank = args.local_rank
-    #     args.gpu = args.local_rank
-    # elif 'SLURM_PROCID' in os.environ: # for slurm scheduler
-    #     args.rank = int(os.environ['SLURM_PROCID'])
-    #     args.gpu = args.rank % torch.cuda.device_count()
-    # dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
-    # # dist.init_process_group(backend=args.dist_backend, init_method='tcp://localhost:12000', world_size=args.world_size, rank=args.rank)
-    #
-    # # suppress printing if not on master gpu
-    # # if args.rank != 0:
-    # #     def print_pass(*args):
-    # #         pass
-    # #     builtins.print = print_pass
-    #
+    # suppress printing if not on master gpu
+    # if args.rank != 0:
+    #     def print_pass(*args):
+    #         pass
+    #     builtins.print = print_pass
+
     # print(f'args.rank: {args.rank}')
     # print(f'args.gpu: {args.gpu}')
     # print(f'torch.cuda.device_count(): {torch.cuda.device_count()}')
