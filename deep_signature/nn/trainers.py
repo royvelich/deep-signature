@@ -57,7 +57,7 @@ class ModelTrainer:
             actual_validation_dataset = validation_dataset
 
         # if shuffle_dataset is True:
-        train_sampler = DistributedSampler(actual_train_dataset, shuffle=True, num_replicas=self._world_size, rank=self._rank, seed=30)
+        train_sampler = DistributedSampler(actual_train_dataset, shuffle=True)
         # train_sampler = SubsetRandomSampler(train_indices)
         validation_sampler = SubsetRandomSampler(validation_indices)
         # else:
@@ -131,6 +131,7 @@ class ModelTrainer:
         train_loss_array = numpy.array([])
         validation_loss_array = numpy.array([])
         for epoch_index in itertools.count():
+            train_sampler.set_epoch(epoch_index)
             if self._rank == 0:
                 print(f'    - Training Epoch #{epoch_index+1}:')
 
