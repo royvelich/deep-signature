@@ -159,7 +159,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
                     start_point_index=index1,
                     end_point_index=index2,
                     multimodality=multimodality,
-                    supporting_points_count=supporting_points_count)
+                    supporting_points_count=supporting_points_count).astype('float32')
                 tuplets.append(sample)
 
         for index1, index2 in zip(indices, indices[1:]):
@@ -168,7 +168,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
                 start_point_index=index1,
                 end_point_index=index2,
                 multimodality=multimodality,
-                supporting_points_count=supporting_points_count)
+                supporting_points_count=supporting_points_count).astype('float32')
             tuplets.append(sample)
 
         return tuplets

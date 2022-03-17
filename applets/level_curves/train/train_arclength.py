@@ -55,22 +55,22 @@ if __name__ == '__main__':
     parser.add_argument("--history-size", default=settings.arclength_default_history_size, type=int)
     parser.add_argument("--data-dir", default=settings.data_dir, type=str)
 
-    parser.add_argument('--gpu', default=None, type=int)
-    parser.add_argument('--world-size', default=-1, type=int)
-    parser.add_argument('--rank', default=-1, type=int)
+    # parser.add_argument('--gpu', default=None, type=int)
+    # parser.add_argument('--world-size', default=-1, type=int)
+    # parser.add_argument('--rank', default=-1, type=int)
     parser.add_argument('--dist-url', default='env://', type=str)
     parser.add_argument('--dist-backend', default='nccl')
-    parser.add_argument('--local-rank', default=-1, type=int)
+    # parser.add_argument('--local-rank', default=-1, type=int)
 
     args = parser.parse_args()
 
-    # if args.distributed:
-    if args.local_rank != -1: # for torch.distributed.launch
-        args.rank = args.local_rank
-        args.gpu = args.local_rank
-    elif 'SLURM_PROCID' in os.environ: # for slurm scheduler
-        args.rank = int(os.environ['SLURM_PROCID'])
-        args.gpu = args.rank % torch.cuda.device_count()
+    # # if args.distributed:
+    # if args.local_rank != -1: # for torch.distributed.launch
+    #     args.rank = args.local_rank
+    #     args.gpu = args.local_rank
+    # elif 'SLURM_PROCID' in os.environ: # for slurm scheduler
+    #     args.rank = int(os.environ['SLURM_PROCID'])
+    #     args.gpu = args.rank % torch.cuda.device_count()
 
     # dist.barrier()
 
@@ -104,7 +104,10 @@ if __name__ == '__main__':
                    'MASTER_PORT']
 
     print('---------------------------------------------------------------')
-    print(f"SLURM PROPERTIES, SLURM_PROCID: {os.environ['SLURM_PROCID']}:")
+    if 'SLURM_PROCID' in os.environ:
+        print(f"SLURM PROPERTIES, SLURM_PROCID: {os.environ['SLURM_PROCID']}:")
+    else:
+        print("SLURM PROPERTIES")
     print('---------------------------------------------------------------')
     for slurm_prop in slurm_props:
         if slurm_prop in os.environ:
@@ -127,14 +130,34 @@ if __name__ == '__main__':
     # print(f'dist.world_size: {dist.get_world_size()}')
     # print('---------------------------------------------------------------')
 
-    rank = int(os.environ['SLURM_PROCID'])
-    local_rank = int(os.environ['SLURM_LOCALID'])
-    size = int(os.environ['SLURM_NTASKS'])
-    cpus_per_task = int(os.environ['SLURM_CPUS_PER_TASK'])
-    gpu_ids = os.environ['SLURM_STEP_GPUS'].split(",")
+    if 'SLURM_PROCID' in os.environ:
+        rank = int(os.environ['SLURM_PROCID'])
+    else:
+        rank = 0
 
-    os.environ['MASTER_ADDR'] = os.environ['SLURM_SUBMIT_HOST']
-    os.environ['MASTER_PORT'] = str(12345 + int(min(gpu_ids)))
+    if 'SLURM_LOCALID' in os.environ:
+        local_rank = int(os.environ['SLURM_LOCALID'])
+    else:
+        local_rank = 0
+
+    if 'SLURM_NTASKS' in os.environ:
+        size = int(os.environ['SLURM_NTASKS'])
+    else:
+        size = 1
+
+    if 'SLURM_CPUS_PER_TASK' in os.environ:
+        cpus_per_task = int(os.environ['SLURM_CPUS_PER_TASK'])
+    else:
+        cpus_per_task = 1
+
+    if 'SLURM_STEP_GPUS' in os.environ:
+        gpu_ids = os.environ['SLURM_STEP_GPUS'].split(",")
+    else:
+        gpu_ids = [0]
+
+    if 'SLURM_SUBMIT_HOST' in os.environ:
+        os.environ['MASTER_ADDR'] = os.environ['SLURM_SUBMIT_HOST']
+        os.environ['MASTER_PORT'] = str(12345 + int(min(gpu_ids)))
 
     print(f'rank: {rank}')
     print(f'local_rank: {local_rank}')
@@ -144,7 +167,7 @@ if __name__ == '__main__':
     print(f"os.environ['MASTER_ADDR']: {os.environ['MASTER_ADDR']}")
     print(f"os.environ['MASTER_PORT']: {os.environ['MASTER_PORT']}")
 
-    dist.init_process_group(backend='nccl', init_method='env://', world_size=size, rank=rank)
+    dist.init_process_group(backend=args.dist_backend, init_method='env://', world_size=size, rank=rank)
 
     torch.cuda.set_device(local_rank)
 
@@ -191,32 +214,25 @@ if __name__ == '__main__':
     validation_dataset.load(dataset_dir_path=validation_dataset_dir_path)
     train_dataset.load(dataset_dir_path=train_dataset_dir_path)
 
-    # validation_dataset.start()
-    # validation_dataset.stop()
-    # train_dataset.start()
-
     device = torch.device("cuda")
     model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count)
     model.cuda(device)
 
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
-    # model_without_ddp = model.module
 
-    if args.rank == 0:
+    if rank == 0:
         print('')
         print(model)
 
     optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
     loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count)
 
-    # dist.barrier()
-
     model_trainer = ModelTrainer(
         model=model,
-        loss_functions=[loss_fn],
+        loss_function=loss_fn,
         optimizer=optimizer,
-        world_size=args.world_size,
+        world_size=size,
         rank=rank,
         device=device)
 
