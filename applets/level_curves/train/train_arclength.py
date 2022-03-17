@@ -32,10 +32,6 @@ def convert_models_to_fp32(model):
             p.grad.data = p.grad.data.float()
 
 
-# def train(gpu, ngpus_per_node, args):
-#
-
-
 if __name__ == '__main__':
     warnings.filterwarnings('error')
     # torch.multiprocessing.set_start_method("spawn")
@@ -90,13 +86,13 @@ if __name__ == '__main__':
         print("os.environ['MASTER_PORT'] not defined!")
 
     if 'SLURM_LAUNCH_NODE_IPADDR' in os.environ:
+        os.environ['MASTER_ADDR'] = os.environ['SLURM_LAUNCH_NODE_IPADDR']
         print(f"os.environ['SLURM_LAUNCH_NODE_IPADDR']: {os.environ['SLURM_LAUNCH_NODE_IPADDR']}")
     else:
         print("os.environ['SLURM_LAUNCH_NODE_IPADDR'] not defined!")
 
     if 'SLURM_SUBMIT_HOST' in os.environ:
         print(f"os.environ['SLURM_SUBMIT_HOST']: {os.environ['SLURM_SUBMIT_HOST']}")
-        os.environ['MASTER_ADDR'] = os.environ['SLURM_SUBMIT_HOST']
     else:
         print("os.environ['SLURM_SUBMIT_HOST'] not defined!")
 
@@ -104,6 +100,8 @@ if __name__ == '__main__':
         print(f"os.environ['WORLD_SIZE']: {int(os.environ['WORLD_SIZE'])}")
     else:
         print("os.environ['WORLD_SIZE'] not defined!")
+
+    print(f"os.environ['MASTER_ADDR']: {os.environ['MASTER_ADDR']}")
 
     print('-------------------------------------------------------')
 
