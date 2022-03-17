@@ -63,7 +63,7 @@ if __name__ == '__main__':
     parser.add_argument('--world-size', default=-1, type=int)
     parser.add_argument('--rank', default=-1, type=int)
     parser.add_argument('--dist-url', default='env://', type=str)
-    parser.add_argument('--dist-backend', default='gloo')
+    parser.add_argument('--dist-backend', default='nccl')
     parser.add_argument('--local-rank', default=-1, type=int)
 
     args = parser.parse_args()
@@ -196,19 +196,19 @@ if __name__ == '__main__':
     optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
     loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count).cuda(args.gpu)
 
-    model_trainer = ModelTrainer(
-        model=model,
-        loss_functions=[loss_fn],
-        optimizer=optimizer,
-        world_size=args.world_size,
-        rank=args.rank,
-        gpu=args.gpu)
-
-    model_trainer.fit(
-        train_dataset=train_dataset,
-        validation_dataset=validation_dataset,
-        epochs=args.epochs,
-        train_batch_size=args.train_batch_size,
-        validation_batch_size=args.validation_batch_size,
-        validation_split=args.validation_split,
-        results_base_dir_path=results_base_dir_path)
+    # model_trainer = ModelTrainer(
+    #     model=model,
+    #     loss_functions=[loss_fn],
+    #     optimizer=optimizer,
+    #     world_size=args.world_size,
+    #     rank=args.rank,
+    #     gpu=args.gpu)
+    #
+    # model_trainer.fit(
+    #     train_dataset=train_dataset,
+    #     validation_dataset=validation_dataset,
+    #     epochs=args.epochs,
+    #     train_batch_size=args.train_batch_size,
+    #     validation_batch_size=args.validation_batch_size,
+    #     validation_split=args.validation_split,
+    #     results_base_dir_path=results_base_dir_path)
