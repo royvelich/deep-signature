@@ -19,12 +19,12 @@ from utils import settings
 
 
 class ModelTrainer:
-    def __init__(self, model, loss_functions, optimizer, world_size, rank, gpu):
-        self._loss_functions = loss_functions
+    def __init__(self, model, loss_function, optimizer, world_size, rank, device):
+        self._loss_function = loss_function
         self._optimizer = optimizer
         self._world_size = world_size
         self._rank = rank
-        self._gpu = gpu
+        self._device = device
         self._model = model
 
         # if torch.cuda.device_count() > 1:
@@ -68,14 +68,13 @@ class ModelTrainer:
         # validation_sampler = SubsetRandomSampler(validation_indices)
         # validation_sampler = SubsetRandomSampler(validation_indices)
 
-        train_data_loader = DataLoader(actual_train_dataset, batch_size=train_batch_size, sampler=train_sampler, drop_last=True, num_workers=0)
+        train_data_loader = DataLoader(actual_train_dataset, batch_size=train_batch_size, sampler=train_sampler, pin_memory=True, drop_last=True, num_workers=0)
         validation_data_loader = DataLoader(actual_validation_dataset, batch_size=validation_batch_size, sampler=validation_sampler, drop_last=False, num_workers=0)
 
         epochs_text = epochs if epochs is not None else 'infinite'
 
         if self._rank == 0:
             print('')
-            print(f'GPU: {self._gpu}')
             ModelTrainer._print_training_configuration('Epochs', epochs_text)
             ModelTrainer._print_training_configuration('Train Batch size', train_batch_size)
             ModelTrainer._print_training_configuration('Validation Batch size', validation_batch_size)
@@ -95,13 +94,11 @@ class ModelTrainer:
         Path(results_dir_path).mkdir(parents=True, exist_ok=True)
 
         if self._rank == 0:
-            print(f'GPU: {self._gpu}')
             with open(model_architecture_file_path, "w") as text_file:
                 text_file.write(str(self._model))
 
             with open(loss_functions_file_path, "w") as text_file:
-                for loss_function in self._loss_functions:
-                    text_file.write(str(loss_function))
+                text_file.write(str(self._loss_function))
 
             with open(optimizer_file_path, "w") as text_file:
                 text_file.write(str(self._optimizer))
@@ -191,7 +188,7 @@ class ModelTrainer:
     def _train_batch(self, batch_data):
         def closure():
             self._optimizer.zero_grad()
-            loss = self._evaluate_loss(batch_data=batch_data)
+            loss = self._evaluate_loss(batch_data=batch_data.to(self._device, non_blocking=True))
             loss.backward()
             return loss
 
@@ -205,17 +202,12 @@ class ModelTrainer:
         # return loss.item()
 
     def _validation_batch(self, batch_data):
-        loss = self._evaluate_loss(batch_data=batch_data)
+        loss = self._evaluate_loss(batch_data=batch_data.to(self._device, non_blocking=True))
         return loss.item()
 
     def _evaluate_loss(self, batch_data):
-        # input_data = [v for k, v in batch_data.items() if k.startswith('input')]
         output = self._model(batch_data)
-        # v = torch.tensor(0).cuda(self._gpu)
-        v = torch.tensor(0).cuda(self._gpu)
-        for loss_function in self._loss_functions:
-            v = v + loss_function(output=output)
-        return v
+        return self._loss_function(output=output)
 
     @staticmethod
     def _epoch(epoch_index, data_loader, process_batch_fn, rank):
