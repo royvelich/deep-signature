@@ -90,16 +90,52 @@ def get_latest_subdirectory(base_dir='.'):
     return os.path.normpath(max(subdirectories, key=os.path.getmtime))
 
 
-def get_train_dataset_dir(invariant, group):
-    return settings.dataset_dir_path_template % (invariant, group, 'train')
+def get_dataset_dir(data_dir, invariant, group, purpose):
+    return f'{data_dir}/datasets/{invariant}/{group}/{purpose}'
 
 
-def get_validation_dataset_dir(invariant, group):
-    return settings.dataset_dir_path_template % (invariant, group, 'validation')
+def get_train_dataset_dir(data_dir, invariant, group):
+    return get_dataset_dir(data_dir=data_dir, invariant=invariant, group=group, purpose='train')
 
 
-def get_results_dir(invariant, group):
-    return settings.results_dir_path_template % (invariant, group)
+def get_validation_dataset_dir(data_dir, invariant, group):
+    return get_dataset_dir(data_dir=data_dir, invariant=invariant, group=group, purpose='validation')
+
+
+def get_results_dir(data_dir, invariant, group):
+    return f'{data_dir}/results/{invariant}/{group}'
+
+
+def get_curves_dir(data_dir, purpose):
+    return f'{data_dir}/curves/{purpose}'
+
+
+def get_train_curves_dir(data_dir):
+    return get_curves_dir(data_dir=data_dir, purpose='train')
+
+
+def get_validation_curves_dir(data_dir):
+    return get_curves_dir(data_dir=data_dir, purpose='validation')
+
+
+def get_test_curves_dir(data_dir):
+    return get_curves_dir(data_dir=data_dir, purpose='test')
+
+
+def get_images_dir(data_dir, purpose):
+    return f'{data_dir}/images/{purpose}'
+
+
+def get_train_images_dir(data_dir):
+    return get_images_dir(data_dir=data_dir, purpose='train')
+
+
+def get_validation_images_dir(data_dir):
+    return get_images_dir(data_dir=data_dir, purpose='validation')
+
+
+def get_test_images_dir(data_dir):
+    return get_images_dir(data_dir=data_dir, purpose='test')
 
 
 def load_models(group, device=torch.device('cuda')):

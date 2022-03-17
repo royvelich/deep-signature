@@ -27,8 +27,7 @@ if __name__ == '__main__':
     parser.add_argument("--num-workers-train", default=settings.arclength_default_num_workers_train, type=int)
     parser.add_argument("--num-workers-validation", default=settings.arclength_default_num_workers_validation, type=int)
     parser.add_argument("--history-size", default=settings.arclength_default_history_size, type=int)
-    parser.add_argument("--level-curves-dir-path-train", default=settings.level_curves_dir_path_train, type=str)
-    parser.add_argument("--level-curves-dir-path-validation", default=settings.level_curves_dir_path_validation, type=str)
+    parser.add_argument("--data-dir", default=settings.data_dir, type=str)
 
     args = parser.parse_args()
     OnlineDataset = None
@@ -42,13 +41,15 @@ if __name__ == '__main__':
     elif args.group == 'affine':
         OnlineDataset = DeepSignatureAffineArclengthTupletsOnlineDataset
 
-    train_dataset_dir_path = common_utils.get_train_dataset_dir(invariant='arclength', group=args.group)
-    validation_dataset_dir_path = common_utils.get_validation_dataset_dir(invariant='arclength', group=args.group)
-    results_base_dir_path = common_utils.get_results_dir(invariant='arclength', group=args.group)
+    train_dataset_dir_path = common_utils.get_train_dataset_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
+    validation_dataset_dir_path = common_utils.get_validation_dataset_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
+    results_base_dir_path = common_utils.get_results_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
+    train_curves_dir_path = common_utils.get_train_curves_dir(data_dir=args.data_dir)
+    validation_curves_dir_path = common_utils.get_validation_curves_dir(data_dir=args.data_dir)
 
     train_dataset = OnlineDataset(
         dataset_size=args.train_dataset_size,
-        dir_path=args.level_curves_dir_path_train,
+        dir_path=train_curves_dir_path,
         multimodality=args.multimodality,
         replace=True,
         buffer_size=args.train_buffer_size,
@@ -61,7 +62,7 @@ if __name__ == '__main__':
 
     validation_dataset = OnlineDataset(
         dataset_size=args.validation_dataset_size,
-        dir_path=args.level_curves_dir_path_validation,
+        dir_path=validation_curves_dir_path,
         multimodality=args.multimodality,
         replace=False,
         buffer_size=args.validation_buffer_size,
