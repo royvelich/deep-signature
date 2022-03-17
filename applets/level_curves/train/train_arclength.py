@@ -68,41 +68,41 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    slurm_props = ['SLURM_GPUS_PER_NODE',
+                   'SLURM_GPUS_ON_NODE',
+                   'SLURM_GPUS',
+                   'SLURM_JOB_CPUS_PER_NODE',
+                   'SLURM_JOB_NAME',
+                   'SLURM_JOBID',
+                   'SLURM_NODEID',
+                   'SLURM_PROCID',
+                   'SLURM_CPUS_PER_TASK',
+                   'SLURM_TASK_PID',
+                   'SLURM_NODELIST',
+                   'SLURM_MEM_PER_NODE',
+                   'SLURM_JOB_PARTITION',
+                   'SLURM_JOB_NUM_NODES',
+                   'SLURM_JOB_ACCOUNT',
+                   'SLURM_GPUS_PER_TASK',
+                   'SLURM_MEM_PER_CPU',
+                   'SLURM_MEM_PER_GPU',
+                   'SLURM_NODE_ALIASES',
+                   'SLURM_NTASKS',
+                   'SLURM_NTASKS_PER_CORE',
+                   'SLURM_NTASKS_PER_GPU',
+                   'SLURM_NTASKS_PER_NODE',
+                   'MASTER_ADDR',
+                   'MASTER_PORT']
+
     print('START TRAINING:')
     print('-------------------------------------------------------')
-    if 'SLURM_PROCID' in os.environ:
-        print(f"os.environ['SLURM_PROCID']: {os.environ['SLURM_PROCID']}")
-    else:
-        print("os.environ['SLURM_PROCID'] not defined!")
+    for slurm_prop in slurm_props:
+        if slurm_prop in os.environ:
+            print(f"os.environ['{slurm_prop}']: {os.environ[slurm_prop]}")
+        else:
+            print(f"os.environ['{slurm_prop}'] not defined!")
 
-    if 'MASTER_ADDR' in os.environ:
-        print(f"os.environ['MASTER_ADDR']: {os.environ['MASTER_ADDR']}")
-    else:
-        print("os.environ['MASTER_ADDR'] not defined!")
-
-    if 'MASTER_PORT' in os.environ:
-        print(f"os.environ['MASTER_PORT']: {os.environ['MASTER_PORT']}")
-    else:
-        print("os.environ['MASTER_PORT'] not defined!")
-
-    if 'SLURM_LAUNCH_NODE_IPADDR' in os.environ:
-        os.environ['MASTER_ADDR'] = os.environ['SLURM_LAUNCH_NODE_IPADDR']
-        print(f"os.environ['SLURM_LAUNCH_NODE_IPADDR']: {os.environ['SLURM_LAUNCH_NODE_IPADDR']}")
-    else:
-        print("os.environ['SLURM_LAUNCH_NODE_IPADDR'] not defined!")
-
-    if 'SLURM_SUBMIT_HOST' in os.environ:
-        print(f"os.environ['SLURM_SUBMIT_HOST']: {os.environ['SLURM_SUBMIT_HOST']}")
-    else:
-        print("os.environ['SLURM_SUBMIT_HOST'] not defined!")
-
-    if 'WORLD_SIZE' in os.environ:
-        print(f"os.environ['WORLD_SIZE']: {int(os.environ['WORLD_SIZE'])}")
-    else:
-        print("os.environ['WORLD_SIZE'] not defined!")
-
-    print(f"os.environ['MASTER_ADDR']: {os.environ['MASTER_ADDR']}")
-
+    os.environ['MASTER_ADDR'] = os.environ['SLURM_LAUNCH_NODE_IPADDR']
     print('-------------------------------------------------------')
 
     # args.distributed = args.world_size > 1
