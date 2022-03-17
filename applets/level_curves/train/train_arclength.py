@@ -105,114 +105,112 @@ if __name__ == '__main__':
 
     print('-------------------------------------------------------')
 
-    args.distributed = args.world_size > 1
-    ngpus_per_node = torch.cuda.device_count()
-
-    # if args.distributed:
-    if args.local_rank != -1: # for torch.distributed.launch
-        args.rank = args.local_rank
-        args.gpu = args.local_rank
-    elif 'SLURM_PROCID' in os.environ: # for slurm scheduler
-        args.rank = int(os.environ['SLURM_PROCID'])
-        args.gpu = args.rank % torch.cuda.device_count()
-    dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
-    # dist.init_process_group(backend=args.dist_backend, init_method='tcp://localhost:12000', world_size=args.world_size, rank=args.rank)
-
-    # suppress printing if not on master gpu
-    # if args.rank != 0:
-    #     def print_pass(*args):
-    #         pass
-    #     builtins.print = print_pass
-
-    print(f'args.rank: {args.rank}')
-    print(f'args.gpu: {args.gpu}')
-    print(f'torch.cuda.device_count(): {torch.cuda.device_count()}')
-
-    fix_random_seeds(args.rank)
-
-    OnlineDataset = None
-    if args.group == 'euclidean':
-        OnlineDataset = DeepSignatureEuclideanArclengthTupletsOnlineDataset
-    elif args.group == 'similarity':
-        OnlineDataset = DeepSignatureSimilarityArclengthTupletsOnlineDataset
-    elif args.group == 'equiaffine':
-        OnlineDataset = DeepSignatureEquiaffineArclengthTupletsOnlineDataset
-    elif args.group == 'affine':
-        OnlineDataset = DeepSignatureAffineArclengthTupletsOnlineDataset
-
-    train_dataset_dir_path = common_utils.get_train_dataset_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
-    validation_dataset_dir_path = common_utils.get_validation_dataset_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
-    results_base_dir_path = common_utils.get_results_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
-    train_curves_dir_path = common_utils.get_train_curves_dir(data_dir=args.data_dir)
-    validation_curves_dir_path = common_utils.get_validation_curves_dir(data_dir=args.data_dir)
-
-    train_dataset = OnlineDataset(
-        dataset_size=args.train_dataset_size,
-        dir_path=train_curves_dir_path,
-        multimodality=args.multimodality,
-        replace=True,
-        buffer_size=args.train_buffer_size,
-        num_workers=args.num_workers_train,
-        gpu=0,
-        supporting_points_count=args.supporting_points_count,
-        min_offset=args.min_offset,
-        max_offset=args.max_offset,
-        anchor_points_count=args.anchor_points_count)
-
-    validation_dataset = OnlineDataset(
-        dataset_size=args.validation_dataset_size,
-        dir_path=validation_curves_dir_path,
-        multimodality=args.multimodality,
-        replace=False,
-        buffer_size=args.validation_buffer_size,
-        num_workers=args.num_workers_validation,
-        gpu=0,
-        supporting_points_count=args.supporting_points_count,
-        min_offset=args.min_offset,
-        max_offset=args.max_offset,
-        anchor_points_count=args.anchor_points_count)
-
-    validation_dataset.load(dataset_dir_path=validation_dataset_dir_path)
-    train_dataset.load(dataset_dir_path=train_dataset_dir_path)
-
-    # validation_dataset.start()
-    # validation_dataset.stop()
-    # train_dataset.start()
-
-    model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count)
-
-    torch.cuda.set_device(args.gpu)
-    model.cuda(args.gpu)
-    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
-    model_without_ddp = model.module
-
-    print('')
-    print(model)
-
-    if args.continue_training:
-        latest_subdir = common_utils.get_latest_subdirectory(results_base_dir_path)
-        results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-        model.load_state_dict(torch.load(results['model_file_path'], map_location=torch.device('cuda')))
-
-    optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
-    loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count).cuda(args.gpu)
-
-    model_trainer = ModelTrainer(
-        model=model,
-        loss_functions=[loss_fn],
-        optimizer=optimizer,
-        world_size=args.world_size,
-        rank=args.rank,
-        gpu=args.gpu)
-
-    model_trainer.fit(
-        train_dataset=train_dataset,
-        validation_dataset=validation_dataset,
-        epochs=args.epochs,
-        train_batch_size=args.train_batch_size,
-        validation_batch_size=args.validation_batch_size,
-        validation_split=args.validation_split,
-        results_base_dir_path=results_base_dir_path)
-
-
+    # args.distributed = args.world_size > 1
+    # ngpus_per_node = torch.cuda.device_count()
+    #
+    # # if args.distributed:
+    # if args.local_rank != -1: # for torch.distributed.launch
+    #     args.rank = args.local_rank
+    #     args.gpu = args.local_rank
+    # elif 'SLURM_PROCID' in os.environ: # for slurm scheduler
+    #     args.rank = int(os.environ['SLURM_PROCID'])
+    #     args.gpu = args.rank % torch.cuda.device_count()
+    # dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url, world_size=args.world_size, rank=args.rank)
+    # # dist.init_process_group(backend=args.dist_backend, init_method='tcp://localhost:12000', world_size=args.world_size, rank=args.rank)
+    #
+    # # suppress printing if not on master gpu
+    # # if args.rank != 0:
+    # #     def print_pass(*args):
+    # #         pass
+    # #     builtins.print = print_pass
+    #
+    # print(f'args.rank: {args.rank}')
+    # print(f'args.gpu: {args.gpu}')
+    # print(f'torch.cuda.device_count(): {torch.cuda.device_count()}')
+    #
+    # fix_random_seeds(args.rank)
+    #
+    # OnlineDataset = None
+    # if args.group == 'euclidean':
+    #     OnlineDataset = DeepSignatureEuclideanArclengthTupletsOnlineDataset
+    # elif args.group == 'similarity':
+    #     OnlineDataset = DeepSignatureSimilarityArclengthTupletsOnlineDataset
+    # elif args.group == 'equiaffine':
+    #     OnlineDataset = DeepSignatureEquiaffineArclengthTupletsOnlineDataset
+    # elif args.group == 'affine':
+    #     OnlineDataset = DeepSignatureAffineArclengthTupletsOnlineDataset
+    #
+    # train_dataset_dir_path = common_utils.get_train_dataset_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
+    # validation_dataset_dir_path = common_utils.get_validation_dataset_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
+    # results_base_dir_path = common_utils.get_results_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
+    # train_curves_dir_path = common_utils.get_train_curves_dir(data_dir=args.data_dir)
+    # validation_curves_dir_path = common_utils.get_validation_curves_dir(data_dir=args.data_dir)
+    #
+    # train_dataset = OnlineDataset(
+    #     dataset_size=args.train_dataset_size,
+    #     dir_path=train_curves_dir_path,
+    #     multimodality=args.multimodality,
+    #     replace=True,
+    #     buffer_size=args.train_buffer_size,
+    #     num_workers=args.num_workers_train,
+    #     gpu=0,
+    #     supporting_points_count=args.supporting_points_count,
+    #     min_offset=args.min_offset,
+    #     max_offset=args.max_offset,
+    #     anchor_points_count=args.anchor_points_count)
+    #
+    # validation_dataset = OnlineDataset(
+    #     dataset_size=args.validation_dataset_size,
+    #     dir_path=validation_curves_dir_path,
+    #     multimodality=args.multimodality,
+    #     replace=False,
+    #     buffer_size=args.validation_buffer_size,
+    #     num_workers=args.num_workers_validation,
+    #     gpu=0,
+    #     supporting_points_count=args.supporting_points_count,
+    #     min_offset=args.min_offset,
+    #     max_offset=args.max_offset,
+    #     anchor_points_count=args.anchor_points_count)
+    #
+    # validation_dataset.load(dataset_dir_path=validation_dataset_dir_path)
+    # train_dataset.load(dataset_dir_path=train_dataset_dir_path)
+    #
+    # # validation_dataset.start()
+    # # validation_dataset.stop()
+    # # train_dataset.start()
+    #
+    # model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count)
+    #
+    # torch.cuda.set_device(args.gpu)
+    # model.cuda(args.gpu)
+    # model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    # model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
+    # model_without_ddp = model.module
+    #
+    # print('')
+    # print(model)
+    #
+    # if args.continue_training:
+    #     latest_subdir = common_utils.get_latest_subdirectory(results_base_dir_path)
+    #     results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+    #     model.load_state_dict(torch.load(results['model_file_path'], map_location=torch.device('cuda')))
+    #
+    # optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
+    # loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count).cuda(args.gpu)
+    #
+    # model_trainer = ModelTrainer(
+    #     model=model,
+    #     loss_functions=[loss_fn],
+    #     optimizer=optimizer,
+    #     world_size=args.world_size,
+    #     rank=args.rank,
+    #     gpu=args.gpu)
+    #
+    # model_trainer.fit(
+    #     train_dataset=train_dataset,
+    #     validation_dataset=validation_dataset,
+    #     epochs=args.epochs,
+    #     train_batch_size=args.train_batch_size,
+    #     validation_batch_size=args.validation_batch_size,
+    #     validation_split=args.validation_split,
+    #     results_base_dir_path=results_base_dir_path)
