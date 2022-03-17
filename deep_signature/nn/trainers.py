@@ -57,13 +57,14 @@ class ModelTrainer:
             actual_validation_dataset = validation_dataset
 
         # if shuffle_dataset is True:
-        train_sampler = SubsetRandomSampler(train_indices)
+        train_sampler = DistributedSampler(actual_train_dataset, shuffle=True, num_replicas=self._world_size, rank=self._rank, seed=30)
+        # train_sampler = SubsetRandomSampler(train_indices)
         validation_sampler = SubsetRandomSampler(validation_indices)
         # else:
         # train_sampler = DistributedSampler(dataset=actual_train_dataset, shuffle=True)
         # validation_sampler = SequentialSampler(validation_indices)
 
-        # train_sampler = DistributedSampler(actual_train_dataset, shuffle=True, num_replicas=self._world_size, rank=self._rank, seed=30)
+
         # validation_sampler = SubsetRandomSampler(validation_indices)
         # validation_sampler = SubsetRandomSampler(validation_indices)
 
