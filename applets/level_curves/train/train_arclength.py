@@ -218,7 +218,7 @@ if __name__ == '__main__':
     model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count)
     model.cuda(device)
 
-    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    # model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
 
     if rank == 0:
