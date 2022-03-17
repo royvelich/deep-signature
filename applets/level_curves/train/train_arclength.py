@@ -74,28 +74,37 @@ if __name__ == '__main__':
 
     print('START TRAINING:')
     print('-------------------------------------------------------')
-
-    if "SLURM_PROCID" in os.environ:
-        print(f"SLURM_PROCID: {os.environ['SLURM_PROCID']}")
-
-    if "WORLD_SIZE" in os.environ:
-        print(f"WORLD_SIZE: {os.environ['WORLD_SIZE']}")
-
-    if "MASTER_ADDR" in os.environ:
-        print(f"MASTER_ADDR: {os.environ['MASTER_ADDR']}")
+    if 'SLURM_PROCID' in os.environ:
+        print(f"os.environ['SLURM_PROCID']: {os.environ['SLURM_PROCID']}")
     else:
-        print(f"os.environ['SLURM_SUBMIT_HOST']: {os.environ['SLURM_SUBMIT_HOST']}")
-        print(f"os.environ['SLURM_LAUNCH_NODE_IPADDR']: {os.environ['SLURM_LAUNCH_NODE_IPADDR']}")
-        os.environ['MASTER_ADDR'] = os.environ['SLURM_SUBMIT_HOST']
+        print("os.environ['SLURM_PROCID'] not defined!")
+
+    if 'MASTER_ADDR' in os.environ:
         print(f"os.environ['MASTER_ADDR']: {os.environ['MASTER_ADDR']}")
+    else:
+        print("os.environ['MASTER_ADDR'] not defined!")
 
-    if "MASTER_PORT" in os.environ:
-        print(f"MASTER_PORT: {os.environ['MASTER_PORT']}")
+    if 'MASTER_PORT' in os.environ:
+        print(f"os.environ['MASTER_PORT']: {os.environ['MASTER_PORT']}")
+    else:
+        print("os.environ['MASTER_PORT'] not defined!")
 
-    if "WORLD_SIZE" in os.environ:
-        args.world_size = int(os.environ["WORLD_SIZE"])
-        print(f"args.world_size: {args.world_size}")
-        
+    if 'SLURM_LAUNCH_NODE_IPADDR' in os.environ:
+        print(f"os.environ['SLURM_LAUNCH_NODE_IPADDR']: {os.environ['SLURM_LAUNCH_NODE_IPADDR']}")
+    else:
+        print("os.environ['SLURM_LAUNCH_NODE_IPADDR'] not defined!")
+
+    if 'SLURM_SUBMIT_HOST' in os.environ:
+        print(f"os.environ['SLURM_SUBMIT_HOST']: {os.environ['SLURM_SUBMIT_HOST']}")
+        os.environ['MASTER_ADDR'] = os.environ['SLURM_SUBMIT_HOST']
+    else:
+        print("os.environ['SLURM_SUBMIT_HOST'] not defined!")
+
+    if 'WORLD_SIZE' in os.environ:
+        print(f"os.environ['WORLD_SIZE']: {int(os.environ['WORLD_SIZE'])}")
+    else:
+        print("os.environ['WORLD_SIZE'] not defined!")
+
     print('-------------------------------------------------------')
 
     args.distributed = args.world_size > 1

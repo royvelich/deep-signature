@@ -181,12 +181,12 @@ class ModelTrainer:
 
     def _train_epoch(self, epoch_index, data_loader):
         self._model.train()
-        return ModelTrainer._epoch(epoch_index=epoch_index, data_loader=data_loader, process_batch_fn=self._train_batch)
+        return ModelTrainer._epoch(epoch_index=epoch_index, data_loader=data_loader, process_batch_fn=self._train_batch, rank=self._rank)
 
     def _validation_epoch(self, epoch_index, data_loader):
         self._model.eval()
         with torch.no_grad():
-            return ModelTrainer._epoch(epoch_index=epoch_index, data_loader=data_loader, process_batch_fn=self._validation_batch)
+            return ModelTrainer._epoch(epoch_index=epoch_index, data_loader=data_loader, process_batch_fn=self._validation_batch, rank=self._rank)
 
     def _train_batch(self, batch_data):
         def closure():
@@ -218,30 +218,27 @@ class ModelTrainer:
         return v
 
     @staticmethod
-    def _epoch(epoch_index, data_loader, process_batch_fn):
+    def _epoch(epoch_index, data_loader, process_batch_fn, rank):
         loss_array = numpy.array([])
         start = timer()
-        # print('START TRAIN EPOCH')
         for batch_index, batch_data in enumerate(data_loader, 0):
-            # print(f'batch_index: {batch_index}')
             batch_loss = process_batch_fn(batch_data)
             loss_array = numpy.append(loss_array, [batch_loss])
             end = timer()
-            ModelTrainer._print_batch_loss(
-                epoch_index=epoch_index,
-                batch_index=batch_index,
-                batch_loss=batch_loss,
-                average_batch_loss=numpy.mean(loss_array),
-                fill=' ',
-                align='<',
-                index_width=8,
-                loss_width=25,
-                batch_count=len(data_loader),
-                batch_duration=end-start)
+            if rank == 0:
+                ModelTrainer._print_batch_loss(
+                    epoch_index=epoch_index,
+                    batch_index=batch_index,
+                    batch_loss=batch_loss,
+                    average_batch_loss=numpy.mean(loss_array),
+                    fill=' ',
+                    align='<',
+                    index_width=8,
+                    loss_width=25,
+                    batch_count=len(data_loader),
+                    batch_duration=end-start)
             start = timer()
-        # print('END TRAIN EPOCH')
-        # print(f'len(data_loader): {len(data_loader)}')
-        # print(f'len(data_loader.dataset): {len(data_loader.dataset)}')
+
         return loss_array
 
     @staticmethod
