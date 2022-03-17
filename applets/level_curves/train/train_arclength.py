@@ -105,27 +105,29 @@ if __name__ == '__main__':
                    'MASTER_ADDR',
                    'MASTER_PORT']
 
-    print('START TRAINING:')
-    print('-------------------------------------------------------')
+    print('---------------------------------------------------------------')
+    print(f"SLURM PROPERTIES, SLURM_PROCID: {os.environ['SLURM_PROCID']}:")
+    print('---------------------------------------------------------------')
     for slurm_prop in slurm_props:
         if slurm_prop in os.environ:
             print(f"os.environ['{slurm_prop}']: {os.environ[slurm_prop]}")
         else:
             print(f"os.environ['{slurm_prop}'] not defined!")
 
-    os.environ['MASTER_ADDR'] = os.environ['SLURM_LAUNCH_NODE_IPADDR']
+    if 'SLURM_LAUNCH_NODE_IPADDR' in os.environ:
+        os.environ['MASTER_ADDR'] = os.environ['SLURM_LAUNCH_NODE_IPADDR']
+        print(f"os.environ['MASTER_ADDR']: {os.environ['MASTER_ADDR']}")
+
+    print('---------------------------------------------------------------')
+    print(f"DIST PROPERTIES, SLURM_PROCID: {os.environ['SLURM_PROCID']}:")
+    print('---------------------------------------------------------------')
     print(f'args.rank: {args.rank}')
     print(f'args.gpu: {args.gpu}')
     print(f'torch.cuda.device_count(): {torch.cuda.device_count()}')
-    print('-------------------------------------------------------')
-
-    # suppress printing if not on master gpu
-    # if args.rank != 0:
-    #     def print_pass(*args):
-    #         pass
-    #     builtins.print = print_pass
-
-    # fix_random_seeds(args.rank)
+    print(f'dist.get_backend: {dist.get_backend()}')
+    print(f'dist.get_rank: {dist.get_rank()}')
+    print(f'dist.world_size: {dist.get_world_size()}')
+    print('---------------------------------------------------------------')
 
     OnlineDataset = None
     if args.group == 'euclidean':
@@ -150,7 +152,7 @@ if __name__ == '__main__':
         replace=True,
         buffer_size=args.train_buffer_size,
         num_workers=args.num_workers_train,
-        gpu=0,
+        gpu=args.gpu,
         supporting_points_count=args.supporting_points_count,
         min_offset=args.min_offset,
         max_offset=args.max_offset,
@@ -163,7 +165,7 @@ if __name__ == '__main__':
         replace=False,
         buffer_size=args.validation_buffer_size,
         num_workers=args.num_workers_validation,
-        gpu=0,
+        gpu=args.gpu,
         supporting_points_count=args.supporting_points_count,
         min_offset=args.min_offset,
         max_offset=args.max_offset,
@@ -196,19 +198,21 @@ if __name__ == '__main__':
     optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
     loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count).cuda(args.gpu)
 
-    # model_trainer = ModelTrainer(
-    #     model=model,
-    #     loss_functions=[loss_fn],
-    #     optimizer=optimizer,
-    #     world_size=args.world_size,
-    #     rank=args.rank,
-    #     gpu=args.gpu)
-    #
-    # model_trainer.fit(
-    #     train_dataset=train_dataset,
-    #     validation_dataset=validation_dataset,
-    #     epochs=args.epochs,
-    #     train_batch_size=args.train_batch_size,
-    #     validation_batch_size=args.validation_batch_size,
-    #     validation_split=args.validation_split,
-    #     results_base_dir_path=results_base_dir_path)
+    dist.barrier()
+
+    model_trainer = ModelTrainer(
+        model=model,
+        loss_functions=[loss_fn],
+        optimizer=optimizer,
+        world_size=args.world_size,
+        rank=args.rank,
+        gpu=args.gpu)
+
+    model_trainer.fit(
+        train_dataset=train_dataset,
+        validation_dataset=validation_dataset,
+        epochs=args.epochs,
+        train_batch_size=args.train_batch_size,
+        validation_batch_size=args.validation_batch_size,
+        validation_split=args.validation_split,
+        results_base_dir_path=results_base_dir_path)
