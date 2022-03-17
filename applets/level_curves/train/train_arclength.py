@@ -218,14 +218,15 @@ if __name__ == '__main__':
     model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count)
     model.cuda(device)
 
-    # model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
 
     if rank == 0:
         print('')
         print(model)
 
-    optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
+    # optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
     loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count)
 
     model_trainer = ModelTrainer(
