@@ -72,6 +72,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    print('START TRAINING:')
+    print('-------------------------------------------------------')
+
     if "SLURM_PROCID" in os.environ:
         print(f"SLURM_PROCID: {os.environ['SLURM_PROCID']}")
 
@@ -81,13 +84,19 @@ if __name__ == '__main__':
     if "MASTER_ADDR" in os.environ:
         print(f"MASTER_ADDR: {os.environ['MASTER_ADDR']}")
     else:
-        os.environ['MASTER_ADDR'] = os.environ['SLURM_LAUNCH_NODE_IPADDR']
+        print(f"os.environ['SLURM_SUBMIT_HOST']: {os.environ['SLURM_SUBMIT_HOST']}")
+        print(f"os.environ['SLURM_LAUNCH_NODE_IPADDR']: {os.environ['SLURM_LAUNCH_NODE_IPADDR']}")
+        os.environ['MASTER_ADDR'] = os.environ['SLURM_SUBMIT_HOST']
+        print(f"os.environ['MASTER_ADDR']: {os.environ['MASTER_ADDR']}")
 
     if "MASTER_PORT" in os.environ:
         print(f"MASTER_PORT: {os.environ['MASTER_PORT']}")
 
     if "WORLD_SIZE" in os.environ:
         args.world_size = int(os.environ["WORLD_SIZE"])
+        print(f"args.world_size: {args.world_size}")
+        
+    print('-------------------------------------------------------')
 
     args.distributed = args.world_size > 1
     ngpus_per_node = torch.cuda.device_count()
