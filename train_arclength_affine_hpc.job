@@ -4,8 +4,8 @@
 ### e.g. request 4 nodes with 1 gpu each, totally 4 gpus (WORLD_SIZE==4)
 ### Note: --gres=gpu:x should equal to ntasks-per-node
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=2
-#SBATCH --gres=gpu:2
+#SBATCH --ntasks-per-node=4
+#SBATCH --gres=gpu:4
 #SBATCH --cpus-per-task=10
 #SBATCH --mem=64gb
 #SBATCH --output=%x-%j.out
@@ -24,4 +24,4 @@ echo "MASTER_PORT="${MASTER_PORT}
 echo "WORLD_SIZE="${WORLD_SIZE}
 
 ### the command to run
-srun --gpus=2 --ntasks=2 --container-image=$HOME/nvidia+pytorch+22.02-py3.sqsh --container-mounts $HOME/deep-signature-data:/deep-signature-data,$HOME/deep-signature:/deep-signature /deep-signature/train_arclength_affine.bash
+srun --gpus=4 --ntasks=4 --container-image=$HOME/nvidia+pytorch+22.02-py3.sqsh --container-mounts $HOME/deep-signature-data:/deep-signature-data,$HOME/deep-signature:/deep-signature /deep-signature/train_arclength_affine.bash
