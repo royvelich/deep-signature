@@ -156,7 +156,7 @@ if __name__ == '__main__':
         gpu_ids = [0]
 
     if 'SLURM_SUBMIT_HOST' in os.environ:
-        os.environ['MASTER_ADDR'] = os.environ['SLURM_LAUNCH_NODE_IPADDR']
+        os.environ['MASTER_ADDR'] = os.environ['SLURM_SUBMIT_HOST']
         os.environ['MASTER_PORT'] = str(12345 + int(min(gpu_ids)))
 
     print(f'rank: {rank}')
@@ -229,8 +229,6 @@ if __name__ == '__main__':
     # optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
     loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count)
-
-    dist.barrier()
 
     model_trainer = ModelTrainer(
         model=model,
