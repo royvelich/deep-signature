@@ -224,21 +224,21 @@ class ModelTrainer:
         start = timer()
         for batch_index, batch_data in enumerate(data_loader, 0):
             batch_loss = process_batch_fn(batch_data)
-            # loss_array = numpy.append(loss_array, [batch_loss])
-            # end = timer()
+            loss_array = numpy.append(loss_array, [batch_loss])
+            end = timer()
             # if rank == 0:
-            #     ModelTrainer._print_batch_loss(
-            #         epoch_index=epoch_index,
-            #         batch_index=batch_index,
-            #         batch_loss=batch_loss,
-            #         average_batch_loss=numpy.mean(loss_array),
-            #         fill=' ',
-            #         align='<',
-            #         index_width=8,
-            #         loss_width=25,
-            #         batch_count=len(data_loader),
-            #         batch_duration=end-start)
-            # start = timer()
+            ModelTrainer._print_batch_loss(
+                epoch_index=epoch_index,
+                batch_index=batch_index,
+                batch_loss=batch_loss,
+                average_batch_loss=numpy.mean(loss_array),
+                fill=' ',
+                align='<',
+                index_width=8,
+                loss_width=25,
+                batch_count=len(data_loader),
+                batch_duration=end-start)
+            start = timer()
 
         return loss_array
 
