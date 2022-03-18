@@ -78,15 +78,15 @@ class ModelTrainer:
 
         epochs_text = epochs if epochs is not None else 'infinite'
 
-        if self._rank == 0:
-            print('')
-            ModelTrainer._print_training_configuration('Epochs', epochs_text)
-            ModelTrainer._print_training_configuration('Train Batch size', train_batch_size)
-            ModelTrainer._print_training_configuration('Validation Batch size', validation_batch_size)
-            ModelTrainer._print_training_configuration('Training dataset length', len(train_indices))
-            ModelTrainer._print_training_configuration('Training batches per epoch', int(numpy.ceil(len(train_indices) / train_batch_size)))
-            ModelTrainer._print_training_configuration('Validation dataset length', len(validation_indices))
-            ModelTrainer._print_training_configuration('Validation batches per epoch', int(numpy.ceil(len(validation_indices) / validation_batch_size)))
+        # if self._rank == 0:
+        print('')
+        ModelTrainer._print_training_configuration('Epochs', epochs_text)
+        ModelTrainer._print_training_configuration('Train Batch size', train_batch_size)
+        ModelTrainer._print_training_configuration('Validation Batch size', validation_batch_size)
+        ModelTrainer._print_training_configuration('Training dataset length', len(train_indices))
+        ModelTrainer._print_training_configuration('Training batches per epoch', int(numpy.ceil(len(train_indices) / train_batch_size)))
+        ModelTrainer._print_training_configuration('Validation dataset length', len(validation_indices))
+        ModelTrainer._print_training_configuration('Validation batches per epoch', int(numpy.ceil(len(validation_indices) / validation_batch_size)))
 
         results_dir_path = os.path.normpath(os.path.join(results_base_dir_path, datetime.now().strftime('%Y-%m-%d-%H-%M-%S')))
         model_file_path = os.path.normpath(os.path.join(results_dir_path, 'model.pt'))
@@ -98,41 +98,41 @@ class ModelTrainer:
         settings_data_file_path = os.path.normpath(os.path.join(results_dir_path, 'settings.txt'))
         Path(results_dir_path).mkdir(parents=True, exist_ok=True)
 
-        if self._rank == 0:
-            with open(model_architecture_file_path, "w") as text_file:
-                text_file.write(str(self._model))
+        # if self._rank == 0:
+        with open(model_architecture_file_path, "w") as text_file:
+            text_file.write(str(self._model))
 
-            with open(loss_functions_file_path, "w") as text_file:
-                text_file.write(str(self._loss_function))
+        with open(loss_functions_file_path, "w") as text_file:
+            text_file.write(str(self._loss_function))
 
-            with open(optimizer_file_path, "w") as text_file:
-                text_file.write(str(self._optimizer))
+        with open(optimizer_file_path, "w") as text_file:
+            text_file.write(str(self._optimizer))
 
-            with open(trainer_data_file_path, "w") as text_file:
-                text_file.write(f'train_batch_size: {train_batch_size}\n')
-                text_file.write(f'validation_batch_size: {validation_batch_size}\n')
-                text_file.write(f'epochs: {epochs_text}\n')
-                text_file.write(f'results_dir_path: {results_dir_path}\n')
-                if validation_split is not None:
-                    text_file.write(f'validation_split: {validation_split}\n')
-                    text_file.write(f'dataset_size: {dataset_size}\n')
-                else:
-                    text_file.write(f'train_dataset_size: {train_dataset_size}\n')
-                    text_file.write(f'validation_dataset_size: {validation_dataset_size}\n')
+        with open(trainer_data_file_path, "w") as text_file:
+            text_file.write(f'train_batch_size: {train_batch_size}\n')
+            text_file.write(f'validation_batch_size: {validation_batch_size}\n')
+            text_file.write(f'epochs: {epochs_text}\n')
+            text_file.write(f'results_dir_path: {results_dir_path}\n')
+            if validation_split is not None:
+                text_file.write(f'validation_split: {validation_split}\n')
+                text_file.write(f'dataset_size: {dataset_size}\n')
+            else:
+                text_file.write(f'train_dataset_size: {train_dataset_size}\n')
+                text_file.write(f'validation_dataset_size: {validation_dataset_size}\n')
 
-            settings_dict = {key: value for key, value in settings.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
-            with open(settings_data_file_path, "w") as text_file:
-                for key, value in settings_dict.items():
-                    text_file.write(f'{key}: {value}\n')
+        settings_dict = {key: value for key, value in settings.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
+        with open(settings_data_file_path, "w") as text_file:
+            for key, value in settings_dict.items():
+                text_file.write(f'{key}: {value}\n')
 
-            print('')
-            print(f' - Start Training:')
+        print('')
+        print(f' - [Rank {self._rank}] Start Training:')
 
         results = None
         best_validation_average_loss = None
         train_loss_array = numpy.array([])
         validation_loss_array = numpy.array([])
-        for epoch_index in range(50):
+        for epoch_index in itertools.count():
             train_sampler.set_epoch(epoch_index)
             # if self._rank == 0:
             print(f'    - [Rank {self._rank}] Training Epoch #{epoch_index+1}:')
@@ -190,20 +190,20 @@ class ModelTrainer:
             return ModelTrainer._epoch(epoch_index=epoch_index, data_loader=data_loader, process_batch_fn=self._validation_batch, rank=self._rank)
 
     def _train_batch(self, batch_data):
-        def closure():
-            self._optimizer.zero_grad()
-            loss = self._evaluate_loss(batch_data=batch_data.to(self._device, non_blocking=True))
-            loss.backward()
-            return loss
+        # def closure():
+        #     self._optimizer.zero_grad()
+        #     loss = self._evaluate_loss(batch_data=batch_data.to(self._device, non_blocking=True))
+        #     loss.backward()
+        #     return loss
+        #
+        # final_loss = self._optimizer.step(closure)
+        # return final_loss.item()
 
-        final_loss = self._optimizer.step(closure)
-        return final_loss.item()
-
-        # self._optimizer.zero_grad()
-        # loss = self._evaluate_loss(batch_data=batch_data)
-        # loss.backward()
-        # self._optimizer.step()
-        # return loss.item()
+        self._optimizer.zero_grad()
+        loss = self._evaluate_loss(batch_data=batch_data.to(self._device, non_blocking=True))
+        loss.backward()
+        self._optimizer.step()
+        return loss.item()
 
     def _validation_batch(self, batch_data):
         loss = self._evaluate_loss(batch_data=batch_data.to(self._device, non_blocking=True))
