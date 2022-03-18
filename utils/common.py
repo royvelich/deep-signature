@@ -163,3 +163,18 @@ def load_models(group, device=torch.device('cuda')):
     arclength_model.eval()
 
     return curvature_model, arclength_model
+
+
+def get_arclength_default_min_offset(supporting_points_count):
+    return supporting_points_count - 1
+
+
+def get_arclength_default_max_offset(supporting_points_count):
+    return 2 * get_arclength_default_min_offset(supporting_points_count=supporting_points_count)
+
+
+def save_object_dict(obj, file_path):
+    dict = {key: value for key, value in obj.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
+    with open(file_path, "w") as text_file:
+        for key, value in dict.items():
+            text_file.write(f'{key}: {value}\n')

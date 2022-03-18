@@ -5,6 +5,7 @@ import random
 import queue
 from multiprocessing import Process, Queue, cpu_count
 from pathlib import Path
+from utils import common as common_utils
 
 # torch
 import torch
@@ -322,6 +323,14 @@ class DeepSignatureArclengthTupletsOnlineDataset(DeepSignatureTupletsOnlineDatas
                 multimodality=multimodality,
                 supporting_points_count=supporting_points_count,
                 anchor_points_count=anchor_points_count))
+
+    def save(self, dataset_dir_path):
+        super(DeepSignatureArclengthTupletsOnlineDataset, self).save(dataset_dir_path=dataset_dir_path)
+        common_utils.save_object_dict(obj=self, file_path=os.path.join(dataset_dir_path, 'dataset_settings.txt'))
+        # dataset_dict = {key: value for key, value in self.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
+        # with open(os.path.join(dataset_dir_path, 'dataset_settings.txt'), "w") as text_file:
+        #     for key, value in dataset_dict.items():
+        #         text_file.write(f'{key}: {value}\n')
 
 
 class DeepSignatureEuclideanArclengthTupletsOnlineDataset(DeepSignatureArclengthTupletsOnlineDataset, EuclideanTuple):

@@ -18,12 +18,12 @@ if __name__ == '__main__':
     parser.add_argument("--train-dataset-size", default=settings.arclength_default_train_dataset_size, type=int)
     parser.add_argument("--validation-dataset-size", default=settings.arclength_default_validation_dataset_size, type=int)
     parser.add_argument("--learning-rate", default=settings.arclength_default_learning_rate, type=float)
-    parser.add_argument("--validation-split", default=settings.arclength_default_validation_split, type=float)
+    # parser.add_argument("--validation-split", default=settings.arclength_default_validation_split, type=float)
     parser.add_argument("--supporting-points-count", default=settings.arclength_default_supporting_points_count, type=int)
     parser.add_argument("--anchor-points-count", default=settings.arclength_default_anchor_points_count, type=int)
     parser.add_argument("--multimodality", default=settings.arclength_default_multimodality, type=int)
-    parser.add_argument("--min-offset", default=settings.arclength_default_min_offset, type=int)
-    parser.add_argument("--max-offset", default=settings.arclength_default_max_offset, type=int)
+    # parser.add_argument("--min-offset", default=settings.arclength_default_min_offset, type=int)
+    # parser.add_argument("--max-offset", default=settings.arclength_default_max_offset, type=int)
     parser.add_argument("--num-workers-train", default=settings.arclength_default_num_workers_train, type=int)
     parser.add_argument("--num-workers-validation", default=settings.arclength_default_num_workers_validation, type=int)
     parser.add_argument("--history-size", default=settings.arclength_default_history_size, type=int)
@@ -46,6 +46,8 @@ if __name__ == '__main__':
     results_base_dir_path = common_utils.get_results_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
     train_curves_dir_path = common_utils.get_train_curves_dir(data_dir=args.data_dir)
     validation_curves_dir_path = common_utils.get_validation_curves_dir(data_dir=args.data_dir)
+    min_offset = common_utils.get_arclength_default_min_offset(supporting_points_count=args.supporting_points_count)
+    max_offset = common_utils.get_arclength_default_max_offset(supporting_points_count=args.supporting_points_count)
 
     train_dataset = OnlineDataset(
         dataset_size=args.train_dataset_size,
@@ -55,8 +57,8 @@ if __name__ == '__main__':
         buffer_size=args.train_buffer_size,
         num_workers=args.num_workers_train,
         supporting_points_count=args.supporting_points_count,
-        min_offset=args.min_offset,
-        max_offset=args.max_offset,
+        min_offset=min_offset,
+        max_offset=max_offset,
         anchor_points_count=args.anchor_points_count)
 
     validation_dataset = OnlineDataset(
@@ -67,8 +69,8 @@ if __name__ == '__main__':
         buffer_size=args.validation_buffer_size,
         num_workers=args.num_workers_validation,
         supporting_points_count=args.supporting_points_count,
-        min_offset=args.min_offset,
-        max_offset=args.max_offset,
+        min_offset=min_offset,
+        max_offset=max_offset,
         anchor_points_count=args.anchor_points_count)
 
     train_dataset.start()

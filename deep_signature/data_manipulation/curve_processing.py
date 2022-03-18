@@ -11,7 +11,7 @@ import sklearn.preprocessing
 from itertools import combinations
 
 # deep_signature
-from deep_signature.linalg import euclidean_transform
+from deep_signature.linalg import transformations
 
 # -------------------------------------------------
 # curve padding
@@ -142,6 +142,27 @@ def normalize_curve(curve, force_ccw=False, force_end_point=False, index1=None, 
     return normalized_curve
 
 
+def normalize_curve_arclength(curve):
+    if not is_ccw2(curve=curve):
+        curve = numpy.flip(m=curve, axis=0)
+
+    curve = translate_curve(curve=curve, offset=-curve[0])
+
+    radians = calculate_secant_angle2(curve=curve)
+    curve = rotate_curve(curve=curve, radians=-radians)
+
+    end_point = curve[-1]
+    if end_point[0] < 0:
+        transform = transformations.generate_vertical_reflection_transform_2d()
+        curve = numpy.matmul(curve, transform)
+
+    if end_point[1] < 0:
+        transform = transformations.generate_horizontal_reflection_transform_2d()
+        curve = numpy.matmul(curve, transform)
+
+    return curve
+
+
 def center_curve(curve):
     return translate_curve(curve=curve, offset=-numpy.mean(curve, axis=0))
 
@@ -152,7 +173,7 @@ def translate_curve(curve, offset):
 
 
 def rotate_curve(curve, radians):
-    rotation_transform = euclidean_transform.generate_rotation_transform_2d(radians)
+    rotation_transform = transformations.generate_rotation_transform_2d(radians)
     transformed_curve = curve.dot(rotation_transform)
     return transformed_curve
 
@@ -176,21 +197,34 @@ def match_curve_sample_tangents(curve_sample1, curve_sample2, index1, index2):
     distance = numpy.dot(tangent1, normal2)
     cosine = numpy.dot(tangent1, tangent2)
     radians = numpy.arccos(cosine)
-    rotation_transform = euclidean_transform.generate_rotation_transform_2d(-numpy.sign(distance) * numpy.abs(radians))
+    rotation_transform = transformations.generate_rotation_transform_2d(-numpy.sign(distance) * numpy.abs(radians))
 
     return curve_sample1.dot(rotation_transform), curve_sample2
 
 
 def is_ccw(curve, index1=None, index2=None, index3=None):
     if index1 is None:
-        index1 = get_leftmost_index(curve)
+        index1 = get_first_index(curve)
 
     if index2 is None:
         index2 = get_middle_index(curve)
 
     if index3 is None:
-        index3 = get_rightmost_index(curve)
+        index3 = get_last_index(curve)
 
+    eps = 1e-9
+    pointer01 = curve[index1] - curve[index2]
+    pointer12 = curve[index3] - curve[index2]
+    pointer12 = pointer12 / (numpy.linalg.norm(pointer12) + eps)
+    normal01 = numpy.array([-pointer01[1], pointer01[0]])
+    normal01 = normal01 / (numpy.linalg.norm(normal01) + eps)
+    return numpy.dot(pointer12, normal01) < 0
+
+
+def is_ccw2(curve):
+    index1 = get_first_index(curve)
+    index2 = get_middle_index(curve)
+    index3 = get_last_index(curve)
     eps = 1e-9
     pointer01 = curve[index1] - curve[index2]
     pointer12 = curve[index3] - curve[index2]
@@ -202,7 +236,7 @@ def is_ccw(curve, index1=None, index2=None, index3=None):
 
 def calculate_secant_angle(curve, index1=None, index2=None):
     if index1 is None:
-        index1 = get_leftmost_index(curve)
+        index1 = get_first_index(curve)
 
     if index2 is None:
         index2 = get_middle_index(curve)
@@ -217,7 +251,14 @@ def calculate_secant_angle(curve, index1=None, index2=None):
     return radians
 
 
-def get_leftmost_index(curve):
+def calculate_secant_angle2(curve):
+    index1 = get_first_index(curve)
+    index2 = get_middle_index(curve)
+    secant = curve[index2] - curve[index1]
+    return numpy.arctan2(secant[1], secant[0])
+
+
+def get_first_index(curve):
     return 0
 
 
@@ -225,7 +266,7 @@ def get_middle_index(curve):
     return int(numpy.floor(curve.shape[0] / 2))
 
 
-def get_rightmost_index(curve):
+def get_last_index(curve):
     return curve.shape[0] - 1
 
 
