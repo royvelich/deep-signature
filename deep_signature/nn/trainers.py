@@ -227,6 +227,7 @@ class ModelTrainer:
             loss_array = numpy.append(loss_array, [batch_loss])
             end = timer()
             # if rank == 0:
+            print(f'Rank {rank}: batch_data.shape: {batch_data.shape}')
             ModelTrainer._print_batch_loss(
                 epoch_index=epoch_index,
                 batch_index=batch_index,
