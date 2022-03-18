@@ -9,5 +9,5 @@ export PYTHONPATH=.
 --data-dir "/deep-signature-data" \
 --train-batch-size 50000 \
 --validation-batch-size 50000 \
---supporting-points-count 5 \
---learning-rate 0.001
+--supporting-points-count 7 \
+--learning-rate 0.0001
