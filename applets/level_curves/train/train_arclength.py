@@ -238,11 +238,11 @@ if __name__ == '__main__':
         rank=rank,
         device=device)
 
-    model_trainer.fit(
-        train_dataset=train_dataset,
-        validation_dataset=validation_dataset,
-        epochs=args.epochs,
-        train_batch_size=args.train_batch_size,
-        validation_batch_size=args.validation_batch_size,
-        validation_split=args.validation_split,
-        results_base_dir_path=results_base_dir_path)
+    # model_trainer.fit(
+    #     train_dataset=train_dataset,
+    #     validation_dataset=validation_dataset,
+    #     epochs=args.epochs,
+    #     train_batch_size=args.train_batch_size,
+    #     validation_batch_size=args.validation_batch_size,
+    #     validation_split=args.validation_split,
+    #     results_base_dir_path=results_base_dir_path)
