@@ -97,7 +97,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         #     out_features = 60
         # else:
         # out_features = 100
-        out_features = 64
+        out_features = 256
 
         p = None
         while out_features > 8:
@@ -120,10 +120,10 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         if use_batch_norm:
             linear_modules.append(torch.nn.BatchNorm1d(out_features))
 
-        # linear_modules.append(torch.nn.PReLU(num_parameters=out_features))
+        linear_modules.append(torch.nn.PReLU(num_parameters=out_features))
         # linear_modules.append(torch.nn.LeakyReLU())
         # linear_modules.append(torch.nn.ReLU())
-        linear_modules.append(torch.nn.GELU())
+        # linear_modules.append(torch.nn.GELU())
         # linear_modules.append(Sine())
 
         if p is not None:
