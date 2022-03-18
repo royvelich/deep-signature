@@ -125,62 +125,62 @@ class ModelTrainer:
             print('')
             print(f' - Start Training:')
 
-        results = None
-        best_validation_average_loss = None
-        train_loss_array = numpy.array([])
-        validation_loss_array = numpy.array([])
-        for epoch_index in itertools.count():
-            train_sampler.set_epoch(epoch_index)
-            if self._rank == 0:
-                print(f'    - Training Epoch #{epoch_index+1}:')
-
-            train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
-            # print('-------------------------------------------------------------------------------')
-            # print(train_loss.shape)
-            # print(train_loss)
-            # print('-------------------------------------------------------------------------------')
-            train_loss_array = numpy.append(train_loss_array, [numpy.mean(train_loss)])
-
-            if self._rank == 0:
-                print(f'    - Validation Epoch #{epoch_index+1}:')
-                validation_loss = self._validation_epoch(epoch_index=epoch_index, data_loader=validation_data_loader)
-                validation_loss_array = numpy.append(validation_loss_array, [numpy.mean(validation_loss)])
-
-                if best_validation_average_loss is None:
-                    torch.save(self._model.state_dict(), model_file_path)
-                    best_validation_average_loss = numpy.mean(validation_loss)
-                else:
-                    validation_average_loss = numpy.mean(validation_loss)
-                    if validation_average_loss < best_validation_average_loss:
-                        torch.save(self._model.state_dict(), model_file_path)
-                        best_validation_average_loss = validation_average_loss
-
-                lastest_model_path = os.path.normpath(os.path.join(results_dir_path, f'model_{epoch_index}.pt'))
-                torch.save(self._model.state_dict(), lastest_model_path)
-
-                if isinstance(self._model, torch.nn.parallel.DistributedDataParallel):
-                    lastest_module_path = os.path.normpath(os.path.join(results_dir_path, f'module_{epoch_index}.pt'))
-                    torch.save(self._model.module.state_dict(), lastest_module_path)
-
-                if epoch_handler is not None:
-                    epoch_handler(epoch_index)
-
-                results = {
-                    'train_loss_array': train_loss_array,
-                    'validation_loss_array': validation_loss_array,
-                    'epochs': epochs_text,
-                    'train_batch_size': train_batch_size,
-                    'validation_batch_size': validation_batch_size,
-                    'model_file_path': model_file_path,
-                    'results_file_path': results_file_path
-                }
-
-                numpy.save(file=results_file_path, arr=results, allow_pickle=True)
-
-                if (epochs is not None) and (epoch_index + 1 == epochs):
-                    break
-
-        return results
+        # results = None
+        # best_validation_average_loss = None
+        # train_loss_array = numpy.array([])
+        # validation_loss_array = numpy.array([])
+        # for epoch_index in itertools.count():
+        #     train_sampler.set_epoch(epoch_index)
+        #     if self._rank == 0:
+        #         print(f'    - Training Epoch #{epoch_index+1}:')
+        #
+        #     train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
+        #     # print('-------------------------------------------------------------------------------')
+        #     # print(train_loss.shape)
+        #     # print(train_loss)
+        #     # print('-------------------------------------------------------------------------------')
+        #     train_loss_array = numpy.append(train_loss_array, [numpy.mean(train_loss)])
+        #
+        #     if self._rank == 0:
+        #         print(f'    - Validation Epoch #{epoch_index+1}:')
+        #         validation_loss = self._validation_epoch(epoch_index=epoch_index, data_loader=validation_data_loader)
+        #         validation_loss_array = numpy.append(validation_loss_array, [numpy.mean(validation_loss)])
+        #
+        #         if best_validation_average_loss is None:
+        #             torch.save(self._model.state_dict(), model_file_path)
+        #             best_validation_average_loss = numpy.mean(validation_loss)
+        #         else:
+        #             validation_average_loss = numpy.mean(validation_loss)
+        #             if validation_average_loss < best_validation_average_loss:
+        #                 torch.save(self._model.state_dict(), model_file_path)
+        #                 best_validation_average_loss = validation_average_loss
+        #
+        #         lastest_model_path = os.path.normpath(os.path.join(results_dir_path, f'model_{epoch_index}.pt'))
+        #         torch.save(self._model.state_dict(), lastest_model_path)
+        #
+        #         if isinstance(self._model, torch.nn.parallel.DistributedDataParallel):
+        #             lastest_module_path = os.path.normpath(os.path.join(results_dir_path, f'module_{epoch_index}.pt'))
+        #             torch.save(self._model.module.state_dict(), lastest_module_path)
+        #
+        #         if epoch_handler is not None:
+        #             epoch_handler(epoch_index)
+        #
+        #         results = {
+        #             'train_loss_array': train_loss_array,
+        #             'validation_loss_array': validation_loss_array,
+        #             'epochs': epochs_text,
+        #             'train_batch_size': train_batch_size,
+        #             'validation_batch_size': validation_batch_size,
+        #             'model_file_path': model_file_path,
+        #             'results_file_path': results_file_path
+        #         }
+        #
+        #         numpy.save(file=results_file_path, arr=results, allow_pickle=True)
+        #
+        #         if (epochs is not None) and (epoch_index + 1 == epochs):
+        #             break
+        #
+        # return results
 
     def _train_epoch(self, epoch_index, data_loader):
         self._model.train()
