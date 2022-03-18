@@ -80,6 +80,7 @@ class ModelTrainer:
 
         results_dir_path = os.path.normpath(os.path.join(results_base_dir_path, datetime.now().strftime('%Y-%m-%d-%H-%M-%S')))
         model_file_path = os.path.normpath(os.path.join(results_dir_path, 'model.pt'))
+        module_file_path = os.path.normpath(os.path.join(results_dir_path, 'module.pt'))
         results_file_path = os.path.normpath(os.path.join(results_dir_path, 'results.npy'))
         model_architecture_file_path = os.path.normpath(os.path.join(results_dir_path, 'model_arch.txt'))
         loss_functions_file_path = os.path.normpath(os.path.join(results_dir_path, 'loss_functions.txt'))
@@ -141,6 +142,8 @@ class ModelTrainer:
                     validation_average_loss = numpy.mean(validation_loss)
                     if validation_average_loss < best_validation_average_loss:
                         torch.save(self._model.state_dict(), model_file_path)
+                        if isinstance(self._model, torch.nn.parallel.DistributedDataParallel):
+                            torch.save(self._model.module.state_dict(), module_file_path)
                         best_validation_average_loss = validation_average_loss
 
                 lastest_model_path = os.path.normpath(os.path.join(results_dir_path, f'model_{epoch_index}.pt'))
@@ -160,6 +163,7 @@ class ModelTrainer:
                     'train_batch_size': train_batch_size,
                     'validation_batch_size': validation_batch_size,
                     'model_file_path': model_file_path,
+                    'module_file_path': module_file_path,
                     'results_file_path': results_file_path
                 }
 
