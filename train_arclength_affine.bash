@@ -8,4 +8,6 @@ export PYTHONPATH=.
 --group "affine" \
 --data-dir "/deep-signature-data" \
 --train-batch-size 400000 \
---validation-batch-size 200000
+--validation-batch-size 200000 \
+--supporting-points-count 7 \
+--learning-rate 0.01
