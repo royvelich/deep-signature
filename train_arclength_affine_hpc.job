@@ -3,9 +3,9 @@
 
 ### e.g. request 4 nodes with 1 gpu each, totally 4 gpus (WORLD_SIZE==4)
 ### Note: --gres=gpu:x should equal to ntasks-per-node
-#SBATCH --nodes=4
-#SBATCH --ntasks-per-node=1
-#SBATCH --gres=gpu:1
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --gres=gpu:4
 #SBATCH --cpus-per-task=5
 #SBATCH --mem=64gb
 #SBATCH --output=%x-%j.out
