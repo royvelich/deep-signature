@@ -10,7 +10,7 @@ curvature_default_train_batch_size = curvature_default_train_buffer_size
 curvature_default_validation_batch_size = curvature_default_validation_buffer_size
 curvature_default_train_dataset_size = curvature_default_train_batch_size
 curvature_default_validation_dataset_size = curvature_default_validation_batch_size
-curvature_default_learning_rate = 0.0001
+curvature_default_learning_rate = 0.1
 curvature_default_validation_split = None
 curvature_default_supporting_points_count = 3
 curvature_default_sample_points_count = 2 * curvature_default_supporting_points_count + 1
@@ -24,7 +24,7 @@ curvature_default_history_size = 1500
 
 # arclength
 arclength_default_continue_training = False
-arclength_default_learning_rate = 0.1
+arclength_default_learning_rate = 0.001
 arclength_default_validation_split = None
 arclength_default_epochs = None
 arclength_default_train_buffer_size = 1000000
@@ -40,7 +40,7 @@ arclength_default_max_offset = 2 * arclength_default_min_offset
 arclength_default_anchor_points_count = 5
 arclength_default_num_workers_train = 15
 arclength_default_num_workers_validation = 10
-arclength_default_history_size = 2500
+arclength_default_history_size = 800
 
 equiaffine_arclength_min_cond_training = 1.3
 equiaffine_arclength_max_cond_training = 2
