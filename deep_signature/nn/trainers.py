@@ -70,6 +70,9 @@ class ModelTrainer:
 
         batch_size_per_gpu = train_batch_size // self._world_size
 
+        print(f'Rank: {self._rank}, train_batch_size: {train_batch_size}')
+        print(f'Rank: {self._rank}, batch_size_per_gpu: {batch_size_per_gpu}')
+
         train_data_loader = DataLoader(actual_train_dataset, batch_size=batch_size_per_gpu, sampler=train_sampler, pin_memory=True, drop_last=True, num_workers=0)
         validation_data_loader = DataLoader(actual_validation_dataset, batch_size=validation_batch_size, sampler=validation_sampler, drop_last=True, num_workers=0)
 
@@ -129,12 +132,12 @@ class ModelTrainer:
         best_validation_average_loss = None
         train_loss_array = numpy.array([])
         validation_loss_array = numpy.array([])
-        for epoch_index in range(100):
+        for epoch_index in range(50):
             train_sampler.set_epoch(epoch_index)
             # if self._rank == 0:
             print(f'    - [Rank {self._rank}] Training Epoch #{epoch_index+1}:')
         #
-        #     train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
+            train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
         #     # print('-------------------------------------------------------------------------------')
         #     # print(train_loss.shape)
         #     # print(train_loss)
@@ -184,7 +187,7 @@ class ModelTrainer:
 
     def _train_epoch(self, epoch_index, data_loader):
         self._model.train()
-        return ModelTrainer._epoch(epoch_index=epoch_index, data_loader=data_loader, process_batch_fn=self._train_batch, rank=self._rank)
+        # return ModelTrainer._epoch(epoch_index=epoch_index, data_loader=data_loader, process_batch_fn=self._train_batch, rank=self._rank)
 
     def _validation_epoch(self, epoch_index, data_loader):
         self._model.eval()
