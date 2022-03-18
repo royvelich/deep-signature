@@ -221,9 +221,10 @@ if __name__ == '__main__':
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
 
-    if rank == 0:
-        print('')
-        print(model)
+    # if rank == 0:
+    print(f'RANK: {rank}')
+    print('')
+    print(model)
 
     # optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)

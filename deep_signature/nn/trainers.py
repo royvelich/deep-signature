@@ -71,7 +71,7 @@ class ModelTrainer:
         batch_size_per_gpu = train_batch_size // self._world_size
 
         train_data_loader = DataLoader(actual_train_dataset, batch_size=batch_size_per_gpu, sampler=train_sampler, pin_memory=True, drop_last=True, num_workers=0)
-        validation_data_loader = DataLoader(actual_validation_dataset, batch_size=validation_batch_size, sampler=validation_sampler, drop_last=False, num_workers=0)
+        validation_data_loader = DataLoader(actual_validation_dataset, batch_size=validation_batch_size, sampler=validation_sampler, drop_last=True, num_workers=0)
 
         epochs_text = epochs if epochs is not None else 'infinite'
 
@@ -157,6 +157,10 @@ class ModelTrainer:
 
                 lastest_model_path = os.path.normpath(os.path.join(results_dir_path, f'model_{epoch_index}.pt'))
                 torch.save(self._model.state_dict(), lastest_model_path)
+
+                if isinstance(self._model, torch.nn.parallel.DistributedDataParallel):
+                    lastest_module_path = os.path.normpath(os.path.join(results_dir_path, f'module_{epoch_index}.pt'))
+                    torch.save(self._model.module.state_dict(), lastest_module_path)
 
                 if epoch_handler is not None:
                     epoch_handler(epoch_index)
