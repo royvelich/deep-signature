@@ -10,4 +10,4 @@ export PYTHONPATH=.
 --train-batch-size 400000 \
 --validation-batch-size 200000 \
 --supporting-points-count 7 \
---learning-rate 0.01
+--learning-rate 0.0001
