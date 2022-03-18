@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=8
 #SBATCH --gres=gpu:8
 #SBATCH --cpus-per-task=5
-#SBATCH --mem=64gb
+#SBATCH --mem=128gb
 #SBATCH --output=%x-%j.out
 #SBATCH --qos=normal
 

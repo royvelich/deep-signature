@@ -97,7 +97,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         #     out_features = 60
         # else:
         # out_features = 100
-        out_features = 256
+        out_features = 128
 
         p = None
         while out_features > 8:
