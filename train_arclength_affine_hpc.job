@@ -1,27 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=royvel-test
-
-### e.g. request 4 nodes with 1 gpu each, totally 4 gpus (WORLD_SIZE==4)
-### Note: --gres=gpu:x should equal to ntasks-per-node
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=6
-#SBATCH --gres=gpu:6
+#SBATCH --ntasks-per-node=8
+#SBATCH --gres=gpu:8
 #SBATCH --cpus-per-task=5
 #SBATCH --mem=64gb
 #SBATCH --output=%x-%j.out
 #SBATCH --qos=normal
 
-### change 5-digit MASTER_PORT as you wish, slurm will raise Error if duplicated with others
-### change WORLD_SIZE as gpus/node * num_nodes
-export MASTER_PORT=12340
-export WORLD_SIZE=2
-
-### get the first node name as master address - customized for vgg slurm
-### e.g. master(gnodee[2-5],gnoded1) == gnodee2
-echo "NODELIST="${SLURM_NODELIST}
-echo "MASTER_ADDR="${MASTER_ADDR}
-echo "MASTER_PORT="${MASTER_PORT}
-echo "WORLD_SIZE="${WORLD_SIZE}
-
-### the command to run
-srun --gpus=6 --ntasks=6 --container-image=$HOME/nvidia+pytorch+22.02-py3.sqsh --container-mounts $HOME/deep-signature-data:/deep-signature-data,$HOME/deep-signature:/deep-signature /deep-signature/train_arclength_affine.bash
+srun --gpus=8 --ntasks=8 --container-image=$HOME/nvidia+pytorch+22.02-py3.sqsh --container-mounts $HOME/deep-signature-data:/deep-signature-data,$HOME/deep-signature:/deep-signature /deep-signature/train_arclength_affine.bash
