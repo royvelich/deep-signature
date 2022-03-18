@@ -125,14 +125,14 @@ class ModelTrainer:
             print('')
             print(f' - Start Training:')
 
-        # results = None
-        # best_validation_average_loss = None
-        # train_loss_array = numpy.array([])
-        # validation_loss_array = numpy.array([])
-        # for epoch_index in itertools.count():
-        #     train_sampler.set_epoch(epoch_index)
-        #     if self._rank == 0:
-        #         print(f'    - Training Epoch #{epoch_index+1}:')
+        results = None
+        best_validation_average_loss = None
+        train_loss_array = numpy.array([])
+        validation_loss_array = numpy.array([])
+        for epoch_index in itertools.count():
+            train_sampler.set_epoch(epoch_index)
+            if self._rank == 0:
+                print(f'    - Training Epoch #{epoch_index+1}:')
         #
         #     train_loss = self._train_epoch(epoch_index=epoch_index, data_loader=train_data_loader)
         #     # print('-------------------------------------------------------------------------------')
