@@ -170,7 +170,7 @@ def get_arclength_default_min_offset(supporting_points_count):
 
 
 def get_arclength_default_max_offset(supporting_points_count):
-    return 3 * get_arclength_default_min_offset(supporting_points_count=supporting_points_count)
+    return 2 * get_arclength_default_min_offset(supporting_points_count=supporting_points_count)
 
 
 def save_object_dict(obj, file_path):
