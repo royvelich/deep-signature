@@ -33,6 +33,8 @@ def convert_models_to_fp32(model):
 
 
 if __name__ == '__main__':
+    fix_random_seeds()
+
     parser = ArgumentParser()
     parser.add_argument("--group")
     parser.add_argument("--epochs", default=settings.arclength_default_epochs, type=int)

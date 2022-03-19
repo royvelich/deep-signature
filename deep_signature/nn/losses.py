@@ -55,8 +55,8 @@ class ArcLengthLoss(torch.nn.Module):
 
         for i in range(3, self._anchor_points_count+1):
             for endpoints in itertools.combinations(indices, i):
-                if len(endpoints) > 3:
-                    continue
+                # if len(endpoints) > 3:
+                #     continue
 
                 B_aux = []
                 for index1, index2 in zip(endpoints, endpoints[1:]):
