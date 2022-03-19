@@ -145,7 +145,8 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
 
         transform1 = cls._generate_curve_transform()
         transform2 = cls._generate_curve_transform()
-        transformed_curve1 = curve_processing.transform_curve(curve=curve, transform=transform1)
+        # transformed_curve1 = curve_processing.transform_curve(curve=curve, transform=transform1)
+        transformed_curve1 = curve
         transformed_curve2 = curve_processing.transform_curve(curve=curve, transform=transform2)
 
         for i in range(2, anchor_points_count):

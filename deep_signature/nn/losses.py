@@ -58,6 +58,15 @@ class ArcLengthLoss(torch.nn.Module):
                 # if len(endpoints) > 3:
                 #     continue
 
+                should_continue = False
+                for index1, index2 in zip(endpoints, endpoints[1:]):
+                    if index2 - index1 > 1:
+                        should_continue = True
+                        break
+
+                if should_continue:
+                    continue
+
                 B_aux = []
                 for index1, index2 in zip(endpoints, endpoints[1:]):
                     B_aux.append(section_approx[(index1, index2)])
