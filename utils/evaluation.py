@@ -91,10 +91,10 @@ def predict_curvature_by_index(model, curve_neighborhoods, device='cuda', factor
     for point_index, sampled_neighborhood in enumerate(sampled_neighborhoods):
         for (indices, sample) in zip(sampled_neighborhood['indices'], sampled_neighborhood['samples']):
             sample = curve_processing.normalize_curve(curve=sample)
-            curvature_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample).double(), dim=0), dim=0).to(device)
+            curvature_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample), dim=0), dim=0).to(device)
             with torch.no_grad():
                 predicted_curvature[point_index, 0] = point_index
-                predicted_curvature[point_index, 1] = torch.squeeze(model(curvature_batch_data), dim=0).cpu().detach().numpy() * factor
+                predicted_curvature[point_index, 1] = torch.squeeze(model(curvature_batch_data.to(torch.float32)), dim=0).cpu().detach().numpy() * factor
     return predicted_curvature
 
 
@@ -117,14 +117,14 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
         sampled_section1 = sampled_curve[sampled_indices1]
         sampled_section2 = sampled_curve[sampled_indices2]
 
-        sample1 = curve_processing.normalize_curve2(curve=sampled_section1)
-        sample2 = curve_processing.normalize_curve2(curve=sampled_section2)
+        sample1 = curve_processing.normalize_curve_arclength(curve=sampled_section1)
+        sample2 = curve_processing.normalize_curve_arclength(curve=sampled_section2)
 
-        arclength_batch_data1 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample1).double(), dim=0), dim=0).to(device)
-        arclength_batch_data2 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2).double(), dim=0), dim=0).to(device)
+        arclength_batch_data1 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample1), dim=0), dim=0).to(device)
+        arclength_batch_data2 = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample2), dim=0), dim=0).to(device)
 
         with torch.no_grad():
-            predicted_arclength[i + 1] = float(predicted_arclength[i] + numpy.abs(torch.squeeze(model(arclength_batch_data1), dim=0).cpu().detach().numpy() - torch.squeeze(model(arclength_batch_data2), dim=0).cpu().detach().numpy()))
+            predicted_arclength[i + 1] = float(predicted_arclength[i] + numpy.abs(torch.squeeze(model(arclength_batch_data1.to(torch.float32)), dim=0).cpu().detach().numpy() - torch.squeeze(model(arclength_batch_data2.to(torch.float32)), dim=0).cpu().detach().numpy()))
 
     indices = numpy.array(list(range(predicted_arclength.shape[0])))
     values = predicted_arclength
