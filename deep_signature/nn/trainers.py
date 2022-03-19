@@ -184,20 +184,20 @@ class ModelTrainer:
             return ModelTrainer._epoch(epoch_index=epoch_index, data_loader=data_loader, process_batch_fn=self._validation_batch, rank=self._rank)
 
     def _train_batch(self, batch_data):
-        # def closure():
-        #     self._optimizer.zero_grad()
-        #     loss = self._evaluate_loss(batch_data=batch_data.to(self._device, non_blocking=True))
-        #     loss.backward()
-        #     return loss
-        #
-        # final_loss = self._optimizer.step(closure)
-        # return final_loss.item()
+        def closure():
+            self._optimizer.zero_grad()
+            loss = self._evaluate_loss(batch_data=batch_data.to(self._device, non_blocking=True))
+            loss.backward()
+            return loss
 
-        self._optimizer.zero_grad()
-        loss = self._evaluate_loss(batch_data=batch_data.to(self._device, non_blocking=True))
-        loss.backward()
-        self._optimizer.step()
-        return loss.item()
+        final_loss = self._optimizer.step(closure)
+        return final_loss.item()
+
+        # self._optimizer.zero_grad()
+        # loss = self._evaluate_loss(batch_data=batch_data.to(self._device, non_blocking=True))
+        # loss.backward()
+        # self._optimizer.step()
+        # return loss.item()
 
     def _validation_batch(self, batch_data):
         loss = self._evaluate_loss(batch_data=batch_data.to(self._device, non_blocking=True))
