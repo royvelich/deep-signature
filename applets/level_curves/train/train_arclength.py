@@ -228,8 +228,8 @@ if __name__ == '__main__':
     print('')
     print(model)
 
-    optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
+    # optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
     loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count)
 
     model_trainer = ModelTrainer(
