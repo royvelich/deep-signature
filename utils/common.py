@@ -144,11 +144,7 @@ def load_models(data_dir, group, distributed=True, device=torch.device('cuda')):
 
     # create models
     curvature_model = DeepSignatureCurvatureNet(sample_points=settings.curvature_default_sample_points_count).cuda()
-
-    # dist.init_process_group(backend='gloo', init_method='env://', world_size=1, rank=0)
     arclength_model = DeepSignatureArcLengthNet(sample_points=settings.arclength_default_supporting_points_count).cuda()
-    # arclength_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(arclength_model)
-    # arclength_model = torch.nn.parallel.DistributedDataParallel(arclength_model)
 
     # load curvature model state
     latest_subdir = get_latest_subdirectory(curvature_results_dir_path)
@@ -159,7 +155,10 @@ def load_models(data_dir, group, distributed=True, device=torch.device('cuda')):
     # load arclength model state
     latest_subdir = get_latest_subdirectory(arclength_results_dir_path)
     results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-    arclength_model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['module_file_path']).name}", map_location=device))
+    if distributed is True:
+        arclength_model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['module_file_path']).name}", map_location=device))
+    else:
+        arclength_model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['model_file_path']).name}", map_location=device))
     arclength_model.eval()
 
     return curvature_model, arclength_model

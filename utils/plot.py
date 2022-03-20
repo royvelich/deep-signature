@@ -347,10 +347,15 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
         # plot_curve_sample_plotly(fig=fig, row=1, col=i + 2, name=f'', curve=orig_curve, curve_sample=numpy.expand_dims(orig_curve[200,:], axis=0), color='black', point_size=settings.plotly_sample_point_size)
 
         # plot_curve_plotly(fig=fig, row=1, col=4, curve=curve, name='', line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
-        plot_curve_sample_plotly(fig=fig, row=1, col=4, name='', curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=int(settings.plotly_sample_point_size * 0.7))
-        plot_curve_sample_plotly(fig=fig, row=1, col=4, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[0, :], axis=0), color='black', point_size=int(settings.plotly_sample_point_size * 1.2))
+        plot_curve_sample_plotly(fig=fig, row=1, col=4, name='', curve=curve, curve_sample=sampled_curve, color=curve_colors[i], point_size=int(settings.plotly_sample_point_size * 0.5))
+        plot_curve_sample_plotly(fig=fig, row=1, col=4, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[0, :], axis=0), color='black', point_size=int(settings.plotly_sample_point_size * 1.5))
+        # plot_curve_sample_plotly(fig=fig, row=1, col=4, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[100, :], axis=0), color='black', point_size=int(settings.plotly_sample_point_size * 1.5))
 
-    for i in range(len(curve_record['comparisons']) + 2):
+        # plot_curve_plotly(fig=fig, row=1, col=5, name='', curve=curve, line_color=curve_colors[0], line_width=settings.plotly_graph_line_width)
+        # plot_curve_sample_plotly(fig=fig, row=1, col=5, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[0, :], axis=0), color='black', point_size=int(settings.plotly_sample_point_size * 1.5))
+        # plot_curve_sample_plotly(fig=fig, row=1, col=5, name=f'', curve=curve, curve_sample=numpy.expand_dims(curve[100, :], axis=0), color='black', point_size=int(settings.plotly_sample_point_size * 1.5))
+
+    for i in range(len(curve_record['comparisons']) + 3):
         fig.update_yaxes(
             scaleanchor=f'x{i+1}',
             scaleratio=1,

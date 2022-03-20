@@ -96,7 +96,7 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
         # if transformation_group_type == 'affine' or transformation_group_type == 'similarity':
         #     out_features = 60
         # else:
-        # out_features = 100
+        # out_features = 64
         out_features = 64
 
         p = None
