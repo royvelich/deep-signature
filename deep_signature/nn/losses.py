@@ -92,10 +92,23 @@ class ArcLengthLoss(torch.nn.Module):
         return loss_eval
 
 
-class DeepSignatureLoss(torch.nn.Module):
+class DeepSignatureCurveLoss(torch.nn.Module):
     def __init__(self, anchor_points_count):
         self._anchor_points_count = anchor_points_count
-        super(DeepSignatureLoss, self).__init__()
+        super(DeepSignatureCurveLoss, self).__init__()
 
     def forward(self, output):
-        bla = 4
+        v = output[:, 0, :]
+        v2 = v.unsqueeze(dim=1)
+        v3 = v2 - output
+        v4 = v3.abs().squeeze(dim=2)
+        v5 = v4[:, 1:]
+        v6 = v5[:, 0]
+        v7 = v6.unsqueeze(dim=1)
+        v8 = v7 - v5
+        v9 = v8[:, 1:]
+        v10 = v9.exp()
+        v11 = v10.sum(dim=1)
+        v12 = v11 + 1
+        v13 = v12.log()
+        return v13.mean(dim=0)

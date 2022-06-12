@@ -347,3 +347,54 @@ class DeepSignatureEquiaffineArclengthTupletsOnlineDataset(DeepSignatureArclengt
 
 class DeepSignatureAffineArclengthTupletsOnlineDataset(DeepSignatureArclengthTupletsOnlineDataset, AffineTuple):
     pass
+
+
+class DeepSignatureCurveTupletsOnlineDataset(DeepSignatureTupletsOnlineDataset):
+    def __init__(self, dataset_size, dir_path, multimodality, replace, buffer_size, num_workers, sampling_ratio, supporting_points_count, offset_length, negative_examples_count):
+        DeepSignatureTupletsOnlineDataset.__init__(
+            self,
+            dataset_size=dataset_size,
+            dir_path=dir_path,
+            multimodality=multimodality,
+            replace=replace,
+            buffer_size=buffer_size,
+            num_workers=num_workers)
+
+        self._sampling_ratio = sampling_ratio
+        self._args.append(sampling_ratio)
+
+        self._supporting_points_count = supporting_points_count
+        self._args.append(supporting_points_count)
+
+        self._offset_length = offset_length
+        self._args.append(offset_length)
+
+        self._negative_examples_count = negative_examples_count
+        self._args.append(negative_examples_count)
+
+    @classmethod
+    def _map_func(cls, curves, multimodality, q, sampling_ratio, supporting_points_count, offset_length, negative_examples_count):
+        while True:
+            q.put(cls._generate_curvature_tuple(
+                curves=curves,
+                sampling_ratio=sampling_ratio,
+                multimodality=multimodality,
+                supporting_points_count=supporting_points_count,
+                offset_length=offset_length,
+                negative_examples_count=negative_examples_count))
+
+
+class DeepSignatureEuclideanCurveTupletsOnlineDataset(DeepSignatureCurveTupletsOnlineDataset, EuclideanTuple):
+    pass
+
+
+class DeepSignatureSimilarityCurveTupletsOnlineDataset(DeepSignatureCurveTupletsOnlineDataset, SimilarityTuple):
+    pass
+
+
+class DeepSignatureEquiaffineCurveTupletsOnlineDataset(DeepSignatureCurveTupletsOnlineDataset, EquiaffineTuple):
+    pass
+
+
+class DeepSignatureAffineCurveTupletsOnlineDataset(DeepSignatureCurveTupletsOnlineDataset, AffineTuple):
+    pass

@@ -28,6 +28,7 @@ if __name__ == '__main__':
     parser.add_argument("--num-workers-validation", default=settings.arclength_default_num_workers_validation, type=int)
     parser.add_argument("--history-size", default=settings.arclength_default_history_size, type=int)
     parser.add_argument("--data-dir", default=settings.data_dir, type=str)
+    parser.add_argument("--invariant", type=str)
 
     args = parser.parse_args()
     OnlineDataset = None
@@ -41,9 +42,9 @@ if __name__ == '__main__':
     elif args.group == 'affine':
         OnlineDataset = DeepSignatureAffineArclengthTupletsOnlineDataset
 
-    train_dataset_dir_path = common_utils.get_train_dataset_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
-    validation_dataset_dir_path = common_utils.get_validation_dataset_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
-    results_base_dir_path = common_utils.get_results_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
+    train_dataset_dir_path = common_utils.get_train_dataset_dir(data_dir=args.data_dir, invariant=args.invariant, group=args.group)
+    validation_dataset_dir_path = common_utils.get_validation_dataset_dir(data_dir=args.data_dir, invariant=args.invariant, group=args.group)
+    results_base_dir_path = common_utils.get_results_dir(data_dir=args.data_dir, invariant=args.invariant, group=args.group)
     train_curves_dir_path = common_utils.get_train_curves_dir(data_dir=args.data_dir)
     validation_curves_dir_path = common_utils.get_validation_curves_dir(data_dir=args.data_dir)
     min_offset = common_utils.get_arclength_default_min_offset(supporting_points_count=args.supporting_points_count)
