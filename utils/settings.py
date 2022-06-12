@@ -56,9 +56,9 @@ affine_arclength_max_det_training = 8
 
 equiaffine_arclength_min_cond_evaluation = 2.5
 equiaffine_arclength_max_cond_evaluation = 2.5
-affine_arclength_min_cond_evaluation = 2.5
-affine_arclength_max_cond_evaluation = 2.5
-affine_arclength_min_det_evaluation = 2
+affine_arclength_min_cond_evaluation = 1.3
+affine_arclength_max_cond_evaluation = 2
+affine_arclength_min_det_evaluation = 1.2
 affine_arclength_max_det_evaluation = 2
 
 # plots
