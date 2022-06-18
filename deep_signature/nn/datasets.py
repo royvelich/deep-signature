@@ -75,7 +75,7 @@ class DeepSignatureTupletsDataset(Dataset):
         item = {}
         tuplet = self._tuplets[index]
         for key in tuplet.keys():
-            item[key] = torch.from_numpy(numpy.array(self._tuplets[index][key]).astype('float64')).cuda().double()
+            item[key] = torch.from_numpy(numpy.array(self._tuplets[index][key]).astype('float32')).cuda().double()
 
         return item
 
@@ -189,7 +189,7 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
         tuplet = self._items[mod_index]
         for key in tuplet.keys():
             if key == 'input':
-                item[key] = torch.from_numpy(numpy.array(tuplet[key]).astype('float64')).cuda().double()
+                item[key] = torch.from_numpy(numpy.array(tuplet[key]).astype('float32')).cuda().double()
             else:
                 item[key] = tuplet[key]
 

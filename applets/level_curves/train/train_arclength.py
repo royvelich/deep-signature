@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 
 if __name__ == '__main__':
 
-    torch.set_default_dtype(torch.float64)
+    torch.set_default_dtype(torch.float32)
 
     parser = ArgumentParser()
     parser.add_argument("--group", dest="group")
