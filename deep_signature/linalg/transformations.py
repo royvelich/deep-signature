@@ -34,10 +34,11 @@ def generate_vertical_reflection_transform_2d():
 
 
 def generate_random_euclidean_transform_2d(rotation=True):
-    if rotation is True:
-        radians = numpy.random.uniform(low=0, high=2*numpy.pi, size=1)
-    else:
-        radians = 0
+    # if rotation is True:
+    #     radians = numpy.random.uniform(low=0, high=2*numpy.pi, size=1)
+    # else:
+    #     radians = 0
+    radians = numpy.random.uniform(low=0, high=2 * numpy.pi, size=1)
     return generate_rotation_transform_2d(float(radians))
     # return generate_rotation_transform_2d(float(numpy.pi / 4))
 
@@ -69,18 +70,19 @@ def generate_random_equiaffine_transform_2d(min_cond, max_cond, rotation=True):
 def generate_random_affine_transform_2d(min_cond, max_cond, min_det, max_det, rotation=True):
     # U = generate_random_euclidean_transform_2d(rotation=rotation)
     # V = generate_random_euclidean_transform_2d(rotation=rotation)
-    # det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
-    # cond = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
-    # s1 = numpy.sqrt(det / cond)
-    # s2 = det / s1
-    # S = numpy.array([[s1, 0], [0, s2]])
+    det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
+    cond = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
+    s1 = numpy.sqrt(det / cond)
+    s2 = det / s1
+    S = numpy.array([[s1, 0], [0, s2]])
+    return S
     # A = numpy.matmul(numpy.matmul(U, S), V)
     # return A
 
-    while True:
-        A = numpy.random.uniform(low=0, high=3, size=(2, 2))
-        if _validate_condition_number(A=A, min_cond=min_cond, max_cond=max_cond) and _validate_determinant(A=A, min_det=min_det, max_det=max_det):
-            return A
+    # while True:
+    #     A = numpy.random.uniform(low=0, high=3, size=(2, 2))
+    #     if _validate_condition_number(A=A, min_cond=min_cond, max_cond=max_cond) and _validate_determinant(A=A, min_det=min_det, max_det=max_det):
+    #         return A
 
 
 def generate_random_transform_2d(transform_type, min_cond, max_cond, min_det, max_det, rotation=True):

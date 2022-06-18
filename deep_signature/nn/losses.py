@@ -93,22 +93,57 @@ class ArcLengthLoss(torch.nn.Module):
 
 
 class DeepSignatureCurveLoss(torch.nn.Module):
-    def __init__(self, anchor_points_count):
-        self._anchor_points_count = anchor_points_count
+    def __init__(self, supporting_points_count):
+        self._anchor_points_count = supporting_points_count
         super(DeepSignatureCurveLoss, self).__init__()
 
+    @staticmethod
+    def _calculate_distance(curves1, curves2):
+        outer_dist = None
+        points_count = curves1.shape[1]
+        for i in range(points_count):
+            inner_dist = None
+            point_i = curves1[:, i, :]
+            for j in range(points_count):
+                point_j = curves2[:, j, :]
+                current_dist = torch.norm(point_i - point_j, dim=1)
+                if inner_dist is None:
+                    inner_dist = current_dist
+                else:
+                    inner_dist = torch.minimum(inner_dist, current_dist)
+
+            if outer_dist is None:
+                outer_dist = inner_dist
+            else:
+                outer_dist = torch.maximum(outer_dist, inner_dist)
+
+        return outer_dist
+
+    @staticmethod
+    def _calculate_hausdorff_distance(curves1, curves2):
+        dist1 = DeepSignatureCurveLoss._calculate_distance(curves1=curves1, curves2=curves2)
+        dist2 = DeepSignatureCurveLoss._calculate_distance(curves1=curves2, curves2=curves1)
+        return torch.maximum(dist1, dist2)
+
     def forward(self, output):
-        v = output[:, 0, :]
-        v2 = v.unsqueeze(dim=1)
-        v3 = v2 - output
-        v4 = v3.abs().squeeze(dim=2)
-        v5 = v4[:, 1:]
-        v6 = v5[:, 0]
-        v7 = v6.unsqueeze(dim=1)
-        v8 = v7 - v5
-        v9 = v8[:, 1:]
-        v10 = v9.exp()
-        v11 = v10.sum(dim=1)
-        v12 = v11 + 1
-        v13 = v12.log()
-        return v13.mean(dim=0)
+        anchor_curves = output[:, 0, :, :]
+        positive_curves = output[:, 1, :, :]
+        dist1 = self._calculate_hausdorff_distance(curves1=anchor_curves, curves2=positive_curves)
+
+
+        j = 5
+
+        # v = output[:, 0, :]
+        # v2 = v.unsqueeze(dim=1)
+        # v3 = v2 - output
+        # v4 = v3.abs().squeeze(dim=2)
+        # v5 = v4[:, 1:]
+        # v6 = v5[:, 0]
+        # v7 = v6.unsqueeze(dim=1)
+        # v8 = v7 - v5
+        # v9 = v8[:, 1:]
+        # v10 = v9.exp()
+        # v11 = v10.sum(dim=1)
+        # v12 = v11 + 1
+        # v13 = v12.log()
+        # return v13.mean(dim=0)

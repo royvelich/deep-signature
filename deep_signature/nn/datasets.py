@@ -234,6 +234,7 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
     def save(self, dataset_dir_path):
         Path(dataset_dir_path).mkdir(parents=True, exist_ok=True)
         numpy.save(file=os.path.join(dataset_dir_path, 'tuplets.npy'), arr=self._tuplets, allow_pickle=True)
+        common_utils.save_object_dict(obj=self, file_path=os.path.join(dataset_dir_path, 'dataset_settings.txt'))
 
     def load(self, dataset_dir_path):
         self._tuplets = numpy.load(file=os.path.join(dataset_dir_path, 'tuplets.npy'), allow_pickle=True)

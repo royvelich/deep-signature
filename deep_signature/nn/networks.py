@@ -132,21 +132,22 @@ class DeepSignatureArcLengthNet(torch.nn.Module):
 
 
 class DeepSignatureCurveNet(torch.nn.Module):
-    def __init__(self, sample_points):
+    def __init__(self, supporting_points_count):
         super(DeepSignatureCurveNet, self).__init__()
-        self._regressor = DeepSignatureCurveNet._create_regressor(in_features=2*sample_points)
+        self._sample_points = 2*supporting_points_count + 1
+        self._in_features = 2*self._sample_points
+        self._regressor = self._create_regressor()
 
     def forward(self, input):
         features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
-        output = self._regressor(features).reshape([input.shape[0], input.shape[1], 1])
-        return output.abs()
+        output = self._regressor(features).reshape([input.shape[0], input.shape[1], input.shape[2], input.shape[3]])
+        return output
 
-    @staticmethod
-    def _create_regressor(in_features):
+    def _create_regressor(self):
         linear_modules = []
         p = None
         for _ in range(6):
-            linear_modules.extend(DeepSignatureCurveNet._create_hidden_layer(in_features=in_features, out_features=in_features, p=p, use_batch_norm=True))
+            linear_modules.extend(DeepSignatureCurveNet._create_hidden_layer(in_features=self._in_features, out_features=self._in_features, p=p, use_batch_norm=True))
         return torch.nn.Sequential(*linear_modules)
 
     @staticmethod

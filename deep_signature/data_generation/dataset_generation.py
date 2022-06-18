@@ -45,11 +45,7 @@ class AffineTransform:
 class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
     @classmethod
     def generate_tuple(cls, curves, sampling_ratio, multimodality, supporting_points_count, offset_length, negative_examples_count):
-        input = []
-        tuplet = {
-            'input': input
-        }
-
+        tuplets = []
         dist_index = 0
         curve_index = int(numpy.random.randint(curves.shape[0], size=1))
         curve = curve_processing.center_curve(curve=curves[curve_index])
@@ -69,12 +65,12 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
                 supporting_points_count=supporting_points_count)
 
             sample = curve_processing.normalize_curve(curve=sample)
-            input.append(sample)
+            tuplets.append(sample)
             dist_index = dist_index + 1
 
-        flipped_anchor = numpy.flip(m=input[0], axis=0).copy()
+        flipped_anchor = numpy.flip(m=tuplets[0], axis=0).copy()
         sample = curve_processing.normalize_curve(curve=flipped_anchor)
-        input.append(sample)
+        tuplets.append(sample)
 
         for i in range(negative_examples_count):
             while True:
@@ -95,10 +91,10 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
                 supporting_points_count=supporting_points_count)
 
             sample = curve_processing.normalize_curve(curve=sample)
-            input.append(sample)
+            tuplets.append(sample)
             dist_index = dist_index + 1
 
-        return tuplet
+        return tuplets
 
 
 class EuclideanCurvatureTupletsDatasetGenerator(CurvatureTupletsDatasetGenerator, EuclideanTransform):
