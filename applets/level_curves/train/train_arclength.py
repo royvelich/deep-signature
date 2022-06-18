@@ -19,8 +19,8 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--group", dest="group")
     parser.add_argument("--epochs", dest="epochs", default=settings.arclength_default_epochs, type=int)
-    parser.add_argument("--continue_training", dest="continue_training", default=settings.arclength_default_continue_training, type=bool)
-    parser.add_argument("--train_buffer_size", dest="train_buffer_size", default=settings.arclength_default_train_buffer_size, type=int)
+    parser.add_argument("--continue-training", dest="continue-training", default=settings.arclength_default_continue_training, type=bool)
+    parser.add_argument("--train-buffer-size", default=settings.arclength_default_train_buffer_size, type=int)
     parser.add_argument("--validation_buffer_size", dest="validation_buffer_size", default=settings.arclength_default_validation_buffer_size, type=int)
     parser.add_argument("--train_batch_size", dest="train_batch_size", default=settings.arclength_default_train_batch_size, type=int)
     parser.add_argument("--validation_batch_size", dest="validation_batch_size", default=settings.arclength_default_validation_batch_size, type=int)
@@ -36,22 +36,25 @@ if __name__ == '__main__':
     parser.add_argument("--num_workers_train", dest="num_workers_train", default=settings.arclength_default_num_workers_train, type=int)
     parser.add_argument("--num_workers_validation", dest="num_workers_validation", default=settings.arclength_default_num_workers_validation, type=int)
     parser.add_argument("--history_size", dest="history_size", default=settings.arclength_default_history_size, type=int)
+    parser.add_argument("--history_size", dest="history_size", default=settings.arclength_default_history_size, type=int)
     args = parser.parse_args()
 
+
     OnlineDataset = None
-    results_base_dir_path = None
     if args.group == 'euclidean':
         OnlineDataset = DeepSignatureEuclideanArclengthTupletsOnlineDataset
-        results_base_dir_path = settings.level_curves_euclidean_arclength_tuplets_results_dir_path
     elif args.group == 'similarity':
         OnlineDataset = DeepSignatureSimilarityArclengthTupletsOnlineDataset
-        results_base_dir_path = settings.level_curves_similarity_arclength_tuplets_results_dir_path
     elif args.group == 'equiaffine':
         OnlineDataset = DeepSignatureEquiaffineArclengthTupletsOnlineDataset
-        results_base_dir_path = settings.level_curves_equiaffine_arclength_tuplets_results_dir_path
     elif args.group == 'affine':
         OnlineDataset = DeepSignatureAffineArclengthTupletsOnlineDataset
-        results_base_dir_path = settings.level_curves_affine_arclength_tuplets_results_dir_path
+
+    train_dataset_dir_path = common_utils.get_train_dataset_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
+    validation_dataset_dir_path = common_utils.get_validation_dataset_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
+    results_base_dir_path = common_utils.get_results_dir(data_dir=args.data_dir, invariant='arclength', group=args.group)
+    train_curves_dir_path = common_utils.get_train_curves_dir(data_dir=args.data_dir)
+    validation_curves_dir_path = common_utils.get_validation_curves_dir(data_dir=args.data_dir)
 
     train_dataset = OnlineDataset(
         dataset_size=args.train_dataset_size,
