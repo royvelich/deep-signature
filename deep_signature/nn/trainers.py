@@ -188,7 +188,7 @@ class ModelTrainer:
         input_data = [v for k, v in batch_data.items() if k.startswith('input')]
         # output = self._model(batch_data['input'])
         output = self._model(*input_data)
-        v = torch.tensor(0).cuda().double()
+        v = torch.tensor(0).cuda()
         for loss_function in self._loss_functions:
             v = v + loss_function(output=output, batch_data=batch_data)
         return v

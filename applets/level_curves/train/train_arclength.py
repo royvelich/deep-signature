@@ -38,6 +38,7 @@ if __name__ == '__main__':
     parser.add_argument("--history-size", default=settings.arclength_default_history_size, type=int)
     parser.add_argument("--data-dir", default=settings.data_dir, type=str)
 
+    args = parser.parse_args()
 
     OnlineDataset = None
     if args.group == 'euclidean':
@@ -57,7 +58,7 @@ if __name__ == '__main__':
 
     train_dataset = OnlineDataset(
         dataset_size=args.train_dataset_size,
-        dir_path=settings.level_curves_dir_path_train,
+        dir_path=train_curves_dir_path,
         multimodality=args.multimodality,
         replace=True,
         buffer_size=args.train_buffer_size,
@@ -69,7 +70,7 @@ if __name__ == '__main__':
 
     validation_dataset = OnlineDataset(
         dataset_size=args.validation_dataset_size,
-        dir_path=settings.level_curves_dir_path_validation,
+        dir_path=validation_curves_dir_path,
         multimodality=args.multimodality,
         replace=False,
         buffer_size=args.validation_buffer_size,
@@ -83,7 +84,7 @@ if __name__ == '__main__':
     validation_dataset.stop()
     train_dataset.start()
 
-    model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count, transformation_group_type=args.group)
+    model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count)
 
     print('')
     print(model)

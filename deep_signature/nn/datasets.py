@@ -52,8 +52,8 @@ class DeepSignaturePairsDataset(Dataset):
             radians = curve_processing.calculate_secant_angle(curve=pair[i])
             pair[i] = curve_processing.rotate_curve(curve=pair[i], radians=radians)
 
-        pair_torch = torch.from_numpy(pair).cuda().double()
-        label_torch = torch.from_numpy(numpy.array([self._labels[idx]])).cuda().double()
+        pair_torch = torch.from_numpy(pair).cuda()
+        label_torch = torch.from_numpy(numpy.array([self._labels[idx]])).cuda()
 
         return {
             'input': pair_torch,
@@ -75,7 +75,7 @@ class DeepSignatureTupletsDataset(Dataset):
         item = {}
         tuplet = self._tuplets[index]
         for key in tuplet.keys():
-            item[key] = torch.from_numpy(numpy.array(self._tuplets[index][key]).astype('float32')).cuda().double()
+            item[key] = torch.from_numpy(numpy.array(self._tuplets[index][key]).astype('float32')).cuda()
 
         return item
 
@@ -189,7 +189,7 @@ class DeepSignatureTupletsOnlineDataset(Dataset):
         tuplet = self._items[mod_index]
         for key in tuplet.keys():
             if key == 'input':
-                item[key] = torch.from_numpy(numpy.array(tuplet[key]).astype('float32')).cuda().double()
+                item[key] = torch.from_numpy(numpy.array(tuplet[key]).astype('float32')).cuda()
             else:
                 item[key] = tuplet[key]
 

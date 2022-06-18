@@ -42,7 +42,8 @@ def generate_random_euclidean_transform_2d(rotation=True):
 
 
 def generate_random_similarity_transform_2d(min_det, max_det, rotation=False):
-    return generate_random_affine_transform_2d(min_cond=1, max_cond=1, min_det=min_det, max_det=max_det, rotation=False)
+    A = generate_random_affine_transform_2d(min_cond=1, max_cond=1, min_det=min_det, max_det=max_det, rotation=False)
+    return A
 
 
 def generate_random_equiaffine_transform_2d(min_cond, max_cond, rotation=True):

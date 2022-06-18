@@ -184,6 +184,20 @@ def transform_curve(curve, transform):
 
 
 # -------------------------------------------------
+# moments
+# -------------------------------------------------
+def append_curve_moments(curve):
+    x = curve[:, 0]
+    y = curve[:, 1]
+    x2 = numpy.square(x)
+    y2 = numpy.square(y)
+    xy = x * y
+    moments = numpy.concatenate((x2[..., numpy.newaxis], y2[..., numpy.newaxis], xy[..., numpy.newaxis]), axis=1)
+    appended_curve = numpy.concatenate((curve, moments), axis=1)
+    return appended_curve
+
+
+# -------------------------------------------------
 # helpers
 # -------------------------------------------------
 def match_curve_sample_tangents(curve_sample1, curve_sample2, index1, index2):

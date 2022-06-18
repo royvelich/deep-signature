@@ -172,6 +172,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
                     end_point_index=index2,
                     multimodality=multimodality,
                     supporting_points_count=supporting_points_count)
+                sample = curve_processing.append_curve_moments(curve=sample)
                 input.append(sample)
 
         for index1, index2 in zip(indices, indices[1:]):
@@ -181,6 +182,7 @@ class ArcLengthTupletsDatasetGenerator(TuplesDatasetGenerator):
                 end_point_index=index2,
                 multimodality=multimodality,
                 supporting_points_count=supporting_points_count)
+            sample = curve_processing.append_curve_moments(curve=sample)
             input.append(sample)
 
         return tuplet
