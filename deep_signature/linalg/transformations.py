@@ -41,7 +41,19 @@ def generate_random_euclidean_transform_2d(rotation=True):
     # return generate_rotation_transform_2d(float(numpy.pi / 4))
 
 
-def generate_random_similarity_transform_2d(min_det, max_det, rotation=False):
+# def generate_random_similarity_transform_2d(min_det, max_det, rotation=False):
+#     A = generate_random_affine_transform_2d(min_cond=1, max_cond=1, min_det=min_det, max_det=max_det, rotation=False)
+#     return A
+
+def generate_random_similarity_transform_2d(min_det, max_det, min_scale=0.75, max_scale=2):
+    B = generate_random_euclidean_transform_2d()
+    scale = numpy.random.uniform(low=min_scale, high=max_scale, size=1)
+    S = scale * generate_identity_transform_2d()
+    A = numpy.matmul(S, B)
+    return A
+
+
+def generate_random_similarity_transform_2d_eval(min_det, max_det, rotation=False):
     A = generate_random_affine_transform_2d(min_cond=1, max_cond=1, min_det=min_det, max_det=max_det, rotation=False)
     return A
 
@@ -122,7 +134,7 @@ def generate_random_transform_2d_evaluation(transform_type, rotation=True):
     if transform_type == 'euclidean':
         return generate_random_euclidean_transform_2d(rotation=rotation)
     elif transform_type == 'similarity':
-        return generate_random_similarity_transform_2d(min_det=settings.affine_arclength_min_det_evaluation, max_det=settings.affine_arclength_max_det_evaluation)
+        return generate_random_similarity_transform_2d_eval(min_det=settings.affine_arclength_min_det_evaluation, max_det=settings.affine_arclength_max_det_evaluation)
     elif transform_type == 'equiaffine':
         return generate_random_equiaffine_transform_2d(min_cond=settings.equiaffine_arclength_min_cond_evaluation, max_cond=settings.equiaffine_arclength_max_cond_evaluation, rotation=rotation)
     elif transform_type == 'affine':
