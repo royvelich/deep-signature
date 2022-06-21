@@ -98,6 +98,7 @@ class ArcLengthLoss(torch.nn.Module):
         diff_2 = diff.mean(dim=1)
         diff_3 = diff_2.exp()
 
+        gamma = 0.6
         return v15.mean(dim=0) + diff_3.mean(dim=0)
 
         # sample_index = 0
