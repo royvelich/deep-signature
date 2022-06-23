@@ -45,7 +45,7 @@ def generate_random_euclidean_transform_2d(rotation=True):
 #     A = generate_random_affine_transform_2d(min_cond=1, max_cond=1, min_det=min_det, max_det=max_det, rotation=False)
 #     return A
 
-def generate_random_similarity_transform_2d(min_det, max_det, min_scale=1, max_scale=5):
+def generate_random_similarity_transform_2d(min_det, max_det, min_scale=1, max_scale=3):
     B = generate_random_euclidean_transform_2d()
     scale = numpy.random.uniform(low=min_scale, high=max_scale, size=1)
     S = scale * generate_identity_transform_2d()
