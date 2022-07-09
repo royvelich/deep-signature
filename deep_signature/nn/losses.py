@@ -96,6 +96,7 @@ class ArcLengthLoss(torch.nn.Module):
 
         A_eval = torch.cat(A, dim=1)
         A_eval_exp = A_eval.exp()
+        # A_eval_exp = torch.reciprocal(input=A_eval)
         A_eval_exp_mean = A_eval_exp.mean(dim=1)
         # A_eval_mean_exp = A_eval_mean.exp()
 
@@ -109,6 +110,7 @@ class ArcLengthLoss(torch.nn.Module):
 
         alpha = 0.5
         loss_eval = alpha*A_eval_exp_mean.mean(dim=0) + (1 - alpha)*B_eval_exp_mean.mean(dim=0)
+        # loss_eval = B_eval_exp_mean.mean(dim=0)
 
         return loss_eval
 

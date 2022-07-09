@@ -1,3 +1,5 @@
+import random
+
 # numpy
 import numpy
 
@@ -7,12 +9,13 @@ from utils import settings
 def _validate_condition_number(A, min_cond, max_cond):
     w, v = numpy.linalg.eig(A)
     cond = numpy.linalg.cond(A)
-    return ((w[0] > 0) and (w[1] > 0)) and (min_cond < cond < max_cond)
-
+    # return ((w[0] > 0) and (w[1] > 0)) and (min_cond < cond < max_cond)
+    return ((w[0] > 0) and (w[1] > 0)) and (cond < max_cond)
 
 def _validate_determinant(A, min_det, max_det):
     det = numpy.linalg.det(A)
-    return min_det < det < max_det
+    return det < max_det
+    # return min_det < det < max_det
 
 
 def generate_identity_transform_2d():
@@ -85,25 +88,42 @@ def generate_random_equiaffine_transform_2d(min_cond, max_cond, rotation=True):
     #         return A
 
 
+# https://gist.github.com/bstellato/23322fe5d87bb71da922fbc41d658079
 def generate_random_affine_transform_2d(min_cond, max_cond, min_det, max_det, rotation=True):
-    det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
-    cond = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
-    s1 = numpy.sqrt(det / cond)
-    s2 = det / s1
-    S = numpy.array([[s1, 0], [0, s2]])
-    return S
+    # det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
+    # cond_P = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
+    # n = 2
+    # log_cond_P = numpy.log(cond_P)
+    # exp_vec = numpy.arange(-log_cond_P / 4., log_cond_P * (n + 1) / (4 * (n - 1)), log_cond_P / (2. * (n - 1)))
+    # s = numpy.exp(exp_vec)
+    # S = numpy.diag(s)
+    # U, _ = numpy.linalg.qr((numpy.random.rand(n, n) - 5.) * 200)
+    # V, _ = numpy.linalg.qr((numpy.random.rand(n, n) - 5.) * 200)
+    # P = U.dot(S).dot(V.T)
+    # P = numpy.sqrt(det) * P.dot(P.T)
+    # return P
 
-    # while True:
-    #     A = numpy.random.uniform(low=0, high=3, size=(2, 2))
-    #     det = numpy.linalg.det(A)
-    #     if _validate_condition_number(A=A, min_cond=1.3, max_cond=3) and (det > 1.5) and (det < 2):
-    #         return A
+    # det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
+    # cond = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
+    # s1 = numpy.sqrt(det / cond)
+    # s2 = det / s1
+    # if bool(random.getrandbits(1)):
+    #     S = numpy.array([[s1, 0], [0, s2]])
+    # else:
+    #     S = numpy.array([[s2, 0], [0, s1]])
+    # return S
+
+    while True:
+        A = numpy.random.uniform(low=0, high=2, size=(2, 2))
+        det = numpy.linalg.det(A)
+        if (det < 4):
+            return A
 
     # B = generate_rotation_transform_2d(float(numpy.pi / 5))
     # return numpy.matmul(numpy.array([[1.3, 0], [0, 2.3]]), B)
     # return numpy.array([[1.5, 0], [0, 2.2]])
     # while True:
-    #     A = numpy.random.uniform(low=0, high=max_scale, size=(2, 2))
+    #     A = numpy.random.uniform(low=0, high=0.2, size=(2, 2))
     #     if (_validate_condition_number(A=A, min_cond=min_cond, max_cond=max_cond) is True) and (_validate_determinant(A=A, min_det=min_det, max_det=max_det) is True):
     #         return A
 
