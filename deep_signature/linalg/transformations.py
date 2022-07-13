@@ -24,7 +24,7 @@ def generate_identity_transform_2d():
 
 def generate_rotation_transform_2d(radians):
     c, s = numpy.cos(radians), numpy.sin(radians)
-    return numpy.array([[c, s], [-s, c]])
+    return numpy.array([[c, s], [-s, c]]).astype('float32')
 
 
 def generate_horizontal_reflection_transform_2d():
@@ -90,18 +90,18 @@ def generate_random_equiaffine_transform_2d(min_cond, max_cond, rotation=True):
 
 # https://gist.github.com/bstellato/23322fe5d87bb71da922fbc41d658079
 def generate_random_affine_transform_2d(min_cond, max_cond, min_det, max_det, rotation=True):
-    # det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
-    # cond_P = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
-    # n = 2
-    # log_cond_P = numpy.log(cond_P)
-    # exp_vec = numpy.arange(-log_cond_P / 4., log_cond_P * (n + 1) / (4 * (n - 1)), log_cond_P / (2. * (n - 1)))
-    # s = numpy.exp(exp_vec)
-    # S = numpy.diag(s)
-    # U, _ = numpy.linalg.qr((numpy.random.rand(n, n) - 5.) * 200)
-    # V, _ = numpy.linalg.qr((numpy.random.rand(n, n) - 5.) * 200)
-    # P = U.dot(S).dot(V.T)
-    # P = numpy.sqrt(det) * P.dot(P.T)
-    # return P
+    det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
+    cond_P = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
+    n = 2
+    log_cond_P = numpy.log(cond_P)
+    exp_vec = numpy.arange(-log_cond_P / 4., log_cond_P * (n + 1) / (4 * (n - 1)), log_cond_P / (2. * (n - 1)))
+    s = numpy.exp(exp_vec)
+    S = numpy.diag(s)
+    U, _ = numpy.linalg.qr((numpy.random.rand(n, n) - 5.) * 200)
+    V, _ = numpy.linalg.qr((numpy.random.rand(n, n) - 5.) * 200)
+    P = U.dot(S).dot(V.T)
+    P = numpy.sqrt(det) * P.dot(P.T)
+    return P
 
     # det = float(numpy.random.uniform(low=min_det, high=max_det, size=1))
     # cond = float(numpy.random.uniform(low=min_cond, high=max_cond, size=1))
@@ -113,11 +113,11 @@ def generate_random_affine_transform_2d(min_cond, max_cond, min_det, max_det, ro
     #     S = numpy.array([[s2, 0], [0, s1]])
     # return S
 
-    while True:
-        A = numpy.random.uniform(low=0, high=2, size=(2, 2))
-        det = numpy.linalg.det(A)
-        if (det < 4):
-            return A
+    # while True:
+    #     A = numpy.random.uniform(low=0, high=2, size=(2, 2))
+    #     det = numpy.linalg.det(A)
+    #     if (det < 4):
+    #         return A
 
     # B = generate_rotation_transform_2d(float(numpy.pi / 5))
     # return numpy.matmul(numpy.array([[1.3, 0], [0, 2.3]]), B)
@@ -141,21 +141,21 @@ def generate_random_transform_2d(transform_type, min_cond, max_cond, min_det, ma
 
 def generate_random_transform_2d_training(transform_type, rotation=True):
     if transform_type == 'euclidean':
-        return generate_random_euclidean_transform_2d(rotation=rotation)
+        return generate_random_euclidean_transform_2d(rotation=rotation).astype('float32')
     elif transform_type == 'similarity':
-        return generate_random_similarity_transform_2d(min_det=settings.affine_arclength_min_det_training, max_det=settings.affine_arclength_max_det_training)
+        return generate_random_similarity_transform_2d(min_det=settings.affine_arclength_min_det_training, max_det=settings.affine_arclength_max_det_training).astype('float32')
     elif transform_type == 'equiaffine':
-        return generate_random_equiaffine_transform_2d(min_cond=settings.equiaffine_arclength_min_cond_training, max_cond=settings.equiaffine_arclength_max_cond_training, rotation=rotation)
+        return generate_random_equiaffine_transform_2d(min_cond=settings.equiaffine_arclength_min_cond_training, max_cond=settings.equiaffine_arclength_max_cond_training, rotation=rotation).astype('float32')
     elif transform_type == 'affine':
-        return generate_random_affine_transform_2d(min_cond=settings.affine_arclength_min_cond_training, max_cond=settings.affine_arclength_max_cond_training, min_det=settings.affine_arclength_min_det_training, max_det=settings.affine_arclength_max_det_training, rotation=rotation)
+        return generate_random_affine_transform_2d(min_cond=settings.affine_arclength_min_cond_training, max_cond=settings.affine_arclength_max_cond_training, min_det=settings.affine_arclength_min_det_training, max_det=settings.affine_arclength_max_det_training, rotation=rotation).astype('float32')
 
 
 def generate_random_transform_2d_evaluation(transform_type, rotation=True):
     if transform_type == 'euclidean':
-        return generate_random_euclidean_transform_2d(rotation=rotation)
+        return generate_random_euclidean_transform_2d(rotation=rotation).astype('float32')
     elif transform_type == 'similarity':
-        return generate_random_similarity_transform_2d_eval(min_det=settings.affine_arclength_min_det_evaluation, max_det=settings.affine_arclength_max_det_evaluation)
+        return generate_random_similarity_transform_2d_eval(min_det=settings.affine_arclength_min_det_evaluation, max_det=settings.affine_arclength_max_det_evaluation).astype('float32')
     elif transform_type == 'equiaffine':
-        return generate_random_equiaffine_transform_2d(min_cond=settings.equiaffine_arclength_min_cond_evaluation, max_cond=settings.equiaffine_arclength_max_cond_evaluation, rotation=rotation)
+        return generate_random_equiaffine_transform_2d(min_cond=settings.equiaffine_arclength_min_cond_evaluation, max_cond=settings.equiaffine_arclength_max_cond_evaluation, rotation=rotation).astype('float32')
     elif transform_type == 'affine':
-        return generate_random_affine_transform_2d(min_cond=settings.affine_arclength_min_cond_evaluation, max_cond=settings.affine_arclength_max_cond_evaluation, min_det=settings.affine_arclength_min_det_evaluation, max_det=settings.affine_arclength_max_det_evaluation, rotation=rotation)
+        return generate_random_affine_transform_2d(min_cond=settings.affine_arclength_min_cond_evaluation, max_cond=settings.affine_arclength_max_cond_evaluation, min_det=settings.affine_arclength_min_det_evaluation, max_det=settings.affine_arclength_max_det_evaluation, rotation=rotation).astype('float32')

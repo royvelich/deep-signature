@@ -9,7 +9,7 @@ class CurvatureLoss(torch.nn.Module):
     def __init__(self):
         super(CurvatureLoss, self).__init__()
 
-    def forward(self, output, batch_data):
+    def forward(self, output):
         v = output[:, 0, :]
         v2 = v.unsqueeze(dim=1)
         v3 = v2 - output
@@ -236,3 +236,23 @@ class ArcLengthLoss(torch.nn.Module):
         # loss_eval = (A_eval_mean_exp + B_eval_diff_mean).mean(dim=0)
         #
         # return loss_eval
+
+
+class DifferentialInvariantsLoss(torch.nn.Module):
+    def __init__(self):
+        super(DifferentialInvariantsLoss, self).__init__()
+        self._k_loss_fn = CurvatureLoss()
+        self._ks_loss_fn = CurvatureLoss()
+
+    def forward(self, output):
+        v_k = output[:, :, 0].unsqueeze(dim=2)
+        v_ks = output[:, :, 1].unsqueeze(dim=2)
+        # anchors_k = v_k[:, 0, :].squeeze()
+        # anchors_ks = v_ks[:, 0, :].squeeze()
+
+        k_loss = self._k_loss_fn(output=v_k)
+        ks_loss = self._ks_loss_fn(output=v_ks)
+        # cov_loss = torch.abs(torch.mean((anchors_k - anchors_k.mean())*(anchors_ks - anchors_ks.mean())))
+        corr_loss = torch.abs(torch.corrcoef(output[:, 0, :].transpose(0, 1))[0, 1])
+
+        return k_loss + ks_loss + corr_loss

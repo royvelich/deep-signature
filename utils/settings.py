@@ -1,61 +1,42 @@
 import os
 
-
 # general
 data_dir = "C:/deep-signature-data"
 plots_dir = os.path.normpath(os.path.join(data_dir, "plots"))
 
-# curvature
-curvature_default_continue_training = False
-curvature_default_epochs = None
-curvature_default_train_buffer_size = 250000
-curvature_default_validation_buffer_size = 50000
-curvature_default_train_batch_size = curvature_default_train_buffer_size
-curvature_default_validation_batch_size = curvature_default_validation_buffer_size
-curvature_default_train_dataset_size = curvature_default_train_batch_size
-curvature_default_validation_dataset_size = curvature_default_validation_batch_size
-curvature_default_learning_rate = 1
-curvature_default_validation_split = None
-curvature_default_supporting_points_count = 3
-curvature_default_sample_points_count = 2 * curvature_default_supporting_points_count + 1
-curvature_default_sampling_ratio = 0.5
-curvature_default_multimodality = 30
-curvature_default_multimodality_evaluation = 35
-curvature_default_offset_length = 50
-curvature_default_num_workers_train = 10
-curvature_default_num_workers_validation = 10
-curvature_default_negative_examples_count = 3
-curvature_default_history_size = 1500
+default_continue_training = False
+default_epochs = None
+default_train_buffer_size = 150000
+default_validation_buffer_size = 50000
+default_train_batch_size = default_train_buffer_size
+default_validation_batch_size = default_validation_buffer_size
+default_train_dataset_size = default_train_batch_size
+default_validation_dataset_size = default_validation_batch_size
+default_learning_rate = 0.1
+default_validation_split = None
+default_supporting_points_count = 3
+default_sample_points_count = 2 * default_supporting_points_count + 1
+default_sampling_ratio = 0.4
+default_multimodality = 15
+default_multimodality_evaluation = 15
+default_offset_length = 50
+default_num_workers_train = 10
+default_num_workers_validation = 10
+default_negative_examples_count = 2
+default_history_size = 800
+default_min_offset = default_supporting_points_count - 1
+default_max_offset = 2 * default_min_offset
+default_anchor_points_count = 4
 
-# arclength
-arclength_default_continue_training = False
-arclength_default_learning_rate = 0.01
-arclength_default_validation_split = None
-arclength_default_epochs = None
-arclength_default_train_buffer_size = 200000
-arclength_default_validation_buffer_size = 50000
-arclength_default_train_batch_size = arclength_default_train_buffer_size
-arclength_default_validation_batch_size = arclength_default_validation_buffer_size
-arclength_default_train_dataset_size = arclength_default_train_batch_size
-arclength_default_validation_dataset_size = arclength_default_validation_batch_size
-arclength_default_multimodality = 30
-arclength_default_supporting_points_count = 5
-arclength_default_min_offset = arclength_default_supporting_points_count - 1
-arclength_default_max_offset = 2 * arclength_default_min_offset
-arclength_default_anchor_points_count = 4
-arclength_default_num_workers_train = 5
-arclength_default_num_workers_validation = 5
-arclength_default_history_size = 1500
-
-equiaffine_arclength_min_cond_training = 1.3
-equiaffine_arclength_max_cond_training = 3
+equiaffine_arclength_min_cond_training = 1
+equiaffine_arclength_max_cond_training = 5
 affine_arclength_min_cond_training = 1
 affine_arclength_max_cond_training = 4
 affine_arclength_min_det_training = 1
 affine_arclength_max_det_training = 4
 
-equiaffine_arclength_min_cond_evaluation = 2.5
-equiaffine_arclength_max_cond_evaluation = 2.5
+equiaffine_arclength_min_cond_evaluation = 1.5
+equiaffine_arclength_max_cond_evaluation = 1.5
 affine_arclength_min_cond_evaluation = 2
 affine_arclength_max_cond_evaluation = 2
 affine_arclength_min_det_evaluation = 2

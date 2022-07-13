@@ -94,7 +94,7 @@ def predict_curvature_by_index(model, curve_neighborhoods, device='cuda', factor
             curvature_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample), dim=0), dim=0).to(device)
             with torch.no_grad():
                 predicted_curvature[point_index, 0] = point_index
-                predicted_curvature[point_index, 1] = torch.squeeze(model(curvature_batch_data.to(torch.float32)), dim=0).cpu().detach().numpy() * factor
+                predicted_curvature[point_index, 1] = torch.squeeze(model(curvature_batch_data), dim=0).cpu().detach().numpy() * factor
     return predicted_curvature
 
 
@@ -134,32 +134,63 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
     return numpy.vstack((indices, values)).transpose()
 
 
-def predict_curve_invariants(curve, arclength_model, curvature_model, sampling_ratio, neighborhood_supporting_points_count, section_supporting_points_count, indices_shift=0, device='cuda', rng=None):
+def predict_differential_invariants_by_index(model, curve_neighborhoods, device='cuda'):
+    sampled_neighborhoods = curve_neighborhoods['sampled_neighborhoods']
+    predicted_differential_invariants = numpy.zeros([len(sampled_neighborhoods), 2])
+    for point_index, sampled_neighborhood in enumerate(sampled_neighborhoods):
+        for (indices, sample) in zip(sampled_neighborhood['indices'], sampled_neighborhood['samples']):
+            sample = curve_processing.normalize_curve(curve=sample)
+            curvature_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample), dim=0), dim=0).to(device)
+            with torch.no_grad():
+                diff_invariants = torch.squeeze(torch.squeeze(model(curvature_batch_data), dim=0), dim=0).cpu().detach().numpy()
+                predicted_differential_invariants[point_index, 0] = diff_invariants[0]
+                predicted_differential_invariants[point_index, 1] = diff_invariants[1]
+    return predicted_differential_invariants
+
+
+def predict_curve_invariants(curve, models, sampling_ratio, neighborhood_supporting_points_count, section_supporting_points_count, indices_shift=0, device='cuda', rng=None):
     curve_points_count = curve.shape[0]
     sampling_points_count = int(sampling_ratio * curve_points_count)
-    dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=settings.curvature_default_multimodality_evaluation, max_density=1, count=1)[0]
+    dist = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=settings.default_multimodality_evaluation, max_density=1, count=1)[0]
     indices_pool = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=sampling_points_count)
     # modified_indices_pool = common_utils.insert_sorted(indices_pool, numpy.array([reference_index]))
     # meta_reference_index = int(numpy.where(modified_indices_pool == reference_index)[0])
     indices_pool = numpy.roll(indices_pool, shift=indices_shift, axis=0)
 
-    predicted_arclength = predict_arclength_by_index(
-        model=arclength_model,
-        curve=curve,
-        indices_pool=indices_pool,
-        supporting_points_count=section_supporting_points_count,
-        device=device,
-        rng=rng)
+    predicted_arclength = None
+    arclength_model = models['arclength']
+    if models['arclength'] is not None:
+        arclength_model.eval()
+        predicted_arclength = predict_arclength_by_index(
+            model=arclength_model,
+            curve=curve,
+            indices_pool=indices_pool,
+            supporting_points_count=section_supporting_points_count,
+            device=device,
+            rng=rng)
 
     curve_neighborhoods = extract_curve_neighborhoods(
         curve=curve,
         indices_pool=indices_pool,
         supporting_points_count=neighborhood_supporting_points_count)
 
-    predicted_curvature = predict_curvature_by_index(
-        model=curvature_model,
-        curve_neighborhoods=curve_neighborhoods,
-        device=device)
+    predicted_curvature = None
+    curvature_model = models['curvature']
+    if curvature_model is not None:
+        curvature_model.eval()
+        predicted_curvature = predict_curvature_by_index(
+            model=curvature_model,
+            curve_neighborhoods=curve_neighborhoods,
+            device=device)
+
+    predicted_differential_invariants = None
+    differential_invariants_model = models['all']
+    if differential_invariants_model is not None:
+        differential_invariants_model.eval()
+        predicted_differential_invariants = predict_differential_invariants_by_index(
+            model=differential_invariants_model,
+            curve_neighborhoods=curve_neighborhoods,
+            device=device)
 
     # if anchor_indices is not None:
     #     predicted_arclength_with_anchors = predict_arclength_by_index(
@@ -179,9 +210,12 @@ def predict_curve_invariants(curve, arclength_model, curvature_model, sampling_r
     #         model=curvature_model,
     #         curve_neighborhoods=curve_neighborhoods_with_anchors)
 
-    predicted_signature = numpy.zeros((indices_pool.shape[0], 2))
-    predicted_signature[:, 0] = predicted_arclength[:, 1]
-    predicted_signature[:, 1] = predicted_curvature[:, 1]
+    if predicted_curvature is not None and predicted_arclength is not None:
+        predicted_signature = numpy.zeros((indices_pool.shape[0], 2))
+        predicted_signature[:, 0] = predicted_arclength[:, 1]
+        predicted_signature[:, 1] = predicted_curvature[:, 1]
+    else:
+        predicted_signature = None
 
     sampled_curve = curve[indices_pool]
     anchors = curve[indices_pool]
@@ -190,6 +224,7 @@ def predict_curve_invariants(curve, arclength_model, curvature_model, sampling_r
         'predicted_arclength': predicted_arclength,
         # 'predicted_arclength_with_anchors': predicted_arclength_with_anchors if anchor_indices is not None else None,
         'predicted_curvature': predicted_curvature,
+        'predicted_differential_invariants': predicted_differential_invariants,
         # 'predicted_curvature_with_anchors': predicted_curvature_with_anchors if anchor_indices is not None else None,
         'predicted_signature': predicted_signature,
         'curve_neighborhoods': curve_neighborhoods,
@@ -222,7 +257,7 @@ def calculate_curve_invariants(curve, transform_type, anchor_indices=None):
 # --------------------------
 # RECORD GENERATION ROUTINES
 # --------------------------
-def generate_curve_records(arclength_model, curvature_model, curves, factor_extraction_curves, transform_type, comparison_curves_count, sampling_ratio, anchors_ratio, neighborhood_supporting_points_count, section_supporting_points_count, do_not_transform_first=True, do_not_downsample_first=False, rotation=True, first_curve_index=None):
+def generate_curve_records(models, curves, factor_extraction_curves, transform_type, comparison_curves_count, sampling_ratio, anchors_ratio, neighborhood_supporting_points_count, section_supporting_points_count, do_not_transform_first=True, do_not_downsample_first=False, rotation=True, first_curve_index=None):
     curve_records = []
     for curve_index, curve in enumerate(curves):
         curve = curve_processing.enforce_cw(curve=curve)
@@ -258,8 +293,7 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
         for i, comparison_curve in enumerate(comparison_curves):
             predicted_curve_invariants = predict_curve_invariants(
                 curve=comparison_curve,
-                arclength_model=arclength_model,
-                curvature_model=curvature_model,
+                models=models,
                 sampling_ratio=1 if (do_not_downsample_first is True and i == 0) else sampling_ratio,
                 neighborhood_supporting_points_count=neighborhood_supporting_points_count,
                 section_supporting_points_count=section_supporting_points_count)
@@ -271,14 +305,17 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
             arclength_comparison = {
                 'true_arclength': true_curve_invariants['true_arclength'],
                 'predicted_arclength': predicted_curve_invariants['predicted_arclength'],
-                # 'predicted_arclength_with_anchors': predicted_curve_invariants['predicted_arclength_with_anchors']
             }
 
             curvature_comparison = {
                 'curve_neighborhoods': predicted_curve_invariants['curve_neighborhoods'],
                 'true_curvature': true_curve_invariants['true_curvature'],
                 'predicted_curvature': predicted_curve_invariants['predicted_curvature'],
-                # 'predicted_curvature_with_anchors': predicted_curve_invariants['predicted_curvature_with_anchors']
+            }
+
+            differential_invariants_comparison = {
+                'curve_neighborhoods': predicted_curve_invariants['curve_neighborhoods'],
+                'predicted_differential_invariants': predicted_curve_invariants['predicted_differential_invariants'],
             }
 
             curve_record['comparisons'].append({
@@ -289,12 +326,14 @@ def generate_curve_records(arclength_model, curvature_model, curves, factor_extr
                 'dist': predicted_curve_invariants['dist'],
                 'arclength_comparison': arclength_comparison,
                 'curvature_comparison': curvature_comparison,
+                'differential_invariants_comparison': differential_invariants_comparison,
                 'predicted_signature': predicted_curve_invariants['predicted_signature'],
             })
 
         curve_records.append(curve_record)
 
-    if len(factor_extraction_curves) > 0:
+    arclength_model = models['arclength']
+    if len(factor_extraction_curves) > 0 and arclength_model is not None:
         factors = []
         for curve_index, curve in enumerate(factor_extraction_curves):
             all_indices = numpy.array(list(range(curve.shape[0])))

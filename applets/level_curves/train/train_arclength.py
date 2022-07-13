@@ -4,7 +4,7 @@ from deep_signature.nn.datasets import DeepSignatureEuclideanArclengthTupletsOnl
 from deep_signature.nn.datasets import DeepSignatureSimilarityArclengthTupletsOnlineDataset
 from deep_signature.nn.datasets import DeepSignatureEquiaffineArclengthTupletsOnlineDataset
 from deep_signature.nn.datasets import DeepSignatureAffineArclengthTupletsOnlineDataset
-from deep_signature.nn.networks import DeepSignatureArcLengthNet
+from deep_signature.nn.networks import ArcLengthNet
 from deep_signature.nn.losses import ArcLengthLoss
 from deep_signature.nn.trainers import ModelTrainer
 from utils import settings
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     validation_dataset.stop()
     train_dataset.start()
 
-    model = DeepSignatureArcLengthNet(sample_points=args.supporting_points_count)
+    model = ArcLengthNet(sample_points=args.supporting_points_count)
 
     print('')
     print(model)
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
     # optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     loss_fn = ArcLengthLoss(anchor_points_count=args.anchor_points_count)
-    model_trainer = ModelTrainer(model=model, loss_functions=[loss_fn], optimizer=optimizer)
+    model_trainer = ModelTrainer(model=model, loss_function=[loss_fn], optimizer=optimizer)
     model_trainer.fit(
         train_dataset=train_dataset,
         validation_dataset=validation_dataset,

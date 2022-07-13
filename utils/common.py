@@ -18,8 +18,9 @@ import torch.distributed as dist
 # scipy
 
 # deep signature
-from deep_signature.nn.networks import DeepSignatureArcLengthNet
-from deep_signature.nn.networks import DeepSignatureCurvatureNet
+from deep_signature.nn.networks import ArcLengthNet
+from deep_signature.nn.networks import CurvatureNet
+from deep_signature.nn.networks import DifferentialInvariantsNet
 
 
 def create_data_generator(dir_path, fine=False, limit=None):
@@ -138,27 +139,48 @@ def get_test_images_dir(data_dir):
     return get_images_dir(data_dir=data_dir, purpose='test')
 
 
+def get_arclength_default_min_offset(args):
+    return args.supporting_points_count - 1
+
+
+def get_arclength_default_max_offset(args):
+    return 2 * get_arclength_default_min_offset(supporting_points_count=args.supporting_points_count)
+
+
+def get_sample_points_count(args):
+    if args.invariant == 'arclength':
+        return args.supporting_points_count
+
+    return 2*args.supporting_points_count + 1
+
+
 def load_models(data_dir, group, distributed=True, device=torch.device('cuda')):
-    curvature_results_dir_path = get_results_dir(data_dir=data_dir, invariant='curvature', group=group)
-    arclength_results_dir_path = get_results_dir(data_dir=data_dir, invariant='arclength', group=group)
+    models = {}
+    invariants = ['curvature', 'arclength', 'all']
+    neural_nets = [CurvatureNet, ArcLengthNet, DifferentialInvariantsNet]
+    for i, invariant in enumerate(invariants):
+        results_dir_path = get_results_dir(data_dir=data_dir, invariant=invariant, group=group)
+        neural_net = neural_nets[i]
+        model = neural_net(sample_points=settings.default_sample_points_count).cuda()
+        latest_subdir = get_latest_subdirectory(results_dir_path)
 
-    # create models
-    curvature_model = DeepSignatureCurvatureNet(sample_points=settings.curvature_default_sample_points_count).cuda()
-    arclength_model = DeepSignatureArcLengthNet(sample_points=settings.arclength_default_supporting_points_count).cuda()
+        try:
+            results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+            if distributed is True:
+                model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['module_file_path']).name}", map_location=device))
+            else:
+                model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['model_file_path']).name}", map_location=device))
 
-    # load curvature model state
-    latest_subdir = get_latest_subdirectory(curvature_results_dir_path)
-    results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-    curvature_model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['model_file_path']).name}", map_location=device))
-    curvature_model.eval()
+            print(model)
+            models[invariant] = model
+        except:
+            models[invariant] = None
 
-    # load arclength model state
-    latest_subdir = get_latest_subdirectory(arclength_results_dir_path)
-    results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-    if distributed is True:
-        arclength_model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['module_file_path']).name}", map_location=device))
-    else:
-        arclength_model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['model_file_path']).name}", map_location=device))
-    arclength_model.eval()
+    return models
 
-    return curvature_model, arclength_model
+
+def save_object_dict(obj, file_path):
+    dict = {key: value for key, value in obj.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
+    with open(file_path, "w") as text_file:
+        for key, value in dict.items():
+            text_file.write(f'{key}: {value}\n')

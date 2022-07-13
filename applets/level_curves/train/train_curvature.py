@@ -4,7 +4,7 @@ from deep_signature.nn.datasets import DeepSignatureEuclideanCurvatureTupletsOnl
 from deep_signature.nn.datasets import DeepSignatureSimilarityCurvatureTupletsOnlineDataset
 from deep_signature.nn.datasets import DeepSignatureEquiaffineCurvatureTupletsOnlineDataset
 from deep_signature.nn.datasets import DeepSignatureAffineCurvatureTupletsOnlineDataset
-from deep_signature.nn.networks import DeepSignatureCurvatureNet
+from deep_signature.nn.networks import CurvatureNet
 from deep_signature.nn.losses import CurvatureLoss
 from deep_signature.nn.trainers import ModelTrainer
 from utils import settings
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     validation_dataset.stop()
     train_dataset.start()
 
-    model = DeepSignatureCurvatureNet(sample_points=args.sample_points_count)
+    model = CurvatureNet(sample_points=args.sample_points_count)
 
     print('')
     print(model)
@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
     curvature_loss_fn = CurvatureLoss()
-    model_trainer = ModelTrainer(model=model, loss_functions=[curvature_loss_fn], optimizer=optimizer)
+    model_trainer = ModelTrainer(model=model, loss_function=[curvature_loss_fn], optimizer=optimizer)
     model_trainer.fit(
         train_dataset=train_dataset,
         validation_dataset=validation_dataset,

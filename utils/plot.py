@@ -101,7 +101,7 @@ def plot_curve_plotly(fig, row, col, curve, name, point_size=2, line_width=2, li
 
 
 
-def plot_curvature_plotly(fig, row, col, name, curvature, line_width=2, line_color='green'):
+def plot_curvature_plotly(fig, row, col, name, curvature, point_size=2, line_width=2, line_color='green', mode='markers'):
     x = numpy.array(range(curvature.shape[0]))
     y = curvature
 
@@ -110,13 +110,14 @@ def plot_curvature_plotly(fig, row, col, name, curvature, line_width=2, line_col
             name=name,
             x=x,
             y=y,
-            mode='lines+markers',
+            mode=mode,
             line={
                 'color': line_color,
                 'width': line_width
             },
             marker={
                 'color': line_color,
+                'size': point_size
             }),
         row=row,
         col=col)
@@ -563,12 +564,81 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     # ------------------------------------
     # CURVATURE VS. INDEX OF SAMPLE POINTS
     # ------------------------------------
-    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted Curvature as a Function of Point Index</b>',))
+    # fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted Curvature as a Function of Point Index</b>',))
+    # for i, comparison in enumerate(curve_record['comparisons']):
+    #     curvature_comparison = comparison['curvature_comparison']
+    #     predicted_curvature = curvature_comparison['predicted_curvature']
+    #
+    #     plot_curve_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curve=predicted_curvature, point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
+    #
+    # fig['layout']['xaxis']['title'] = 'Sample Point Index'
+    # fig['layout']['yaxis']['title'] = 'Predicted Curvature'
+    #
+    # fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+    #
+    # fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    #
+    # fig.write_image(os.path.join(plots_dir_path, f'predicted_curvature_as_function_of_index_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    # if plot_to_screen is True:
+    #     fig.show()
+
+    # -----------------------------------------
+    # CURVATURE VS. ARC-LENGTH OF SAMPLE POINTS
+    # -----------------------------------------
+    # fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted Curvature as a Function of Predicted Arc-Length</b>',))
+    # comparisons = curve_record['comparisons']
+    # for i, comparison in enumerate(comparisons):
+    #     curvature_comparison = comparison['curvature_comparison']
+    #     arclength_comparison = comparison['arclength_comparison']
+    #     predicted_curvature = curvature_comparison['predicted_curvature']
+    #     predicted_arclength = arclength_comparison['predicted_arclength']
+    #     predicted_signature = comparison['predicted_signature']
+    #     true_curvature = curvature_comparison['true_curvature']
+    #     true_arclength = arclength_comparison['true_arclength']
+    #
+    #     # if transformation_group_type != 'affine':
+    #     if transformation_group_type == 'euclidean':
+    #         if i == 0:
+    #             if transformation_group_type == 'equiaffine':
+    #                 true_curvature[:, 1] = numpy.clip(true_curvature[:, 1], a_min=numpy.min(predicted_curvature[:, 1]), a_max=numpy.max(predicted_curvature[:, 1]))
+    #                 ratio = 1
+    #             elif transformation_group_type == 'euclidean':
+    #                 ratio = float(numpy.max(numpy.abs(true_curvature[:, 1])) / numpy.max(numpy.abs(predicted_curvature[:, 1])))
+    #
+    #             plot_graph_plotly(fig=fig, row=1, col=1, name=f'Ground Truth', x=true_arclength[:, 1], y=true_curvature[:, 1], point_size=int(settings.plotly_sample_point_size * 1.3), line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1], mode='markers')
+    #     else:
+    #         ratio = 1
+    #
+    #     signature_arclength = predicted_signature[:, 0].copy()
+    #     if normalize_signature is True:
+    #         predicted_signature_1 = comparisons[1]['predicted_signature']
+    #         signature_arclength = signature_arclength * (predicted_signature_1[-1, 0] / predicted_signature[-1, 0])
+    #
+    #     plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=signature_arclength, y=ratio*predicted_signature[:, 1], point_size=int(settings.plotly_sample_point_size * 1.3), line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
+    #
+    # fig['layout']['xaxis']['title'] = 'Predicted Arc-Length'
+    # fig['layout']['yaxis']['title'] = 'Predicted Curvature'
+    #
+    # fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+    #
+    # fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    #
+    # fig.write_image(os.path.join(plots_dir_path, f'predicted_curvature_as_function_of_arclength_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    # if plot_to_screen is True:
+    #     fig.show()
+
+
+    # ------------------------------------
+    # KAPPA VS. INDEX OF SAMPLE POINTS
+    # ------------------------------------
+    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted KAPPA as a Function of Point Index</b>',))
     for i, comparison in enumerate(curve_record['comparisons']):
+        differential_invariants_comparison = comparison['differential_invariants_comparison']
+        predicted_differential_invariants = differential_invariants_comparison['predicted_differential_invariants']
         curvature_comparison = comparison['curvature_comparison']
         predicted_curvature = curvature_comparison['predicted_curvature']
 
-        plot_curve_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curve=predicted_curvature, point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
+        plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curvature=predicted_differential_invariants[:, 0], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
 
     fig['layout']['xaxis']['title'] = 'Sample Point Index'
     fig['layout']['yaxis']['title'] = 'Predicted Curvature'
@@ -581,48 +651,61 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     if plot_to_screen is True:
         fig.show()
 
-    # -----------------------------------------
-    # CURVATURE VS. ARC-LENGTH OF SAMPLE POINTS
-    # -----------------------------------------
-    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted Curvature as a Function of Predicted Arc-Length</b>',))
-    comparisons = curve_record['comparisons']
-    for i, comparison in enumerate(comparisons):
+
+    # ------------------------------------
+    # KAPPA_S VS. INDEX OF SAMPLE POINTS
+    # ------------------------------------
+    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted KAPPA_S as a Function of Point Index</b>',))
+    for i, comparison in enumerate(curve_record['comparisons']):
+        differential_invariants_comparison = comparison['differential_invariants_comparison']
+        predicted_differential_invariants = differential_invariants_comparison['predicted_differential_invariants']
         curvature_comparison = comparison['curvature_comparison']
-        arclength_comparison = comparison['arclength_comparison']
         predicted_curvature = curvature_comparison['predicted_curvature']
-        predicted_arclength = arclength_comparison['predicted_arclength']
-        predicted_signature = comparison['predicted_signature']
-        true_curvature = curvature_comparison['true_curvature']
-        true_arclength = arclength_comparison['true_arclength']
 
-        # if transformation_group_type != 'affine':
-        if transformation_group_type == 'euclidean':
-            if i == 0:
-                if transformation_group_type == 'equiaffine':
-                    true_curvature[:, 1] = numpy.clip(true_curvature[:, 1], a_min=numpy.min(predicted_curvature[:, 1]), a_max=numpy.max(predicted_curvature[:, 1]))
-                    ratio = 1
-                elif transformation_group_type == 'euclidean':
-                    ratio = float(numpy.max(numpy.abs(true_curvature[:, 1])) / numpy.max(numpy.abs(predicted_curvature[:, 1])))
+        plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curvature=predicted_differential_invariants[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
 
-                plot_graph_plotly(fig=fig, row=1, col=1, name=f'Ground Truth', x=true_arclength[:, 1], y=true_curvature[:, 1], point_size=int(settings.plotly_sample_point_size * 1.3), line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1], mode='markers')
-        else:
-            ratio = 1
-
-        signature_arclength = predicted_signature[:, 0].copy()
-        if normalize_signature is True:
-            predicted_signature_1 = comparisons[1]['predicted_signature']
-            signature_arclength = signature_arclength * (predicted_signature_1[-1, 0] / predicted_signature[-1, 0])
-
-        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=signature_arclength, y=ratio*predicted_signature[:, 1], point_size=int(settings.plotly_sample_point_size * 1.3), line_width=settings.plotly_graph_line_width, line_color=curve_colors[i], mode='markers')
-
-    fig['layout']['xaxis']['title'] = 'Predicted Arc-Length'
+    fig['layout']['xaxis']['title'] = 'Sample Point Index'
     fig['layout']['yaxis']['title'] = 'Predicted Curvature'
 
     fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
 
     fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
 
-    fig.write_image(os.path.join(plots_dir_path, f'predicted_curvature_as_function_of_arclength_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    fig.write_image(os.path.join(plots_dir_path, f'predicted_curvature_as_function_of_index_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    if plot_to_screen is True:
+        fig.show()
+
+
+    # -----------------------------------------
+    # KAPPA VS KAPPA_S
+    # -----------------------------------------
+    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted Signature Curve</b>',))
+    comparisons = curve_record['comparisons']
+    for i, comparison in enumerate(comparisons):
+        differential_invariants_comparison = comparison['differential_invariants_comparison']
+        predicted_differential_invariants = differential_invariants_comparison['predicted_differential_invariants']
+        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=predicted_differential_invariants[:, 1], y=predicted_differential_invariants[:, 0], point_size=int(settings.plotly_sample_point_size * 1.3), line_width=1, line_color=curve_colors[i], mode='lines')
+
+    fig['layout']['xaxis']['title'] = 'Kappa_s'
+    fig['layout']['yaxis']['title'] = 'Kappa'
+
+    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+
+    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+
+    fig.write_image(os.path.join(plots_dir_path, f'predicted_signature_curve_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+
+    fig.update_yaxes(
+        scaleanchor='x1',
+        scaleratio=1,
+        row=1,
+        col=1)
+
+    fig.update_layout(width=1000, height=1000)
+
+
+    # fig.update_layout(yaxis1=dict(range=get_range()))
+
     if plot_to_screen is True:
         fig.show()
 
