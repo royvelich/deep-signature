@@ -1,8 +1,17 @@
 # python peripherals
 import numpy
+import copy
 
 # torch
 import torch
+
+# lightly
+from lightly.data import LightlyDataset
+from lightly.data import SimCLRCollateFunction
+from lightly.loss import NegativeCosineSimilarity
+from lightly.models.modules import BYOLProjectionHead, BYOLPredictionHead
+from lightly.models.utils import deactivate_requires_grad
+from lightly.models.utils import update_momentum
 
 
 # Taken from https://github.com/vsitzmann/siren
@@ -33,31 +42,86 @@ def first_layer_sine_init(m):
             m.weight.uniform_(-1 / num_input, 1 / num_input)
 
 
+class DifferentialInvariantsNetBYOL(torch.nn.Module):
+    def __init__(self, sample_points):
+        super(DifferentialInvariantsNetBYOL, self).__init__()
+        self._diff_invariants_net = DifferentialInvariantsNet(sample_points=sample_points)
+        self._model = BYOL(self._diff_invariants_net)
+
+    def forward(self, in_features):
+        x0 = in_features[:, 0, :, :].unsqueeze(dim=1)
+        x1 = in_features[:, 1, :, :].unsqueeze(dim=1)
+        update_momentum(self._model.backbone, self._model.backbone_momentum, m=0.99)
+        update_momentum(self._model.projection_head, self._model.projection_head_momentum, m=0.99)
+        p0, z0 = self._model(x0)
+        z0_momentum = self._model.forward_momentum(x0)
+        p1, z1 = self._model(x1)
+        z1_momentum = self._model.forward_momentum(x1)
+
+        return p0, p1, z0, z1, z0_momentum, z1_momentum
+
+        # features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
+        # output = self._regressor1(features).reshape([input.shape[0], input.shape[1], 1])
+        # return output
+
+
+class BYOL(torch.nn.Module):
+    def __init__(self, backbone):
+        super().__init__()
+
+        self.backbone = backbone
+        self.projection_head = BYOLProjectionHead(32, 512, 16)
+        self.prediction_head = BYOLPredictionHead(16, 64, 16)
+
+        self.backbone_momentum = copy.deepcopy(self.backbone)
+        self.projection_head_momentum = copy.deepcopy(self.projection_head)
+
+        deactivate_requires_grad(self.backbone_momentum)
+        deactivate_requires_grad(self.projection_head_momentum)
+
+    def forward(self, x):
+        y = self.backbone(x).flatten(start_dim=1)
+        z = self.projection_head(y)
+        p = self.prediction_head(z)
+        return p, z
+
+    def forward_momentum(self, x):
+        y = self.backbone_momentum(x).flatten(start_dim=1)
+        z = self.projection_head_momentum(y)
+        z = z.detach()
+        return z
+
+
 class DifferentialInvariantsNet(torch.nn.Module):
     def __init__(self, sample_points):
         super(DifferentialInvariantsNet, self).__init__()
-        self._regressor = DifferentialInvariantsNet._create_regressor(in_features=2 * sample_points)
+        self._regressor = DifferentialInvariantsNet._create_regressor(in_features=2*sample_points)
+        # self._regressor2 = DifferentialInvariantsNet._create_regressor(in_features=2*sample_points)
         # self._regressor.apply(sine_init)
         # self._regressor[0].apply(first_layer_sine_init)
 
-    def forward(self, input):
-        features = input.reshape([input.shape[0] * input.shape[1], input.shape[2] * input.shape[3]])
-        output = self._regressor(features).reshape([input.shape[0], input.shape[1], 2])
+    def forward(self, in_features):
+        x = in_features.reshape([in_features.shape[0] * in_features.shape[1], in_features.shape[2] * in_features.shape[3]])
+        # output = self._regressor(x).reshape([input.shape[0], input.shape[1], 1])
+        output = self._regressor(x)
         return output
+        # output2 = self._regressor2(features).reshape([input.shape[0], input.shape[1], 1])
+        # return torch.cat((output1, output2), dim=2)
 
     @staticmethod
     def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
-        out_features = 128
+        out_features = 256
         p = None
-        while out_features > 4:
+        while out_features > 16:
             linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
             linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+            # linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
             in_features = out_features
             out_features = int(out_features / 2)
 
-        linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=2))
+        # linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
 
         return torch.nn.Sequential(*linear_modules)
 
@@ -73,6 +137,7 @@ class DifferentialInvariantsNet(torch.nn.Module):
 
         linear_modules.append(Sine())
         # linear_modules.append(torch.nn.ReLU())
+        # linear_modules.append(torch.nn.PReLU(num_parameters=out_features))
 
         if p is not None:
             linear_modules.append(torch.nn.Dropout(p))
@@ -116,8 +181,9 @@ class CurvatureNet(torch.nn.Module):
         if use_batch_norm:
             linear_modules.append(torch.nn.BatchNorm1d(out_features))
 
-        linear_modules.append(Sine())
+        # linear_modules.append(Sine())
         # linear_modules.append(torch.nn.ReLU())
+        linear_modules.append(torch.nn.PReLU(num_parameters=out_features))
 
         if p is not None:
             linear_modules.append(torch.nn.Dropout(p))

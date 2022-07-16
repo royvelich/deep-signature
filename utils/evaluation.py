@@ -142,7 +142,18 @@ def predict_differential_invariants_by_index(model, curve_neighborhoods, device=
             sample = curve_processing.normalize_curve(curve=sample)
             curvature_batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(sample), dim=0), dim=0).to(device)
             with torch.no_grad():
-                diff_invariants = torch.squeeze(torch.squeeze(model(curvature_batch_data), dim=0), dim=0).cpu().detach().numpy()
+                # diff_invariants_net = model._model
+                # if point_index == 0:
+                #     print(diff_invariants_net(curvature_batch_data).cpu().detach().numpy())
+                # j = 5
+                backbone_res = model._model.backbone(curvature_batch_data)
+                proj_res = model._model.projection_head(backbone_res)
+
+                backbone_momentum_res = model._model.backbone_momentum(curvature_batch_data)
+                proj_momentum_res = model._model.projection_head_momentum(backbone_momentum_res)
+
+                diff_invariants = torch.squeeze(torch.squeeze(proj_res, dim=0), dim=0).cpu().detach().numpy()
+                diff_invariants2 = torch.squeeze(torch.squeeze(proj_momentum_res, dim=0), dim=0).cpu().detach().numpy()
                 predicted_differential_invariants[point_index, 0] = diff_invariants[0]
                 predicted_differential_invariants[point_index, 1] = diff_invariants[1]
     return predicted_differential_invariants

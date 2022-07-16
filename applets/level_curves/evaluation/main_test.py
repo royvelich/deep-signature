@@ -66,7 +66,7 @@ if __name__ == '__main__':
         plt.show()
 
 
-    group = 'euclidean'
+    group = 'equiaffine'
     # data_dir = settings.data_dir
     curvature_results_dir_path = common_utils.get_results_dir(data_dir=settings.data_dir, invariant='curvature', group=group)
     arclength_results_dir_path = common_utils.get_results_dir(data_dir=settings.data_dir, invariant='arclength', group=group)
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     limit = 5
     factor_extraction_limit = -1
     comparison_curves_count = 2
-    sampling_ratio = 0.7
+    sampling_ratio = 1
     anchors_ratio = None
 
     # randomness

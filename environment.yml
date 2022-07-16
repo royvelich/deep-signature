@@ -32,5 +32,7 @@ dependencies:
   - numexpr
   - bottleneck
   - openpyxl
+  - pip
   - pip:
       - hausdorff
+      - lightly

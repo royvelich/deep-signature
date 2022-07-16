@@ -21,6 +21,7 @@ from deep_signature.nn.datasets import DifferentialInvariantsTupletsDataset
 from deep_signature.nn.networks import CurvatureNet
 from deep_signature.nn.networks import ArcLengthNet
 from deep_signature.nn.networks import DifferentialInvariantsNet
+from deep_signature.nn.networks import DifferentialInvariantsNetBYOL
 from deep_signature.nn.losses import CurvatureLoss
 from deep_signature.nn.losses import ArcLengthLoss
 from deep_signature.nn.losses import DifferentialInvariantsLoss
@@ -103,7 +104,7 @@ def create_differential_invariants_environment(args):
         num_workers=args.num_workers_validation,
         args=args)
 
-    model = DifferentialInvariantsNet(sample_points=common_utils.get_sample_points_count(args=args))
+    model = DifferentialInvariantsNetBYOL(sample_points=common_utils.get_sample_points_count(args=args))
     loss_fn = DifferentialInvariantsLoss()
     return train_dataset, validation_dataset, model, loss_fn
 

@@ -196,11 +196,14 @@ class DifferentialInvariantsTupletsDataset(DeepSignatureTupletsDataset):
         curve = curve_processing.center_curve(curve=curves[curve_index])
         curve_points_count = curve.shape[0]
         sampling_points_count = int(args.sampling_ratio * curve_points_count)
-        discrete_distribution_pack = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=args.multimodality, max_density=1, count=args.negative_examples_count+2)
+        discrete_distribution_pack = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=args.multimodality, max_density=1, count=2)
         center_point_index = int(numpy.random.randint(curve.shape[0], size=1))
         for i in range(2):
             transform = transformations.generate_random_transform_2d_training(transform_type=args.group)
-            transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+            if i == 0:
+                transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+            else:
+                transformed_curve = curve
 
             indices_pool = discrete_distribution.sample_discrete_dist(dist=discrete_distribution_pack[dist_index], sampling_points_count=sampling_points_count)
             sample = curve_sampling.sample_curve_neighborhood(
@@ -213,30 +216,30 @@ class DifferentialInvariantsTupletsDataset(DeepSignatureTupletsDataset):
             tuplet.append(sample)
             dist_index = dist_index + 1
 
-        flipped_anchor = numpy.flip(m=tuplet[0], axis=0).copy()
-        sample = curve_processing.normalize_curve(curve=flipped_anchor)
-        tuplet.append(sample)
-
-        for i in range(args.negative_examples_count):
-            while True:
-                center_point_index_offset = int(numpy.random.randint(args.offset_length, size=1)) - int(args.offset_length/2)
-                if center_point_index_offset != 0:
-                    break
-
-            transform = transformations.generate_random_transform_2d_training(transform_type=args.group)
-            transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
-
-            negative_center_point_index = numpy.mod(center_point_index + center_point_index_offset, transformed_curve.shape[0])
-            # negative_center_point_index = int(numpy.random.randint(transformed_curve.shape[0], size=1))
-            indices_pool = discrete_distribution.sample_discrete_dist(dist=discrete_distribution_pack[dist_index], sampling_points_count=sampling_points_count)
-            sample = curve_sampling.sample_curve_neighborhood(
-                curve=transformed_curve,
-                center_point_index=negative_center_point_index,
-                indices_pool=indices_pool,
-                supporting_points_count=args.supporting_points_count)
-
-            sample = curve_processing.normalize_curve(curve=sample)
-            tuplet.append(sample)
-            dist_index = dist_index + 1
+        # flipped_anchor = numpy.flip(m=tuplet[0], axis=0).copy()
+        # sample = curve_processing.normalize_curve(curve=flipped_anchor)
+        # tuplet.append(sample)
+        #
+        # for i in range(args.negative_examples_count):
+        #     while True:
+        #         center_point_index_offset = int(numpy.random.randint(args.offset_length, size=1)) - int(args.offset_length/2)
+        #         if center_point_index_offset != 0:
+        #             break
+        #
+        #     transform = transformations.generate_random_transform_2d_training(transform_type=args.group)
+        #     transformed_curve = curve_processing.transform_curve(curve=curve, transform=transform)
+        #
+        #     negative_center_point_index = numpy.mod(center_point_index + center_point_index_offset, transformed_curve.shape[0])
+        #     # negative_center_point_index = int(numpy.random.randint(transformed_curve.shape[0], size=1))
+        #     indices_pool = discrete_distribution.sample_discrete_dist(dist=discrete_distribution_pack[dist_index], sampling_points_count=sampling_points_count)
+        #     sample = curve_sampling.sample_curve_neighborhood(
+        #         curve=transformed_curve,
+        #         center_point_index=negative_center_point_index,
+        #         indices_pool=indices_pool,
+        #         supporting_points_count=args.supporting_points_count)
+        #
+        #     sample = curve_processing.normalize_curve(curve=sample)
+        #     tuplet.append(sample)
+        #     dist_index = dist_index + 1
 
         return tuplet

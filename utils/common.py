@@ -21,6 +21,7 @@ import torch.distributed as dist
 from deep_signature.nn.networks import ArcLengthNet
 from deep_signature.nn.networks import CurvatureNet
 from deep_signature.nn.networks import DifferentialInvariantsNet
+from deep_signature.nn.networks import DifferentialInvariantsNetBYOL
 
 
 def create_data_generator(dir_path, fine=False, limit=None):
@@ -157,7 +158,7 @@ def get_sample_points_count(args):
 def load_models(data_dir, group, distributed=True, device=torch.device('cuda')):
     models = {}
     invariants = ['curvature', 'arclength', 'all']
-    neural_nets = [CurvatureNet, ArcLengthNet, DifferentialInvariantsNet]
+    neural_nets = [CurvatureNet, ArcLengthNet, DifferentialInvariantsNetBYOL]
     for i, invariant in enumerate(invariants):
         results_dir_path = get_results_dir(data_dir=data_dir, invariant=invariant, group=group)
         neural_net = neural_nets[i]
