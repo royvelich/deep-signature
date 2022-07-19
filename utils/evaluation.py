@@ -136,7 +136,7 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
 
 def predict_differential_invariants_by_index(model, curve_neighborhoods, device='cuda'):
     sampled_neighborhoods = curve_neighborhoods['sampled_neighborhoods']
-    predicted_differential_invariants = numpy.zeros([len(sampled_neighborhoods), 2])
+    predicted_differential_invariants = numpy.zeros([len(sampled_neighborhoods), 8])
     for point_index, sampled_neighborhood in enumerate(sampled_neighborhoods):
         for (indices, sample) in zip(sampled_neighborhood['indices'], sampled_neighborhood['samples']):
             sample = curve_processing.normalize_curve(curve=sample)
@@ -152,10 +152,16 @@ def predict_differential_invariants_by_index(model, curve_neighborhoods, device=
                 backbone_momentum_res = model._model.backbone_momentum(curvature_batch_data)
                 proj_momentum_res = model._model.projection_head_momentum(backbone_momentum_res)
 
-                diff_invariants = torch.squeeze(torch.squeeze(proj_res, dim=0), dim=0).cpu().detach().numpy()
+                diff_invariants = torch.squeeze(torch.squeeze(backbone_res, dim=0), dim=0).cpu().detach().numpy()
                 diff_invariants2 = torch.squeeze(torch.squeeze(proj_momentum_res, dim=0), dim=0).cpu().detach().numpy()
-                predicted_differential_invariants[point_index, 0] = diff_invariants[0]
-                predicted_differential_invariants[point_index, 1] = diff_invariants[1]
+                predicted_differential_invariants[point_index, 0] = diff_invariants[10]
+                predicted_differential_invariants[point_index, 1] = diff_invariants[11]
+                predicted_differential_invariants[point_index, 2] = diff_invariants[12]
+                predicted_differential_invariants[point_index, 3] = diff_invariants[13]
+                predicted_differential_invariants[point_index, 4] = diff_invariants[14]
+                predicted_differential_invariants[point_index, 5] = diff_invariants[15]
+                predicted_differential_invariants[point_index, 6] = diff_invariants[16]
+                predicted_differential_invariants[point_index, 7] = diff_invariants[17]
     return predicted_differential_invariants
 
 

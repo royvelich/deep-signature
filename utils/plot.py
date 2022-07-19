@@ -631,49 +631,50 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     # ------------------------------------
     # KAPPA VS. INDEX OF SAMPLE POINTS
     # ------------------------------------
-    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted KAPPA as a Function of Point Index</b>',))
-    for i, comparison in enumerate(curve_record['comparisons']):
-        differential_invariants_comparison = comparison['differential_invariants_comparison']
-        predicted_differential_invariants = differential_invariants_comparison['predicted_differential_invariants']
-        curvature_comparison = comparison['curvature_comparison']
-        predicted_curvature = curvature_comparison['predicted_curvature']
+    for k in range(8):
+        fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted KAPPA as a Function of Point Index</b>',))
+        for i, comparison in enumerate(curve_record['comparisons']):
+            differential_invariants_comparison = comparison['differential_invariants_comparison']
+            predicted_differential_invariants = differential_invariants_comparison['predicted_differential_invariants']
+            curvature_comparison = comparison['curvature_comparison']
+            predicted_curvature = curvature_comparison['predicted_curvature']
 
-        plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curvature=predicted_differential_invariants[:, 0], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
+            plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curvature=predicted_differential_invariants[:, k], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
 
-    fig['layout']['xaxis']['title'] = 'Sample Point Index'
-    fig['layout']['yaxis']['title'] = 'Predicted Curvature'
+        fig['layout']['xaxis']['title'] = 'Sample Point Index'
+        fig['layout']['yaxis']['title'] = 'Predicted Curvature'
 
-    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+        fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
 
-    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+        fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
 
-    fig.write_image(os.path.join(plots_dir_path, f'predicted_curvature_as_function_of_index_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
-    if plot_to_screen is True:
-        fig.show()
+        fig.write_image(os.path.join(plots_dir_path, f'predicted_curvature_as_function_of_index_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+        if plot_to_screen is True:
+            fig.show()
 
 
     # ------------------------------------
     # KAPPA_S VS. INDEX OF SAMPLE POINTS
     # ------------------------------------
-    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted KAPPA_S as a Function of Point Index</b>',))
-    for i, comparison in enumerate(curve_record['comparisons']):
-        differential_invariants_comparison = comparison['differential_invariants_comparison']
-        predicted_differential_invariants = differential_invariants_comparison['predicted_differential_invariants']
-        curvature_comparison = comparison['curvature_comparison']
-        predicted_curvature = curvature_comparison['predicted_curvature']
-
-        plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curvature=predicted_differential_invariants[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
-
-    fig['layout']['xaxis']['title'] = 'Sample Point Index'
-    fig['layout']['yaxis']['title'] = 'Predicted Curvature'
-
-    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
-
-    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
-
-    fig.write_image(os.path.join(plots_dir_path, f'predicted_curvature_as_function_of_index_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
-    if plot_to_screen is True:
-        fig.show()
+    # fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted KAPPA_S as a Function of Point Index</b>',))
+    # for i, comparison in enumerate(curve_record['comparisons']):
+    #     differential_invariants_comparison = comparison['differential_invariants_comparison']
+    #     predicted_differential_invariants = differential_invariants_comparison['predicted_differential_invariants']
+    #     curvature_comparison = comparison['curvature_comparison']
+    #     predicted_curvature = curvature_comparison['predicted_curvature']
+    #
+    #     plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curvature=predicted_differential_invariants[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
+    #
+    # fig['layout']['xaxis']['title'] = 'Sample Point Index'
+    # fig['layout']['yaxis']['title'] = 'Predicted Curvature'
+    #
+    # fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+    #
+    # fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    #
+    # fig.write_image(os.path.join(plots_dir_path, f'predicted_curvature_as_function_of_index_{curve_index}.svg'), width=settings.plotly_write_image_width, height=settings.plotly_write_image_height)
+    # if plot_to_screen is True:
+    #     fig.show()
 
 
     # -----------------------------------------
@@ -684,7 +685,7 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     for i, comparison in enumerate(comparisons):
         differential_invariants_comparison = comparison['differential_invariants_comparison']
         predicted_differential_invariants = differential_invariants_comparison['predicted_differential_invariants']
-        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=predicted_differential_invariants[:, 1], y=predicted_differential_invariants[:, 0], point_size=int(settings.plotly_sample_point_size * 1.3), line_width=1, line_color=curve_colors[i], mode='lines')
+        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=predicted_differential_invariants[:, 1], y=predicted_differential_invariants[:, 0], point_size=int(settings.plotly_sample_point_size), line_width=1, line_color=curve_colors[i], mode='markers')
 
     fig['layout']['xaxis']['title'] = 'Kappa_s'
     fig['layout']['yaxis']['title'] = 'Kappa'

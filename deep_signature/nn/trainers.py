@@ -207,9 +207,11 @@ class ModelTrainer:
 
     def _evaluate_loss(self, batch_data):
         p0, p1, z0, z1, z0_momentum, z1_momentum = self._model(batch_data)
-        corr_loss1 = torch.abs(torch.corrcoef(z0.transpose(0, 1))[0, 1])
-        corr_loss2 = torch.abs(torch.corrcoef(z1.transpose(0, 1))[0, 1])
-        return 0.5 * (self._criterion(p0, z1_momentum) + self._criterion(p1, z0_momentum)) + 0.5 * (corr_loss1 + corr_loss2)
+        # corr_loss1 = torch.abs(torch.corrcoef(z0.transpose(0, 1))[0, 1])
+        # corr_loss2 = torch.abs(torch.corrcoef(z1.transpose(0, 1))[0, 1])
+        cov_loss = torch.abs(torch.mean((z0[:, 0] - z0[:, 0].mean()) * (z0[:, 1] - z0[:, 1].mean())))
+        # return 0.5 * (self._criterion(p0, z1_momentum) + self._criterion(p1, z0_momentum)) + cov_loss
+        return 0.5 * (self._criterion(p0, z1_momentum) + self._criterion(p1, z0_momentum))
 
     @staticmethod
     def _epoch(epoch_index, data_loader, process_batch_fn, rank):

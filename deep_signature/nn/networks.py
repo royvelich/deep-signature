@@ -70,8 +70,8 @@ class BYOL(torch.nn.Module):
         super().__init__()
 
         self.backbone = backbone
-        self.projection_head = BYOLProjectionHead(32, 512, 16)
-        self.prediction_head = BYOLPredictionHead(16, 64, 16)
+        self.projection_head = BYOLProjectionHead(32, 512, 8)
+        self.prediction_head = BYOLPredictionHead(8, 64, 8)
 
         self.backbone_momentum = copy.deepcopy(self.backbone)
         self.projection_head_momentum = copy.deepcopy(self.projection_head)
