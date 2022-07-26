@@ -70,8 +70,8 @@ class BYOL(torch.nn.Module):
         super().__init__()
 
         self.backbone = backbone
-        self.projection_head = BYOLProjectionHead(32, 512, 8)
-        self.prediction_head = BYOLPredictionHead(8, 64, 8)
+        self.projection_head = BYOLProjectionHead(128, 64, 32)
+        self.prediction_head = BYOLPredictionHead(32, 64, 32)
 
         self.backbone_momentum = copy.deepcopy(self.backbone)
         self.projection_head_momentum = copy.deepcopy(self.projection_head)
@@ -95,15 +95,29 @@ class BYOL(torch.nn.Module):
 class DifferentialInvariantsNet(torch.nn.Module):
     def __init__(self, sample_points):
         super(DifferentialInvariantsNet, self).__init__()
-        self._regressor = DifferentialInvariantsNet._create_regressor(in_features=2*sample_points)
+        self._L = 4
+        self._regressor = DifferentialInvariantsNet._create_regressor(in_features=2*sample_points*2*self._L)
         # self._regressor2 = DifferentialInvariantsNet._create_regressor(in_features=2*sample_points)
         # self._regressor.apply(sine_init)
         # self._regressor[0].apply(first_layer_sine_init)
 
     def forward(self, in_features):
         x = in_features.reshape([in_features.shape[0] * in_features.shape[1], in_features.shape[2] * in_features.shape[3]])
+        coeffs = torch.pow(2, torch.linspace(0, self._L-1, steps=self._L)).repeat_interleave(2).cuda()
+        x2 = x.unsqueeze(-1).expand(x.shape[0], x.shape[1], 2*self._L)
+        x3 = x2 * coeffs * numpy.pi
+        for i in range(2*self._L):
+            if i % 2 == 0:
+                x3[:, :, i] = torch.sin(x3[:, :, i])
+            else:
+                x3[:, :, i] = torch.cos(x3[:, :, i])
+        # y_sin = torch.sin(y)
+        # y_cos = torch.cos(y)
+
+        x4 = x3.reshape([x3.shape[0], x3.shape[1] * x3.shape[2]])
+
         # output = self._regressor(x).reshape([input.shape[0], input.shape[1], 1])
-        output = self._regressor(x)
+        output = self._regressor(x4)
         return output
         # output2 = self._regressor2(features).reshape([input.shape[0], input.shape[1], 1])
         # return torch.cat((output1, output2), dim=2)
@@ -114,14 +128,20 @@ class DifferentialInvariantsNet(torch.nn.Module):
         in_features = in_features
         out_features = 256
         p = None
-        while out_features > 16:
+        # while out_features > 16:
+        #     linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+        #     linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+        #     # linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+        #     in_features = out_features
+        #     out_features = int(out_features / 2)
+
+        for i in range(8):
             linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
-            linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+            # linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
             # linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
             in_features = out_features
-            out_features = int(out_features / 2)
 
-        # linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=1))
+        linear_modules.append(torch.nn.Linear(in_features=out_features, out_features=128))
 
         return torch.nn.Sequential(*linear_modules)
 
@@ -135,8 +155,8 @@ class DifferentialInvariantsNet(torch.nn.Module):
         if use_batch_norm:
             linear_modules.append(torch.nn.BatchNorm1d(out_features))
 
-        linear_modules.append(Sine())
-        # linear_modules.append(torch.nn.ReLU())
+        # linear_modules.append(Sine())
+        linear_modules.append(torch.nn.ReLU())
         # linear_modules.append(torch.nn.PReLU(num_parameters=out_features))
 
         if p is not None:

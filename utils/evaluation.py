@@ -152,16 +152,16 @@ def predict_differential_invariants_by_index(model, curve_neighborhoods, device=
                 backbone_momentum_res = model._model.backbone_momentum(curvature_batch_data)
                 proj_momentum_res = model._model.projection_head_momentum(backbone_momentum_res)
 
-                diff_invariants = torch.squeeze(torch.squeeze(backbone_res, dim=0), dim=0).cpu().detach().numpy()
+                diff_invariants = torch.squeeze(torch.squeeze(proj_res, dim=0), dim=0).cpu().detach().numpy()
                 diff_invariants2 = torch.squeeze(torch.squeeze(proj_momentum_res, dim=0), dim=0).cpu().detach().numpy()
-                predicted_differential_invariants[point_index, 0] = diff_invariants[10]
-                predicted_differential_invariants[point_index, 1] = diff_invariants[11]
-                predicted_differential_invariants[point_index, 2] = diff_invariants[12]
-                predicted_differential_invariants[point_index, 3] = diff_invariants[13]
-                predicted_differential_invariants[point_index, 4] = diff_invariants[14]
-                predicted_differential_invariants[point_index, 5] = diff_invariants[15]
-                predicted_differential_invariants[point_index, 6] = diff_invariants[16]
-                predicted_differential_invariants[point_index, 7] = diff_invariants[17]
+                predicted_differential_invariants[point_index, 0] = diff_invariants[0]
+                predicted_differential_invariants[point_index, 1] = diff_invariants[1]
+                predicted_differential_invariants[point_index, 2] = diff_invariants[2]
+                predicted_differential_invariants[point_index, 3] = diff_invariants[3]
+                predicted_differential_invariants[point_index, 4] = diff_invariants[4]
+                predicted_differential_invariants[point_index, 5] = diff_invariants[5]
+                predicted_differential_invariants[point_index, 6] = diff_invariants[6]
+                predicted_differential_invariants[point_index, 7] = diff_invariants[7]
     return predicted_differential_invariants
 
 
