@@ -66,7 +66,7 @@ if __name__ == '__main__':
         plt.show()
 
 
-    group = 'equiaffine'
+    group = 'euclidean'
     # data_dir = settings.data_dir
     curvature_results_dir_path = common_utils.get_results_dir(data_dir=settings.data_dir, invariant='curvature', group=group)
     arclength_results_dir_path = common_utils.get_results_dir(data_dir=settings.data_dir, invariant='arclength', group=group)

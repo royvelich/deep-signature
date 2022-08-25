@@ -152,7 +152,8 @@ class ModelTrainer:
                 torch.save(self._model.state_dict(), lastest_model_path)
 
                 if isinstance(self._model, torch.nn.parallel.DistributedDataParallel):
-                    lastest_module_path = os.path.normpath(os.path.join(results_dir_path, f'module_{epoch_index}.pt'))
+                    # lastest_module_path = os.path.normpath(os.path.join(results_dir_path, f'module_{epoch_index}.pt'))
+                    lastest_module_path = os.path.normpath(os.path.join(results_dir_path, f'module.pt'))
                     torch.save(self._model.module.state_dict(), lastest_module_path)
 
                 if epoch_handler is not None:

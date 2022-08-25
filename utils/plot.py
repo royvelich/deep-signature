@@ -628,10 +628,70 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
     #     fig.show()
 
 
+
     # ------------------------------------
     # KAPPA VS. INDEX OF SAMPLE POINTS
     # ------------------------------------
-    for k in range(8):
+    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>True KAPPA as a Function of Point Index</b>',))
+    for i, comparison in enumerate(curve_record['comparisons']):
+        differential_invariants_comparison = comparison['differential_invariants_comparison']
+        true_curvature = differential_invariants_comparison['true_curvature']
+        plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curvature=true_curvature[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
+
+    fig['layout']['xaxis']['title'] = 'Sample Point Index'
+    fig['layout']['yaxis']['title'] = 'True Curvature'
+    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    if plot_to_screen is True:
+        fig.show()
+
+    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>True KAPPA_S as a Function of Point Index</b>',))
+    for i, comparison in enumerate(curve_record['comparisons']):
+        differential_invariants_comparison = comparison['differential_invariants_comparison']
+        true_ks = differential_invariants_comparison['true_ks']
+        plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curvature=true_ks[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
+
+    fig['layout']['xaxis']['title'] = 'Sample Point Index'
+    fig['layout']['yaxis']['title'] = 'True K_S'
+    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    if plot_to_screen is True:
+        fig.show()
+
+
+
+    fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>True Signature Curve</b>',))
+    comparisons = curve_record['comparisons']
+    for i, comparison in enumerate(comparisons):
+        differential_invariants_comparison = comparison['differential_invariants_comparison']
+        true_curvature = differential_invariants_comparison['true_curvature']
+        true_ks = differential_invariants_comparison['true_ks']
+        plot_graph_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', x=true_ks[:, 1], y=true_curvature[:, 1], point_size=int(settings.plotly_sample_point_size), line_width=1, line_color=curve_colors[i], mode='markers')
+
+    fig['layout']['xaxis']['title'] = 'Kappa_s'
+    fig['layout']['yaxis']['title'] = 'Kappa'
+
+    fig.update_layout(font=dict(size=settings.plotly_axis_title_label_fontsize))
+    fig.update_annotations(font_size=settings.plotly_fig_title_label_fontsize)
+    fig.update_yaxes(
+        scaleanchor='x1',
+        scaleratio=1,
+        row=1,
+        col=1)
+
+    fig.update_layout(width=1000, height=1000)
+    if plot_to_screen is True:
+        fig.show()
+
+
+
+
+
+
+    # ------------------------------------
+    # KAPPA VS. INDEX OF SAMPLE POINTS
+    # ------------------------------------
+    for k in range(2):
         fig = make_subplots(rows=1, cols=1, subplot_titles=('<b>Predicted KAPPA as a Function of Point Index</b>',))
         for i, comparison in enumerate(curve_record['comparisons']):
             differential_invariants_comparison = comparison['differential_invariants_comparison']

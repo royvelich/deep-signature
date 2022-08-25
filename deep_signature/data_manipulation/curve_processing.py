@@ -77,6 +77,18 @@ def calculate_euclidean_curvature(curve, padding=True):
     return kappa
 
 
+def calculate_euclidean_ks(curve, padding=True):
+    k = calculate_euclidean_curvature(curve=curve)
+    padded_k = numpy.pad(k, (1, 1), 'wrap')
+    k_diff = numpy.array([(padded_k[i+1] - padded_k[i-1]) for i in range(1, curve.shape[0]+1)])
+
+    padded_curve = pad_curve(curve=curve, padding=1)
+    length_diff = numpy.array([(padded_curve[i+1] - padded_curve[i-1]) for i in range(1, curve.shape[0]+1)])
+    length_diff_norm = numpy.linalg.norm(x=length_diff, ord=2, axis=1)
+    ks = k_diff / length_diff_norm
+    return ks
+
+
 def calculate_euclidean_arclength(curve):
     adjacent_diff = numpy.diff(a=curve, n=1, axis=0)
     diff_norm = numpy.linalg.norm(x=adjacent_diff, ord=2, axis=1)

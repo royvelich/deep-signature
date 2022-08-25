@@ -302,7 +302,7 @@ if __name__ == '__main__':
     device = torch.device("cuda")
     model.cuda(device)
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], find_unused_parameters=True)
 
     # if rank == 0:
     print(f'RANK: {rank}')

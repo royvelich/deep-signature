@@ -82,6 +82,22 @@ def calculate_curvature_by_index(curve, transform_type):
     return true_curvature
 
 
+def calculate_ks_by_index(curve, transform_type):
+    true_ks = numpy.zeros([curve.shape[0], 2])
+    true_ks[:, 0] = numpy.arange(curve.shape[0])
+
+    if transform_type == 'euclidean':
+        true_ks[:, 1] = curve_processing.calculate_euclidean_ks(curve=curve)
+    elif transform_type == 'equiaffine':
+        true_ks[:, 1] = 0
+    elif transform_type == 'similarity':
+        true_ks[:, 1] = 0
+    elif transform_type == 'affine':
+        true_ks[:, 1] = 0
+
+    return true_ks
+
+
 # -------------------
 # PREDICTION ROUTINES
 # -------------------
@@ -136,7 +152,7 @@ def predict_arclength_by_index(model, curve, indices_pool, supporting_points_cou
 
 def predict_differential_invariants_by_index(model, curve_neighborhoods, device='cuda'):
     sampled_neighborhoods = curve_neighborhoods['sampled_neighborhoods']
-    predicted_differential_invariants = numpy.zeros([len(sampled_neighborhoods), 8])
+    predicted_differential_invariants = numpy.zeros([len(sampled_neighborhoods), 2])
     for point_index, sampled_neighborhood in enumerate(sampled_neighborhoods):
         for (indices, sample) in zip(sampled_neighborhood['indices'], sampled_neighborhood['samples']):
             sample = curve_processing.normalize_curve(curve=sample)
@@ -156,12 +172,12 @@ def predict_differential_invariants_by_index(model, curve_neighborhoods, device=
                 diff_invariants2 = torch.squeeze(torch.squeeze(proj_momentum_res, dim=0), dim=0).cpu().detach().numpy()
                 predicted_differential_invariants[point_index, 0] = diff_invariants[0]
                 predicted_differential_invariants[point_index, 1] = diff_invariants[1]
-                predicted_differential_invariants[point_index, 2] = diff_invariants[2]
-                predicted_differential_invariants[point_index, 3] = diff_invariants[3]
-                predicted_differential_invariants[point_index, 4] = diff_invariants[4]
-                predicted_differential_invariants[point_index, 5] = diff_invariants[5]
-                predicted_differential_invariants[point_index, 6] = diff_invariants[6]
-                predicted_differential_invariants[point_index, 7] = diff_invariants[7]
+                # predicted_differential_invariants[point_index, 2] = diff_invariants[2]
+                # predicted_differential_invariants[point_index, 3] = diff_invariants[3]
+                # predicted_differential_invariants[point_index, 4] = diff_invariants[4]
+                # predicted_differential_invariants[point_index, 5] = diff_invariants[5]
+                # predicted_differential_invariants[point_index, 6] = diff_invariants[6]
+                # predicted_differential_invariants[point_index, 7] = diff_invariants[7]
     return predicted_differential_invariants
 
 
@@ -266,9 +282,14 @@ def calculate_curve_invariants(curve, transform_type, anchor_indices=None):
         curve=curve,
         transform_type=transform_type)
 
+    true_ks = calculate_ks_by_index(
+        curve=curve,
+        transform_type=transform_type)
+
     return {
         'true_arclength': true_arclength,
         'true_curvature': true_curvature,
+        'true_ks': true_ks
     }
 
 # --------------------------
@@ -327,12 +348,15 @@ def generate_curve_records(models, curves, factor_extraction_curves, transform_t
             curvature_comparison = {
                 'curve_neighborhoods': predicted_curve_invariants['curve_neighborhoods'],
                 'true_curvature': true_curve_invariants['true_curvature'],
+                'true_ks': true_curve_invariants['true_ks'],
                 'predicted_curvature': predicted_curve_invariants['predicted_curvature'],
             }
 
             differential_invariants_comparison = {
                 'curve_neighborhoods': predicted_curve_invariants['curve_neighborhoods'],
                 'predicted_differential_invariants': predicted_curve_invariants['predicted_differential_invariants'],
+                'true_curvature': true_curve_invariants['true_curvature'],
+                'true_ks': true_curve_invariants['true_ks']
             }
 
             curve_record['comparisons'].append({
