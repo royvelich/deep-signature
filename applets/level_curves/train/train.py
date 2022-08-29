@@ -18,13 +18,16 @@ import torch.backends.cudnn as cudnn
 from deep_signature.nn.datasets import CurvatureTupletsDataset
 from deep_signature.nn.datasets import ArclengthTupletsDataset
 from deep_signature.nn.datasets import DifferentialInvariantsTupletsDataset
+from deep_signature.nn.datasets import DifferentialInvariantsTupletsDataset
 from deep_signature.nn.networks import CurvatureNet
 from deep_signature.nn.networks import ArcLengthNet
+from deep_signature.nn.networks import DifferentialInvariantsNetBackend
 from deep_signature.nn.networks import DifferentialInvariantsNet
 from deep_signature.nn.networks import DifferentialInvariantsNetBYOL
 from deep_signature.nn.losses import CurvatureLoss
 from deep_signature.nn.losses import ArcLengthLoss
 from deep_signature.nn.losses import DifferentialInvariantsLoss
+from deep_signature.nn.losses import DifferentialInvariantsLossBYOL
 from deep_signature.nn.trainers import ModelTrainer
 from utils import settings
 from utils import common as common_utils
@@ -61,7 +64,7 @@ def create_curvature_environment(args):
         args=args)
 
     model = CurvatureNet(sample_points=common_utils.get_sample_points_count(args=args))
-    loss_fn = CurvatureLoss()
+    loss_fn = DifferentialInvariantsLoss()
     return train_dataset, validation_dataset, model, loss_fn
 
 
@@ -104,19 +107,44 @@ def create_differential_invariants_environment(args):
         num_workers=args.num_workers_validation,
         args=args)
 
-    model = DifferentialInvariantsNetBYOL(sample_points=common_utils.get_sample_points_count(args=args))
+    # model = DifferentialInvariantsNetBYOL(sample_points=common_utils.get_sample_points_count(args=args))
+    model = DifferentialInvariantsNet(sample_points=common_utils.get_sample_points_count(args=args))
     loss_fn = DifferentialInvariantsLoss()
+    return train_dataset, validation_dataset, model, loss_fn
+
+
+def create_differential_invariants_environment_byol(args):
+    train_dataset = DifferentialInvariantsTupletsDataset(
+        dataset_size=args.train_dataset_size,
+        dir_path=train_curves_dir_path,
+        replace=True,
+        buffer_size=args.train_dataset_size,
+        num_workers=args.num_workers_train,
+        args=args)
+
+    validation_dataset = DifferentialInvariantsTupletsDataset(
+        dataset_size=args.validation_dataset_size,
+        dir_path=validation_curves_dir_path,
+        replace=False,
+        buffer_size=args.validation_dataset_size,
+        num_workers=args.num_workers_validation,
+        args=args)
+
+    # model = DifferentialInvariantsNetBYOL(sample_points=common_utils.get_sample_points_count(args=args))
+    model = DifferentialInvariantsNetBYOL(sample_points=common_utils.get_sample_points_count(args=args))
+    loss_fn = DifferentialInvariantsLossBYOL()
     return train_dataset, validation_dataset, model, loss_fn
 
 
 def create_environment(args):
     if args.invariant == 'curvature':
         return create_curvature_environment(args=args)
-    elif args.group == 'arclength':
+    elif args.invariant == 'arclength':
         return create_arclength_environment(args=args)
-
-    return create_differential_invariants_environment(args=args)
-
+    elif args.invariant == 'diff_inv':
+        return create_differential_invariants_environment(args=args)
+    elif args.invariant == 'diff_inv_byol':
+        return create_differential_invariants_environment_byol(args=args)
 
 if __name__ == '__main__':
     # torch.set_default_dtype(torch.float64)
@@ -309,8 +337,8 @@ if __name__ == '__main__':
     print('')
     print(model)
 
-    # optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
+    optimizer = torch.optim.LBFGS(model.parameters(), lr=args.learning_rate, line_search_fn='strong_wolfe', history_size=args.history_size)
+    # optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
 
     model_trainer = ModelTrainer(
         model=model,

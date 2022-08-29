@@ -60,6 +60,7 @@ def calculate_normal(curve):
 # -------------------------------------------------
 # euclidean curvature and arclength
 # -------------------------------------------------
+
 def calculate_euclidean_curvature(curve, padding=True):
     if padding is True:
         padded_curve = pad_curve(curve=curve, padding=2)

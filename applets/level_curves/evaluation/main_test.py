@@ -70,7 +70,7 @@ if __name__ == '__main__':
     # data_dir = settings.data_dir
     curvature_results_dir_path = common_utils.get_results_dir(data_dir=settings.data_dir, invariant='curvature', group=group)
     arclength_results_dir_path = common_utils.get_results_dir(data_dir=settings.data_dir, invariant='arclength', group=group)
-    all_results_dir_path = common_utils.get_results_dir(data_dir=settings.data_dir, invariant='all', group=group)
+    all_results_dir_path = common_utils.get_results_dir(data_dir=settings.data_dir, invariant='diff_inv', group=group)
 
     # level_curves_curvature_tuplets_results_dir_path, level_curves_arclength_tuplets_results_dir_path = common_utils.get_results_dir_path(transform_type=transform_type)
     # plot_learning_curve(level_curves_curvature_tuplets_results_dir_path, 'Curvature Learnin"g Curve')

@@ -162,14 +162,17 @@ def predict_differential_invariants_by_index(model, curve_neighborhoods, device=
                 # if point_index == 0:
                 #     print(diff_invariants_net(curvature_batch_data).cpu().detach().numpy())
                 # j = 5
-                backbone_res = model._model.backbone(curvature_batch_data)
-                proj_res = model._model.projection_head(backbone_res)
 
-                backbone_momentum_res = model._model.backbone_momentum(curvature_batch_data)
-                proj_momentum_res = model._model.projection_head_momentum(backbone_momentum_res)
+                # backbone_res = model._model.backbone(curvature_batch_data)
+                # proj_res = model._model.projection_head(backbone_res)
+                #
+                # backbone_momentum_res = model._model.backbone_momentum(curvature_batch_data)
+                # proj_momentum_res = model._model.projection_head_momentum(backbone_momentum_res)
 
-                diff_invariants = torch.squeeze(torch.squeeze(proj_res, dim=0), dim=0).cpu().detach().numpy()
-                diff_invariants2 = torch.squeeze(torch.squeeze(proj_momentum_res, dim=0), dim=0).cpu().detach().numpy()
+                res = proj_res = model(curvature_batch_data)
+
+                diff_invariants = torch.squeeze(torch.squeeze(res, dim=0), dim=0).cpu().detach().numpy()
+                # diff_invariants2 = torch.squeeze(torch.squeeze(proj_momentum_res, dim=0), dim=0).cpu().detach().numpy()
                 predicted_differential_invariants[point_index, 0] = diff_invariants[0]
                 predicted_differential_invariants[point_index, 1] = diff_invariants[1]
                 # predicted_differential_invariants[point_index, 2] = diff_invariants[2]
@@ -217,7 +220,7 @@ def predict_curve_invariants(curve, models, sampling_ratio, neighborhood_support
             device=device)
 
     predicted_differential_invariants = None
-    differential_invariants_model = models['all']
+    differential_invariants_model = models['diff_inv']
     if differential_invariants_model is not None:
         differential_invariants_model.eval()
         predicted_differential_invariants = predict_differential_invariants_by_index(

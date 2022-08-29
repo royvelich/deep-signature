@@ -698,8 +698,10 @@ def plot_curve_comparison(curve_index, curve_record, curve_colors, sampling_rati
             predicted_differential_invariants = differential_invariants_comparison['predicted_differential_invariants']
             curvature_comparison = comparison['curvature_comparison']
             predicted_curvature = curvature_comparison['predicted_curvature']
+            true_curvature = differential_invariants_comparison['true_curvature']
 
             plot_curvature_plotly(fig=fig, row=1, col=1, name=f'Sampled Curve #{i+1}', curvature=predicted_differential_invariants[:, k], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[i])
+            plot_curvature_plotly(fig=fig, row=1, col=1, name=f'True Curvature', curvature=true_curvature[:, 1], point_size=settings.plotly_sample_point_size, line_width=settings.plotly_graph_line_width, line_color=curve_colors[-1])
 
         fig['layout']['xaxis']['title'] = 'Sample Point Index'
         fig['layout']['yaxis']['title'] = 'Predicted Curvature'
