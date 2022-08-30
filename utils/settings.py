@@ -6,13 +6,13 @@ plots_dir = os.path.normpath(os.path.join(data_dir, "plots"))
 
 default_continue_training = False
 default_epochs = None
-default_train_buffer_size = 30000
-default_validation_buffer_size = 10000
+default_train_buffer_size = 100000
+default_validation_buffer_size = 20000
 default_train_batch_size = default_train_buffer_size
 default_validation_batch_size = default_validation_buffer_size
 default_train_dataset_size = default_train_batch_size
 default_validation_dataset_size = default_validation_batch_size
-default_learning_rate = 0.1
+default_learning_rate = 0.01
 default_validation_split = None
 default_supporting_points_count = 3
 default_sample_points_count = 2 * default_supporting_points_count + 1
@@ -28,19 +28,19 @@ default_min_offset = default_supporting_points_count - 1
 default_max_offset = 2 * default_min_offset
 default_anchor_points_count = 4
 
-equiaffine_arclength_min_cond_training = 1
-equiaffine_arclength_max_cond_training = 3
-affine_arclength_min_cond_training = 1
-affine_arclength_max_cond_training = 4
-affine_arclength_min_det_training = 1
-affine_arclength_max_det_training = 4
+equiaffine_min_cond_training = 2
+equiaffine_max_cond_training = 5
+affine_min_cond_training = 1
+affine_max_cond_training = 4
+affine_min_det_training = 1
+affine_max_det_training = 4
 
-equiaffine_arclength_min_cond_evaluation = 2
-equiaffine_arclength_max_cond_evaluation = 2
-affine_arclength_min_cond_evaluation = 2
-affine_arclength_max_cond_evaluation = 2
-affine_arclength_min_det_evaluation = 2
-affine_arclength_max_det_evaluation = 2
+equiaffine_min_cond_evaluation = 2
+equiaffine_max_cond_evaluation = 2
+affine_min_cond_evaluation = 2
+affine_max_cond_evaluation = 2
+affine_min_det_evaluation = 2
+affine_max_det_evaluation = 2
 
 # plots
 matplotlib_factor = 1

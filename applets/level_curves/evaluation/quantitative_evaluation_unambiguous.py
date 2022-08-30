@@ -220,13 +220,13 @@ if __name__ == '__main__':
     multimodality = 25
     sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5]
     transform_types = ['affine', 'equiaffine', 'euclidean']
-    dataset_names = ['basketball', 'bats', 'bears', 'birds', 'branches', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
-    # dataset_names = ['basketball']
+    # dataset_names = ['basketball', 'bats', 'bears', 'birds', 'branches', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
+    dataset_names = ['birds']
 
     curvature_models = {}
     arclength_models = {}
 
-    models = common_utils.load_models(base_dir=args.results_base_dir_path, group='euclidean', device=torch.device("cpu"))
+    models = common_utils.load_models(base_dir=args.results_base_dir_path, group='equiaffine', device=torch.device("cpu"))
     for model_type in models:
         model = models[model_type]
         if model is not None:
@@ -250,7 +250,7 @@ if __name__ == '__main__':
     processes = []
     raw_curves_configs = []
     # for transform_type in transform_types:
-    transform_type = 'euclidean'
+    transform_type = 'equiaffine'
     curves_dir_path = os.path.normpath(os.path.join(args.curves_base_dir_path, transform_type, f'multimodality_{multimodality}'))
     for dataset_name in dataset_names:
         if len(processes) >= max_cpu_count:
