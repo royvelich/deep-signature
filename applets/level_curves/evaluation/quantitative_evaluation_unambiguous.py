@@ -220,8 +220,8 @@ if __name__ == '__main__':
     multimodality = 25
     sampling_ratios = [1, 0.9, 0.8, 0.7, 0.6, 0.5]
     transform_types = ['affine', 'equiaffine', 'euclidean']
-    # dataset_names = ['basketball', 'bats', 'bears', 'birds', 'branches', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
-    dataset_names = ['birds']
+    dataset_names = ['basketball', 'bats', 'bears', 'birds', 'branches', 'cartoon', 'cats', 'chickens', 'clouds', 'dogs', 'flames', 'guitars', 'hearts', 'pieces', 'profiles', 'rabbits', 'rats', 'shapes', 'shields', 'signs', 'trees', 'vegetables', 'whales']
+    # dataset_names = ['basketball']
 
     curvature_models = {}
     arclength_models = {}

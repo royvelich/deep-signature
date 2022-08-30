@@ -587,7 +587,7 @@ class DifferentialInvariantsNet(torch.nn.Module):
     def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
-        out_features = 16
+        out_features = 64
         p = None
         while out_features > 2:
             linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
