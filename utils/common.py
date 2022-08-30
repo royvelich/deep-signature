@@ -105,8 +105,8 @@ def get_validation_dataset_dir(data_dir, invariant, group):
     return get_dataset_dir(data_dir=data_dir, invariant=invariant, group=group, purpose='validation')
 
 
-def get_results_dir(data_dir, invariant, group):
-    return f'{data_dir}/results/{invariant}/{group}'
+def get_results_dir(base_dir, invariant, group):
+    return f'{base_dir}/results/{invariant}/{group}'
 
 
 def get_curves_dir(data_dir, purpose):
@@ -156,12 +156,12 @@ def get_sample_points_count(args):
     return 2*args.supporting_points_count + 1
 
 
-def load_models(data_dir, group, distributed=True, device=torch.device('cuda')):
+def load_models(base_dir, group, distributed=True, device=torch.device('cuda')):
     models = {}
     invariants = ['curvature', 'arclength', 'diff_inv']
     neural_nets = [CurvatureNet, ArcLengthNet, DifferentialInvariantsNet]
     for i, invariant in enumerate(invariants):
-        results_dir_path = get_results_dir(data_dir=data_dir, invariant=invariant, group=group)
+        results_dir_path = get_results_dir(base_dir=base_dir, invariant=invariant, group=group)
         neural_net = neural_nets[i]
         model = neural_net(sample_points=settings.default_sample_points_count).cuda()
         latest_subdir = get_latest_subdirectory(results_dir_path)
@@ -169,10 +169,11 @@ def load_models(data_dir, group, distributed=True, device=torch.device('cuda')):
         try:
             results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
             if distributed is True:
-                model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['module_file_path']).name}", map_location=device))
+                model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['module_file_path']).name}"))
             else:
-                model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['model_file_path']).name}", map_location=device))
+                model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['model_file_path']).name}"))
 
+            model.to(device)
             print(model)
             models[invariant] = model
         except:

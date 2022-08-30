@@ -68,9 +68,9 @@ if __name__ == '__main__':
 
     group = 'euclidean'
     # data_dir = settings.data_dir
-    curvature_results_dir_path = common_utils.get_results_dir(data_dir=settings.data_dir, invariant='curvature', group=group)
-    arclength_results_dir_path = common_utils.get_results_dir(data_dir=settings.data_dir, invariant='arclength', group=group)
-    all_results_dir_path = common_utils.get_results_dir(data_dir=settings.data_dir, invariant='diff_inv', group=group)
+    curvature_results_dir_path = common_utils.get_results_dir(base_dir=settings.data_dir, invariant='curvature', group=group)
+    arclength_results_dir_path = common_utils.get_results_dir(base_dir=settings.data_dir, invariant='arclength', group=group)
+    all_results_dir_path = common_utils.get_results_dir(base_dir=settings.data_dir, invariant='diff_inv', group=group)
 
     # level_curves_curvature_tuplets_results_dir_path, level_curves_arclength_tuplets_results_dir_path = common_utils.get_results_dir_path(transform_type=transform_type)
     # plot_learning_curve(level_curves_curvature_tuplets_results_dir_path, 'Curvature Learnin"g Curve')
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     numpy.random.seed(20)
 
     # models
-    models = common_utils.load_models(data_dir=settings.data_dir, group=group, distributed=True)
+    models = common_utils.load_models(base_dir=settings.data_dir, group=group, distributed=True)
 
     # curves
     # curves_full = numpy.load(file=os.path.normpath("C:/deep-signature-data/level-curves/curves/test_raw/multimodality_35/profiles_0_7.npy"), allow_pickle=True)

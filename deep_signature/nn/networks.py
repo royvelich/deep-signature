@@ -545,7 +545,7 @@ class DifferentialInvariantsNet(torch.nn.Module):
         self._L = 4
         # self._regressor = DifferentialInvariantsNet._create_regressor(in_features=2*sample_points*2*self._L)
         self._regressor = DifferentialInvariantsNet._create_regressor(in_features=2*sample_points)
-        # self._regressor = DifferentialInvariantsNet._create_regressor(in_features=5 * sample_points)
+        # self._regressor = DifferentialInvariantsNet._create_regressor(in_features=9*sample_points)
 
     def forward(self, in_features):
         # x = in_features.reshape([in_features.shape[0] * in_features.shape[1], in_features.shape[2] * in_features.shape[3]])
@@ -568,7 +568,12 @@ class DifferentialInvariantsNet(torch.nn.Module):
         # x2 = x * x
         # y2 = y * y
         # xy = x * y
-        # extended_in_features = torch.stack((x, y, x2, y2, xy), dim=-1)
+        # x3 = x * x * x
+        # y3 = y * y * y
+        # xxy = x * x * y
+        # xyy = x * y * y
+        #
+        # extended_in_features = torch.stack((x, y, x2, y2, xy, x3, y3, xxy, xyy), dim=-1)
         # z = extended_in_features.reshape([extended_in_features.shape[0] * extended_in_features.shape[1], extended_in_features.shape[2] * extended_in_features.shape[3]])
         # output = self._regressor(z).reshape([in_features.shape[0], in_features.shape[1], 2])
 
@@ -582,7 +587,7 @@ class DifferentialInvariantsNet(torch.nn.Module):
     def _create_regressor(in_features):
         linear_modules = []
         in_features = in_features
-        out_features = 64
+        out_features = 16
         p = None
         while out_features > 2:
             linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))

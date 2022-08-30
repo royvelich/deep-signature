@@ -200,7 +200,7 @@ if __name__ == '__main__':
 
     train_dataset_dir_path = common_utils.get_train_dataset_dir(data_dir=args.data_dir, invariant=args.invariant, group=args.group)
     validation_dataset_dir_path = common_utils.get_validation_dataset_dir(data_dir=args.data_dir, invariant=args.invariant, group=args.group)
-    results_base_dir_path = common_utils.get_results_dir(data_dir=args.data_dir, invariant=args.invariant, group=args.group)
+    results_base_dir_path = common_utils.get_results_dir(base_dir=args.data_dir, invariant=args.invariant, group=args.group)
     train_curves_dir_path = common_utils.get_train_curves_dir(data_dir=args.data_dir)
     validation_curves_dir_path = common_utils.get_validation_curves_dir(data_dir=args.data_dir)
 

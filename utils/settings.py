@@ -6,7 +6,7 @@ plots_dir = os.path.normpath(os.path.join(data_dir, "plots"))
 
 default_continue_training = False
 default_epochs = None
-default_train_buffer_size = 50000
+default_train_buffer_size = 30000
 default_validation_buffer_size = 10000
 default_train_batch_size = default_train_buffer_size
 default_validation_batch_size = default_validation_buffer_size
@@ -20,7 +20,7 @@ default_sampling_ratio = 0.3
 default_multimodality = 25
 default_multimodality_evaluation = 25
 default_offset_length = 50
-default_num_workers_train = 8
+default_num_workers_train = 10
 default_num_workers_validation = 8
 default_negative_examples_count = 2
 default_history_size = 800

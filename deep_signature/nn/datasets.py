@@ -195,7 +195,9 @@ class DifferentialInvariantsTupletsDataset(DeepSignatureTupletsDataset):
         curve_index = int(numpy.random.randint(curves.shape[0], size=1))
         curve = curve_processing.center_curve(curve=curves[curve_index])
         curve_points_count = curve.shape[0]
-        sampling_points_count = int(args.sampling_ratio * curve_points_count)
+        # sampling_points_count = int(args.sampling_ratio * curve_points_count)
+        sampling_ratio = float(numpy.random.random(size=1)*0.8 + 0.1)
+        sampling_points_count = int(sampling_ratio * curve_points_count)
         discrete_distribution_pack = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=args.multimodality, max_density=1, count=args.negative_examples_count+2)
         center_point_index = int(numpy.random.randint(curve.shape[0], size=1))
         for i in range(2):
