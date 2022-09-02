@@ -102,8 +102,12 @@ def extract_curves(curves, curves_dir, stem):
 if __name__ == '__main__':
     numpy.random.seed(30)
     parser = ArgumentParser()
-    parser.add_argument("--images_dir", dest="images_dir", type=str)
-    parser.add_argument("--curves_dir", dest="curves_dir", type=str)
+    parser.add_argument("--images_dir", type=str)
+    parser.add_argument("--curves_dir", type=str)
+    parser.add_argument("--group", type=str)
+    parser.add_argument("--det", default=1, type=float)
+    parser.add_argument("--cond", default=1, type=float)
+
     args = parser.parse_args()
 
     image_file_paths = []
