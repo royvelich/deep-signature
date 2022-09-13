@@ -4,8 +4,7 @@ from argparse import ArgumentParser
 from os import walk
 from pathlib import Path
 import pathlib
-import queue
-from multiprocessing import Process, Queue, cpu_count
+from multiprocessing import Process
 
 # numpy
 import numpy
@@ -16,16 +15,13 @@ import skimage.color
 import skimage.measure
 
 # common
-from utils import common as common_utils
-from utils import settings
 
 # matplotlib
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 
 # deep-signature
-from deep_signature.data_manipulation import curve_sampling, curve_processing
-from deep_signature.stats import discrete_distribution
+from deep_signature.data_manipulation import curve_processing
+from deep_signature import discrete_distributions
 from deep_signature.linalg import transformations
 
 # shapely

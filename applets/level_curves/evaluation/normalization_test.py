@@ -1,29 +1,17 @@
 # python peripherals
-import os
-from argparse import ArgumentParser
 
 # numpy
 import numpy
 
 # skimage
-import skimage.io
-import skimage.color
-import skimage.measure
-from skimage import metrics
 
 # deep signature
 from deep_signature.data_manipulation import curve_processing
-from deep_signature.linalg import transformations
-from deep_signature.data_generation.curve_generation import LevelCurvesGenerator
 
 # common
-from utils import common as common_utils
-from utils import evaluation as evaluation_utils
-from utils import settings
 
 # matplotlib
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 
 from deep_signature.linalg import euclidean_transform
 

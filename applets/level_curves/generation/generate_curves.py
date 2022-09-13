@@ -1,4 +1,4 @@
-from deep_signature.data_generation import curve_generation
+from deep_signature import manifold_generation
 from utils import settings
 
 if __name__ == '__main__':

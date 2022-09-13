@@ -2,27 +2,18 @@
 import os
 from pathlib import Path
 import multiprocessing
+from typing import List
 
 # numpy
 import numpy
 
-# common
-from utils import settings
-
 # pytorch
 import torch
-import torch.distributed as dist
-
-# sklearn
-
-# scipy
 
 # deep signature
-from deep_signature.nn.networks import ArcLengthNet
-from deep_signature.nn.networks import CurvatureNet
-from deep_signature.nn.networks import DifferentialInvariantsNetBackend
-from deep_signature.nn.networks import DifferentialInvariantsNet
-from deep_signature.nn.networks import DifferentialInvariantsNetBYOL
+from deep_signature.networks import ArcLengthNet
+from deep_signature.networks import CurvatureNet
+from deep_signature.networks import DifferentialInvariantsNet
 
 
 def create_data_generator(dir_path, fine=False, limit=None):
@@ -74,8 +65,9 @@ def insert_sorted(a, b):
 
 
 # https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
-def chunks(input_list, chunks_count):
-    return [input_list[i:i + chunks_count] for i in range(0, len(input_list), chunks_count)]
+def chunks(a: List, chunks_count: int) -> List[List[int]]:
+    chunk_size = len(a)//chunks_count
+    return [a[i:i + chunk_size] for i in range(0, len(a), chunk_size)]
 
 
 def list_subdirectories(base_dir='.'):

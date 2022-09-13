@@ -1,9 +1,6 @@
 # python peripherals
 import os
-import random
 from argparse import ArgumentParser
-import builtins
-import warnings
 
 # numpy
 import numpy
@@ -11,26 +8,21 @@ import numpy
 # pytorch
 import torch
 import torch.distributed as dist
-import torch.multiprocessing as mp
-import torch.backends.cudnn as cudnn
 
 # deep-signature
-from deep_signature.nn.datasets import CurvatureTupletsDataset
-from deep_signature.nn.datasets import ArclengthTupletsDataset
-from deep_signature.nn.datasets import DifferentialInvariantsTupletsDataset
-from deep_signature.nn.datasets import DifferentialInvariantsTupletsDataset
-from deep_signature.nn.networks import CurvatureNet
-from deep_signature.nn.networks import ArcLengthNet
-from deep_signature.nn.networks import DifferentialInvariantsNetBackend
-from deep_signature.nn.networks import DifferentialInvariantsNet
-from deep_signature.nn.networks import DifferentialInvariantsNetBYOL
-from deep_signature.nn.losses import CurvatureLoss
-from deep_signature.nn.losses import ArcLengthLoss
-from deep_signature.nn.losses import DifferentialInvariantsLoss
-from deep_signature.nn.losses import DifferentialInvariantsLossBYOL
-from deep_signature.nn.trainers import ModelTrainer
+from deep_signature.datasets import CurvatureTupletsDataset
+from deep_signature.datasets import ArclengthTupletsDataset
+from deep_signature.datasets import DifferentialInvariantsTupletsDataset
+from deep_signature.networks import CurvatureNet
+from deep_signature.networks import ArcLengthNet
+from deep_signature.networks import DifferentialInvariantsNet
+from deep_signature.networks import DifferentialInvariantsNetBYOL
+from deep_signature.losses import ArcLengthLoss
+from deep_signature.losses import DifferentialInvariantsLoss
+from deep_signature.losses import DifferentialInvariantsLossBYOL
+from deep_signature.trainers import ModelTrainer
 from utils import settings
-from utils import common as common_utils
+from deep_signature import utils as common_utils
 
 
 def fix_random_seeds(seed=30):
@@ -319,9 +311,9 @@ if __name__ == '__main__':
     # validation_dataset.load(dataset_dir_path=validation_dataset_dir_path)
     # train_dataset.load(dataset_dir_path=train_dataset_dir_path)
 
-    validation_dataset.start()
+    validation_dataset.process()
     validation_dataset.stop()
-    train_dataset.start()
+    train_dataset.process()
     # train_dataset.stop()
 
     # validation_dataset.save(dataset_dir_path=validation_dataset_dir_path)

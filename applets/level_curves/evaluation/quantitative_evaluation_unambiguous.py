@@ -7,29 +7,21 @@ import queue
 import numpy
 
 # skimage
-import skimage.io
-import skimage.color
-import skimage.measure
-from skimage import metrics
 
 # pandas
-import bottleneck
-import numexpr
 import pandas
 
 # deep signature
 from deep_signature.data_manipulation import curve_processing
 from deep_signature.linalg import transformations
-from deep_signature.data_generation.curve_generation import LevelCurvesGenerator
 
 # common
-from utils import common as common_utils
+from deep_signature import utils as common_utils
 from utils import evaluation as evaluation_utils
 from utils import settings
 
 # matplotlib
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 
 # pytorch
 import torch

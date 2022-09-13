@@ -1,14 +1,14 @@
 import torch
 import numpy
-from deep_signature.nn.datasets import DeepSignatureEuclideanArclengthTupletsOnlineDataset
-from deep_signature.nn.datasets import DeepSignatureSimilarityArclengthTupletsOnlineDataset
-from deep_signature.nn.datasets import DeepSignatureEquiaffineArclengthTupletsOnlineDataset
-from deep_signature.nn.datasets import DeepSignatureAffineArclengthTupletsOnlineDataset
-from deep_signature.nn.networks import ArcLengthNet
-from deep_signature.nn.losses import ArcLengthLoss
-from deep_signature.nn.trainers import ModelTrainer
+from deep_signature.datasets import DeepSignatureEuclideanArclengthTupletsOnlineDataset
+from deep_signature.datasets import DeepSignatureSimilarityArclengthTupletsOnlineDataset
+from deep_signature.datasets import DeepSignatureEquiaffineArclengthTupletsOnlineDataset
+from deep_signature.datasets import DeepSignatureAffineArclengthTupletsOnlineDataset
+from deep_signature.networks import ArcLengthNet
+from deep_signature.losses import ArcLengthLoss
+from deep_signature.trainers import ModelTrainer
 from utils import settings
-from utils import common as common_utils
+from deep_signature import utils as common_utils
 from argparse import ArgumentParser
 
 
@@ -80,9 +80,9 @@ if __name__ == '__main__':
         max_offset=args.max_offset,
         anchor_points_count=args.anchor_points_count)
 
-    validation_dataset.start()
+    validation_dataset.process()
     validation_dataset.stop()
-    train_dataset.start()
+    train_dataset.process()
 
     model = ArcLengthNet(sample_points=args.supporting_points_count)
 

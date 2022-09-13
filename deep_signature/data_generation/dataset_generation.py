@@ -1,17 +1,12 @@
 # python peripherals
-import os
-import multiprocessing
-import pathlib
-import random
 
 # numpy
 import numpy
 
 # deep_signature
 from deep_signature.data_manipulation import curve_sampling, curve_processing
-from deep_signature.stats import discrete_distribution
+from deep_signature import discrete_distributions
 from deep_signature.linalg import transformations
-from utils import settings
 
 
 class TuplesDatasetGenerator:
@@ -55,7 +50,7 @@ class CurvatureTupletsDatasetGenerator(TuplesDatasetGenerator):
         curve = curve_processing.center_curve(curve=curves[curve_index])
         curve_points_count = curve.shape[0]
         sampling_points_count = int(sampling_ratio * curve_points_count)
-        discrete_distribution_pack = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=multimodality, max_density=1, count=negative_examples_count+2)
+        discrete_distribution_pack = discrete_distribution.random_discrete_dist(bins=curve_points_count, multimodality=multimodality, max_density=1, count=negative_examples_count + 2)
         center_point_index = int(numpy.random.randint(curve.shape[0], size=1))
         for i in range(2):
             transform = cls._generate_curve_transform()

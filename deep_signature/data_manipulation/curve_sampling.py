@@ -2,10 +2,10 @@
 import numpy
 
 # deep signature
-from deep_signature.stats import discrete_distribution
+from deep_signature import discrete_distributions, utils as common_utils
+
 
 # utils
-from utils import common as common_utils
 
 
 def sample_curve_neighborhood_indices(center_point_index, indices_pool, supporting_points_count):

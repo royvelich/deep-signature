@@ -7,7 +7,6 @@ sys.path.insert(1, os.path.join(sys.path[0], '../..'))
 import numpy
 
 # ipython
-from IPython.display import display, HTML
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -15,16 +14,12 @@ import matplotlib.ticker as ticker
 
 # pytorch
 import torch
-from torch.utils.data.sampler import SubsetRandomSampler
-from torch.utils.data.sampler import SequentialSampler
-from torch.utils.data import DataLoader
 
 # deep signature
-from deep_signature.data_generation.curve_generation import LevelCurvesGenerator
-from deep_signature.data_manipulation import curve_processing
+from deep_signature.manifold_generation import LevelCurveGenerator
 
 # utils
-from utils import common as common_utils
+from deep_signature import utils as common_utils
 from utils import evaluation as evaluation_utils
 from utils import plot as plot_utils
 from utils import settings
@@ -99,7 +94,7 @@ if __name__ == '__main__':
 
     # curves
     # curves_full = numpy.load(file=os.path.normpath("C:/deep-signature-data/level-curves/curves/test_raw/multimodality_35/profiles_0_7.npy"), allow_pickle=True)
-    curves_full = LevelCurvesGenerator.load_curves(dir_path=common_utils.get_test_curves_dir(data_dir=settings.data_dir))
+    curves_full = LevelCurveGenerator.load_curves(dir_path=common_utils.get_test_curves_dir(data_dir=settings.data_dir))
     # curves_full = LevelCurvesGenerator.load_curves(dir_path=os.path.normpath("C:/GitHub/deep-signature/applets/level_curves/evaluation/"))
 
     curves = []

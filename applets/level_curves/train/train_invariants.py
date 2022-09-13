@@ -1,22 +1,17 @@
 import torch
 import numpy
 import os
-import random
-from deep_signature.nn.datasets import DeepSignatureEuclideanCurveTupletsOnlineDataset
-from deep_signature.nn.datasets import DeepSignatureSimilarityCurveTupletsOnlineDataset
-from deep_signature.nn.datasets import DeepSignatureEquiaffineCurveTupletsOnlineDataset
-from deep_signature.nn.datasets import DeepSignatureAffineCurveTupletsOnlineDataset
-from deep_signature.nn.networks import DeepSignatureCurveNet
-from deep_signature.nn.losses import DeepSignatureCurveLoss
-from deep_signature.nn.trainers import ModelTrainer
+from deep_signature.datasets import DeepSignatureEuclideanCurveTupletsOnlineDataset
+from deep_signature.datasets import DeepSignatureSimilarityCurveTupletsOnlineDataset
+from deep_signature.datasets import DeepSignatureEquiaffineCurveTupletsOnlineDataset
+from deep_signature.datasets import DeepSignatureAffineCurveTupletsOnlineDataset
+from deep_signature.networks import DeepSignatureCurveNet
+from deep_signature.losses import DeepSignatureCurveLoss
+from deep_signature.trainers import ModelTrainer
 from utils import settings
-from utils import common as common_utils
+from deep_signature import utils as common_utils
 from argparse import ArgumentParser
-import torch.multiprocessing as mp
 import torch.distributed as dist
-import torch.backends.cudnn as cudnn
-import builtins
-import warnings
 
 
 def fix_random_seeds(seed=30):

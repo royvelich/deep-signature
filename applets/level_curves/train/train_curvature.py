@@ -1,14 +1,14 @@
 import torch
 import numpy
-from deep_signature.nn.datasets import DeepSignatureEuclideanCurvatureTupletsOnlineDataset
-from deep_signature.nn.datasets import DeepSignatureSimilarityCurvatureTupletsOnlineDataset
-from deep_signature.nn.datasets import DeepSignatureEquiaffineCurvatureTupletsOnlineDataset
-from deep_signature.nn.datasets import DeepSignatureAffineCurvatureTupletsOnlineDataset
-from deep_signature.nn.networks import CurvatureNet
-from deep_signature.nn.losses import CurvatureLoss
-from deep_signature.nn.trainers import ModelTrainer
+from deep_signature.datasets import DeepSignatureEuclideanCurvatureTupletsOnlineDataset
+from deep_signature.datasets import DeepSignatureSimilarityCurvatureTupletsOnlineDataset
+from deep_signature.datasets import DeepSignatureEquiaffineCurvatureTupletsOnlineDataset
+from deep_signature.datasets import DeepSignatureAffineCurvatureTupletsOnlineDataset
+from deep_signature.networks import CurvatureNet
+from deep_signature.losses import CurvatureLoss
+from deep_signature.trainers import ModelTrainer
 from utils import settings
-from utils import common as common_utils
+from deep_signature import utils as common_utils
 from argparse import ArgumentParser
 
 
@@ -77,9 +77,9 @@ if __name__ == '__main__':
         offset_length=args.offset_length,
         negative_examples_count=args.negative_examples_count)
 
-    validation_dataset.start()
+    validation_dataset.process()
     validation_dataset.stop()
-    train_dataset.start()
+    train_dataset.process()
 
     model = CurvatureNet(sample_points=args.sample_points_count)
 

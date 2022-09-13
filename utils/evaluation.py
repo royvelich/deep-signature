@@ -10,18 +10,16 @@ from deep_signature.data_manipulation import curve_processing
 from deep_signature.linalg import transformations
 
 # utils
-from utils import common as common_utils
 from utils import settings
 
 # hausdorff
 from hausdorff import hausdorff_distance
 
 # https://stackoverflow.com/questions/36074455/python-matplotlib-with-a-line-color-gradient-and-colorbar
-from deep_signature.stats import discrete_distribution
+from deep_signature import discrete_distributions
+
 
 # matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 
 
 def plot_graph(ax, x, y, linewidth=2, color='red', alpha=1, zorder=1, label=None):
