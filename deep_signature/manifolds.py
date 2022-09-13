@@ -468,7 +468,7 @@ class PlanarCurve:
 # =================================================
 # PlanarCurvesGenerator Class
 # =================================================
-class PlanarCurvesManager(ParallelProcessor):
+class PlanarCurvesManager:
     def __init__(self, curves_count: int):
         super().__init__()
         self._curves_count = curves_count
@@ -524,7 +524,7 @@ class PlanarCurvesManager(ParallelProcessor):
 # =================================================
 # LevelCurvesGenerator Class
 # =================================================
-class LevelCurvesGenerator(PlanarCurvesManager):
+class LevelCurvesGenerator(ParallelProcessor):
     def __init__(
             self,
             curves_count: int,
@@ -540,6 +540,7 @@ class LevelCurvesGenerator(PlanarCurvesManager):
             smoothing_iterations: int,
             smoothing_window_length: int,
             smoothing_poly_order: int):
+        self._curves_count = curves_count
         self._images_base_dir_path = os.path.normpath(images_base_dir_path)
         self._sigmas = sigmas
         self._min_contour_level = min_contour_level
@@ -553,7 +554,7 @@ class LevelCurvesGenerator(PlanarCurvesManager):
         self._smoothing_window_length = smoothing_window_length
         self._smoothing_poly_order = smoothing_poly_order
         self._image_file_paths = self._get_image_file_paths()
-        super().__init__(curves_count=curves_count)
+        super().__init__()
 
     def _generate_items(self):
         image_file_path = self._image_file_paths[numpy.random.randint(low=0, high=len(self._image_file_paths))]

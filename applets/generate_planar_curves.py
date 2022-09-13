@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    level_curves_manager = manifolds.LevelCurvesGenerator(
+    level_curves_generator = manifolds.LevelCurvesGenerator(
         curves_count=args.curves_count,
         images_base_dir_path=args.images_base_dir_path,
         sigmas=args.sigmas,
@@ -45,5 +45,5 @@ if __name__ == '__main__':
         smoothing_window_length=args.smoothing_window_length,
         smoothing_poly_order=args.smoothing_poly_order)
 
-    level_curves_manager.process(items_count=args.curves_count, workers_count=args.workers_count, queue_maxsize=args.curves_count)
-    level_curves_manager.save(items_file_path=args.curves_file_path)
+    level_curves_generator.process(items_count=args.curves_count, workers_count=args.workers_count, queue_maxsize=args.curves_count)
+    level_curves_generator.save(items_file_path=args.curves_file_path)
