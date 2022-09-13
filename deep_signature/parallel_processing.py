@@ -70,6 +70,7 @@ class ParallelProcessor(ABC):
 
     def _worker_func(self, item_ids: List[int]):
         item_id = 0
+        print(f'len(item_ids): {len(item_ids)}')
         while True:
             items = self._generate_items()
             for item in items:
