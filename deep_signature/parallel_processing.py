@@ -38,6 +38,7 @@ class ParallelProcessor(ABC):
     #     self._post_load()
 
     def process(self, items_count: int, workers_count: int, queue_maxsize: int):
+        # self._queue = Queue(maxsize=queue_maxsize)
         self._queue = Queue(maxsize=queue_maxsize)
         item_ids = chunks(a=list(range(items_count)), chunks_count=workers_count)
         workers = [Process(target=self._worker_func, args=tuple([item_ids[i]],)) for i in range(workers_count)]
