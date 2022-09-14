@@ -22,7 +22,7 @@ class ParallelProcessor(ABC):
             self._items.extend(curve)
 
         print('    - Creating pool... ', end='')
-        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+        pool = multiprocessing.Pool(processes=50)
         print('Done.')
 
         iterable = list(range(items_count))
