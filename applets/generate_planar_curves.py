@@ -45,5 +45,6 @@ if __name__ == '__main__':
         smoothing_window_length=args.smoothing_window_length,
         smoothing_poly_order=args.smoothing_poly_order)
 
-    level_curves_generator.process(items_count=args.curves_count, workers_count=args.workers_count, queue_maxsize=args.queue_maxsize)
+    # level_curves_generator.process(items_count=args.curves_count, workers_count=args.workers_count, queue_maxsize=args.queue_maxsize)
+    level_curves_generator.process(items_count=args.curves_count)
     level_curves_generator.save(items_file_path=args.curves_file_path)
