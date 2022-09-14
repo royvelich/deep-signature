@@ -30,6 +30,9 @@ import skimage.color
 import skimage.filters
 import skimage.measure
 
+# opencv
+import cv2
+
 # matplotlib
 import matplotlib
 
@@ -575,7 +578,10 @@ class LevelCurvesGenerator(ParallelProcessor):
             image = skimage.color.gray2rgb(image)
 
         gray_image = skimage.color.rgb2gray(image)
-        gray_image_filtered = skimage.filters.gaussian(gray_image, sigma=sigma)
+
+        gray_image_filtered = cv2.GaussianBlur(src=gray_image, ksize=(sigma, sigma), sigmaX=0)
+
+        # gray_image_filtered = skimage.filters.gaussian(gray_image, sigma=sigma)
         contours = skimage.measure.find_contours(gray_image_filtered, contour_level)
         contours = [contour for contour in contours if self._min_points_count <= contour.shape[0] <= self._max_points_count]
         # contours.sort(key=lambda contour: contour.shape[0], reverse=True)
