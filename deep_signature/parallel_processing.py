@@ -30,7 +30,7 @@ class ParallelProcessor(ABC):
         format_string = '\r    - Generating item... {0:.1%} Done.'
 
         print(f'    - Generating items...', end='')
-        for i, processed_data in enumerate(pool.imap_unordered(func=self._worker_func, iterable=iterable, chunksize=100)):
+        for i, processed_data in enumerate(pool.imap_unordered(func=self._worker_func, iterable=iterable)):
             reduce_func(processed_data)
             print(format_string.format((i + 1) / iterable_length), end='')
         print()
