@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import multiprocessing
 from typing import List
+import random
 
 # numpy
 import numpy
@@ -14,6 +15,13 @@ import torch
 # from deep_signature.networks import ArcLengthNet
 # from deep_signature.networks import CurvatureNet
 # from deep_signature.networks import DifferentialInvariantsNet
+
+
+def fix_random_seeds(seed: int = 42):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    numpy.random.seed(seed)
+    random.seed(seed)
 
 
 def create_data_generator(dir_path, fine=False, limit=None):

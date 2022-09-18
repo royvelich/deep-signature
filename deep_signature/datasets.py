@@ -2,6 +2,7 @@
 import numpy
 from abc import ABC, abstractmethod
 import random
+from typing import Union
 
 # torch
 from torch.utils.data import Dataset
@@ -10,10 +11,13 @@ from torch.utils.data import Dataset
 from deep_signature.manifolds import PlanarCurvesManager, PlanarCurve
 from deep_signature.discrete_distributions import MultimodalGaussianDiscreteDistribution
 from deep_signature.groups import Group
+from deep_signature.base import SeedableObject
 
 
-class TupletsDataset(Dataset):
+class TupletsDataset(Dataset, SeedableObject):
     def __init__(self, planar_curves_manager: PlanarCurvesManager, group: Group, dataset_size: int):
+        super(Dataset, self).__init__()
+        super(SeedableObject, self).__init__()
         self._planar_curves_manager = planar_curves_manager
         self._group = group
         self._dataset_size = dataset_size
@@ -41,7 +45,7 @@ class CurveNeighborhoodTupletsDataset(TupletsDataset):
     def __getitem__(self, index):
         tuplet = []
         planar_curve = self._planar_curves_manager.get_random_planar_curve()
-        center_point_index = int(numpy.random.randint(planar_curve.points_count, size=1))
+        center_point_index = planar_curve.get_random_point_index()
         for i in range(2):
             sampled_planar_curve = self._sample_planar_curve(planar_curve=planar_curve)
             curve_neighborhood_points = self._extract_curve_neighborhood_points(planar_curve=sampled_planar_curve, center_point_index=center_point_index)
@@ -52,7 +56,7 @@ class CurveNeighborhoodTupletsDataset(TupletsDataset):
 
         for i in range(self._negative_examples_count):
             sampled_planar_curve = self._sample_planar_curve(planar_curve=planar_curve)
-            negative_example_offset = numpy.random.randint(low=self._min_negative_example_offset, high=self._max_negative_example_offset)
+            negative_example_offset = self._rng.integers(low=self._min_negative_example_offset, high=self._max_negative_example_offset)
             if bool(random.getrandbits(1)) is True:
                 negative_example_offset = -negative_example_offset
             negative_example_center_point_index = numpy.mod(center_point_index + negative_example_offset, planar_curve.points_count)
@@ -62,8 +66,8 @@ class CurveNeighborhoodTupletsDataset(TupletsDataset):
         return numpy.array(tuplet)
 
     def _sample_planar_curve(self, planar_curve: PlanarCurve) -> PlanarCurve:
-        multimodality = numpy.random.randint(low=self._min_multimodality, high=self._max_multimodality)
-        sampling_ratio = numpy.random.uniform(low=self._min_sampling_ratio, high=self._max_sampling_ratio)
+        multimodality = self._rng.integers(low=self._min_multimodality, high=self._max_multimodality)
+        sampling_ratio = self._rng.uniform(low=self._min_sampling_ratio, high=self._max_sampling_ratio)
         discrete_distribution = MultimodalGaussianDiscreteDistribution(bins_count=planar_curve.points_count, multimodality=multimodality)
         return planar_curve.sample_curve(sampling_ratio=sampling_ratio, discrete_distribution=discrete_distribution)
 

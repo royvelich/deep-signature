@@ -6,9 +6,13 @@ warnings.filterwarnings("ignore")
 # deep-signature
 from deep_signature import manifolds
 from deep_signature import groups
+from deep_signature import utils
+from deep_signature.base import SeedableObject
 
 
 if __name__ == '__main__':
+    utils.fix_random_seeds()
+
     parser = ArgumentParser()
     parser.add_argument('--curves-base-dir-path', type=str)
     parser.add_argument('--benchmark-base-dir-path', type=str)
@@ -22,7 +26,10 @@ if __name__ == '__main__':
     parser.add_argument('--fig-size', nargs='+', type=int)
     parser.add_argument('--point-size', type=float)
     parser.add_argument('--workers-count', type=int)
+    parser.add_argument('--seed', type=int)
     args = parser.parse_args()
+
+    SeedableObject.seed = args.seed
 
     group_list = []
     for group_name in args.groups:

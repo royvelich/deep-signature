@@ -51,13 +51,15 @@ from deep_signature import utils
 from deep_signature.parallel_processing import ParallelProcessor, ParallelProcessorTask
 from deep_signature.groups import Group
 import deep_signature.visualization
+from deep_signature.base import SeedableObject
 
 
 # =================================================
 # PlanarCurve Class
 # =================================================
-class PlanarCurve:
-    def __init__(self, points: numpy.ndarray, closed: Union[None, bool] = None):
+class PlanarCurve(SeedableObject):
+    def __init__(self, points: numpy.ndarray, closed: Union[None, bool] = None, seed: Union[None, int] = None):
+        super(SeedableObject, self).__init__(seed=seed)
         self._points = points
 
         if closed is None:
@@ -361,7 +363,7 @@ class PlanarCurve:
     #     return indices
 
     def get_random_point_index(self) -> int:
-        return numpy.random.randint(low=0, high=self._points.shape[0])
+        return self._rng.integers(low=0, high=self._points.shape[0])
 
     # -------------------------------------------------
     # curve transformation
@@ -507,61 +509,6 @@ class PlanarCurve:
 #
 #     def _zip_iterable(self):
 #         return [self._min_radius, self._max_radius, self._sampling_density] * self._curves_count
-
-
-# # =================================================
-# # LevelCurveValidator Class
-# # =================================================
-# class LevelCurveValidator(ABC):
-#     @abstractmethod
-#     def validate_curve(self, planar_curve: PlanarCurve) -> bool:
-#         pass
-#
-#
-# # =================================================
-# # LevelCurvePreprocessor Class
-# # =================================================
-# class LevelCurvePreprocessor(ABC):
-#     @abstractmethod
-#     def preprocess_curve(self, planar_curve: PlanarCurve) -> PlanarCurve:
-#         pass
-#
-#
-# # =================================================
-# # LevelCurveValidator Class
-# # =================================================
-# class TrainingLevelCurveValidator(LevelCurveValidator):
-#     def __init__(
-#             self,
-#             curves_count: int,
-#             images_base_dir_path: str,
-#             sigmas: List[int],
-#             min_contour_level: float,
-#             max_contour_level: float,
-#             min_points_count: int,
-#             max_points_count: int,
-#             flat_point_threshold: float,
-#             max_flat_points_ratio: float,
-#             min_equiaffine_std: float):
-#         self._curves_count = curves_count
-#         self._images_base_dir_path = os.path.normpath(images_base_dir_path)
-#         self._sigmas = sigmas
-#         self._min_contour_level = min_contour_level
-#         self._max_contour_level = max_contour_level
-#         self._min_points_count = min_points_count
-#         self._max_points_count = max_points_count
-#         self._flat_point_threshold = flat_point_threshold
-#         self._max_flat_points_ratio = max_flat_points_ratio
-#         self._min_equiaffine_std = min_equiaffine_std
-#         self._smoothing_iterations = smoothing_iterations
-#         self._smoothing_window_length = smoothing_window_length
-#         self._smoothing_poly_order = smoothing_poly_order
-#         self._image_file_paths = self._get_image_file_paths()
-#         super().__init__()
-#
-#
-#     def validate_curve(self, planar_curve: PlanarCurve) -> bool:
-#         pass
 
 
 # =================================================
@@ -970,8 +917,10 @@ class ShapeMatchingBenchmarkCurvesGenerator(ParallelProcessor):
 # PlanarCurvesManager Class
 # =================================================
 class PlanarCurvesManager:
-    def __init__(self):
+    def __init__(self, seed: Union[None, int] = None):
         super().__init__()
+        self._seed = seed
+        self._rng = numpy.random.default_rng(seed)
         self._planar_curves = []
 
     @property
@@ -988,7 +937,7 @@ class PlanarCurvesManager:
     #         self._planar_curves[i].plot_curve(ax=ax)
 
     def get_random_planar_curve(self) -> PlanarCurve:
-        index = numpy.random.randint(low=0, high=len(self._planar_curves))
+        index = self._rng.integers(low=0, high=len(self._planar_curves))
         return self._planar_curves[index]
 
     def load(self, curves_file_path: str):

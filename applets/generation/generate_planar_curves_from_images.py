@@ -5,6 +5,7 @@ warnings.filterwarnings("ignore")
 
 # deep-signature
 from deep_signature import manifolds
+from deep_signature.base import SeedableObject
 
 
 if __name__ == '__main__':
@@ -22,7 +23,10 @@ if __name__ == '__main__':
     parser.add_argument('--smoothing-poly-order', type=int)
     parser.add_argument('--flat-point-threshold', type=float)
     parser.add_argument('--max-flat-points-ratio', type=float)
+    parser.add_argument('--seed', type=int)
     args = parser.parse_args()
+
+    SeedableObject.seed = args.seed
 
     image_level_curves_generator = manifolds.ImageLevelCurvesGenerator(
         images_base_dir_path=args.images_base_dir_path,
