@@ -19,6 +19,8 @@ if __name__ == '__main__':
     parser.add_argument('--max-det', type=float)
     parser.add_argument('--min-cond', type=float)
     parser.add_argument('--max-cond', type=float)
+    parser.add_argument('--fig-size', nargs='+', type=int)
+    parser.add_argument('--point-size', type=float)
     parser.add_argument('--workers-count', type=int)
     args = parser.parse_args()
 
@@ -38,6 +40,8 @@ if __name__ == '__main__':
         benchmark_base_dir_path=args.benchmark_base_dir_path,
         sampling_ratios=args.sampling_ratios,
         multimodalities=args.multimodalities,
-        groups=group_list)
+        groups=group_list,
+        fig_size=tuple(args.fig_size),
+        point_size=args.point_size)
 
     shape_matching_benchmark_curves_generator.process(workers_count=args.workers_count)

@@ -13,7 +13,7 @@ if __name__ == '__main__':
     parser.add_argument('--curves-base-dir-path', type=str)
     parser.add_argument('--min-points-count', type=int)
     parser.add_argument('--max-points-count', type=int)
-    parser.add_argument('--kernel_sizes', nargs='+', type=int)
+    parser.add_argument('--kernel-sizes', nargs='+', type=int)
     parser.add_argument('--contour-levels', nargs='+', type=float)
     parser.add_argument('--workers-count', type=int)
     parser.add_argument('--min-equiaffine-std', type=float)
