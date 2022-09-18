@@ -20,6 +20,8 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int)
     args = parser.parse_args()
 
+    utils.save_command_args(dir_path=args.curves_base_dir_path, args=args)
+
     SeedableObject.seed = args.seed
 
     silhouette_level_curves_generator = manifolds.SilhouetteLevelCurvesGenerator(

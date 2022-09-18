@@ -27,6 +27,8 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int)
     args = parser.parse_args()
 
+    utils.save_command_args(dir_path=args.benchmark_base_dir_path, args=args)
+
     SeedableObject.seed = args.seed
 
     group_list = []

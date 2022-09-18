@@ -1,5 +1,7 @@
 # python peripherals
 import os
+import json
+import pathlib
 from pathlib import Path
 import multiprocessing
 from typing import List
@@ -15,6 +17,12 @@ import torch
 # from deep_signature.networks import ArcLengthNet
 # from deep_signature.networks import CurvatureNet
 # from deep_signature.networks import DifferentialInvariantsNet
+
+
+def save_command_args(dir_path: str, args: object):
+    pathlib.Path(dir_path)
+    with open(os.path.join(dir_path, 'args.txt'), 'w') as f:
+        json.dump(args.__dict__, f, indent=2)
 
 
 def fix_random_seeds(seed: int = 42):

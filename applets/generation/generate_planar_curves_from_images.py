@@ -1,10 +1,13 @@
 # python peripherals
+import json
+import os
 from argparse import ArgumentParser
 import warnings
 warnings.filterwarnings("ignore")
 
 # deep-signature
 from deep_signature import manifolds
+from deep_signature import utils
 from deep_signature.base import SeedableObject
 
 
@@ -25,6 +28,8 @@ if __name__ == '__main__':
     parser.add_argument('--max-flat-points-ratio', type=float)
     parser.add_argument('--seed', type=int)
     args = parser.parse_args()
+
+    utils.save_command_args(dir_path=args.curves_base_dir_path, args=args)
 
     SeedableObject.seed = args.seed
 
