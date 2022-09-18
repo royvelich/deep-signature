@@ -33,6 +33,7 @@ dependencies:
   - bottleneck
   - openpyxl
   - pip
+  - libwebp
   - pip:
       - hausdorff
       - lightly

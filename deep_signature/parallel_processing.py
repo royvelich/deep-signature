@@ -75,7 +75,11 @@ class ParallelProcessor(ABC):
 
     def _worker_func(self, worker_id: int, tasks: List[ParallelProcessorTask]):
         for task in tasks:
-            task.process()
-            task.post_process()
+            try:
+                task.process()
+                task.post_process()
+            except:
+                pass
+
             self._completed_tasks_queue.put(task.identifier)
         self._completed_workers_queue.put(worker_id)
