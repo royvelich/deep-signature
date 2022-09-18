@@ -1,11 +1,14 @@
 # python peripherals
 from __future__ import annotations
+
+import typing
 from typing import Dict, Union, Tuple, List, Callable
 from abc import ABC, abstractmethod
 import os
 import pathlib
 import inspect
 import random
+import itertools
 
 # numpy
 import numpy
@@ -15,9 +18,6 @@ import scipy.signal
 
 # sklearn
 import sklearn.preprocessing
-
-# itertools
-from itertools import combinations
 
 # deep_signature
 from deep_signature import discrete_distributions
@@ -33,12 +33,21 @@ import skimage.measure
 # opencv
 import cv2
 
+# skimage
+import skimage.io
+import skimage.color
+import skimage.measure
+
+# shapely
+from shapely.geometry import Polygon
+
 # matplotlib
 import matplotlib
 
 # deep_signature
 from deep_signature import utils
-from deep_signature.parallel_processing import ParallelProcessor
+from deep_signature.parallel_processing import ParallelProcessor, ParallelProcessorTask, ParallelProcessorTaskResult
+from deep_signature.groups import Group
 import deep_signature.visualization
 
 
@@ -172,7 +181,7 @@ class PlanarCurve:
 
     def _calculate_T(self, indices: numpy.ndarray) -> float:
         T = 1
-        for item in combinations(indices, 3):
+        for item in itertools.combinations(indices, 3):
             sorted_indices = sorted(item)
             T = T * self._calculate_signed_parallelogram_area(indices=numpy.array(sorted_indices))
         return T / 4
@@ -414,6 +423,11 @@ class PlanarCurve:
 
         return False
 
+    def is_within(self, planar_curve: PlanarCurve) -> bool:
+        reference_polygon = Polygon(shell=self._points)
+        query_polygon = Polygon(shell=planar_curve.points)
+        return reference_polygon.within(query_polygon)
+
     # -------------------------------------------------
     # curve normalization
     # -------------------------------------------------
@@ -467,37 +481,6 @@ class PlanarCurve:
         y = self._points[:, 1]
         deep_signature.visualization.plot_multicolor_line(x=x, y=y, ax=ax, line_width=line_width, alpha=alpha, cmap=cmap, zorder=zorder)
 
-
-# =================================================
-# PlanarCurvesGenerator Class
-# =================================================
-class PlanarCurvesManager:
-    def __init__(self, curves_count: int):
-        super().__init__()
-        self._curves_count = curves_count
-        self._planar_curves = []
-
-    @property
-    def planar_curves(self):
-        return self._planar_curves
-
-    # def plot_curves(self, curves_count: int, figsize: Tuple[int, int]):
-    #     for i in range(curves_count):
-    #         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-    #         self._planar_curves[i].plot_curve(ax=ax)
-
-    def get_random_planar_curve(self) -> PlanarCurve:
-        index = numpy.random.randint(low=0, high=len(self._planar_curves))
-        return self._planar_curves[index]
-
-    # def _post_load(self):
-    #     self._planar_curves = [PlanarCurve(points=item, closed=True) for item in self._items]
-    #     for planar_curve in self._planar_curves:
-    #         planar_curve.center_curve()
-    #
-    #     random.shuffle(self._planar_curves)
-        # self._planar_curves = self._planar_curves[:self._curves_count]
-
 # =================================================
 # CirclesManager Class
 # =================================================
@@ -524,100 +507,154 @@ class PlanarCurvesManager:
 #         return [self._min_radius, self._max_radius, self._sampling_density] * self._curves_count
 
 
+# # =================================================
+# # LevelCurveValidator Class
+# # =================================================
+# class LevelCurveValidator(ABC):
+#     @abstractmethod
+#     def validate_curve(self, planar_curve: PlanarCurve) -> bool:
+#         pass
+#
+#
+# # =================================================
+# # LevelCurvePreprocessor Class
+# # =================================================
+# class LevelCurvePreprocessor(ABC):
+#     @abstractmethod
+#     def preprocess_curve(self, planar_curve: PlanarCurve) -> PlanarCurve:
+#         pass
+#
+#
+# # =================================================
+# # LevelCurveValidator Class
+# # =================================================
+# class TrainingLevelCurveValidator(LevelCurveValidator):
+#     def __init__(
+#             self,
+#             curves_count: int,
+#             images_base_dir_path: str,
+#             sigmas: List[int],
+#             min_contour_level: float,
+#             max_contour_level: float,
+#             min_points_count: int,
+#             max_points_count: int,
+#             flat_point_threshold: float,
+#             max_flat_points_ratio: float,
+#             min_equiaffine_std: float):
+#         self._curves_count = curves_count
+#         self._images_base_dir_path = os.path.normpath(images_base_dir_path)
+#         self._sigmas = sigmas
+#         self._min_contour_level = min_contour_level
+#         self._max_contour_level = max_contour_level
+#         self._min_points_count = min_points_count
+#         self._max_points_count = max_points_count
+#         self._flat_point_threshold = flat_point_threshold
+#         self._max_flat_points_ratio = max_flat_points_ratio
+#         self._min_equiaffine_std = min_equiaffine_std
+#         self._smoothing_iterations = smoothing_iterations
+#         self._smoothing_window_length = smoothing_window_length
+#         self._smoothing_poly_order = smoothing_poly_order
+#         self._image_file_paths = self._get_image_file_paths()
+#         super().__init__()
+#
+#
+#     def validate_curve(self, planar_curve: PlanarCurve) -> bool:
+#         pass
+
+
 # =================================================
 # LevelCurvesGenerator Class
 # =================================================
+class LevelCurvesGeneratorTask(ParallelProcessorTask):
+    def __init__(self, image_file_path: str, contour_level: float):
+        self._image_file_path = image_file_path
+        self._contour_level = contour_level
+
+    @property
+    def image_file_path(self) -> str:
+        return self._image_file_path
+
+    @property
+    def contour_level(self) -> float:
+        return self._contour_level
+
+    @property
+    def image_name(self) -> str:
+        return pathlib.Path(self._image_file_path).stem
+
+
+class LevelCurvesGeneratorTaskResult(ParallelProcessorTaskResult):
+    def __init__(self, task: ParallelProcessorTask, curves: List[numpy.ndarray]):
+        super().__init__(task=task)
+        self._curves = curves
+
+    def post_process(self):
+        pass
+
+    @property
+    def curves(self) -> List[numpy.ndarray]:
+        return self._curves
+
+
 class LevelCurvesGenerator(ParallelProcessor):
     def __init__(
             self,
-            curves_count: int,
             images_base_dir_path: str,
-            sigmas: List[int],
-            min_contour_level: float,
-            max_contour_level: float,
+            curves_base_dir_path: str,
             min_points_count: int,
-            max_points_count: int,
-            flat_point_threshold: float,
-            max_flat_points_ratio: float,
-            min_equiaffine_std: float,
-            smoothing_iterations: int,
-            smoothing_window_length: int,
-            smoothing_poly_order: int):
-        self._curves_count = curves_count
+            max_points_count: int):
         self._images_base_dir_path = os.path.normpath(images_base_dir_path)
-        self._sigmas = sigmas
-        self._min_contour_level = min_contour_level
-        self._max_contour_level = max_contour_level
+        self._curves_base_dir_path = os.path.normpath(curves_base_dir_path)
         self._min_points_count = min_points_count
         self._max_points_count = max_points_count
-        self._flat_point_threshold = flat_point_threshold
-        self._max_flat_points_ratio = max_flat_points_ratio
-        self._min_equiaffine_std = min_equiaffine_std
-        self._smoothing_iterations = smoothing_iterations
-        self._smoothing_window_length = smoothing_window_length
-        self._smoothing_poly_order = smoothing_poly_order
         self._image_file_paths = self._get_image_file_paths()
         super().__init__()
 
-    def _generate_items(self):
-        image_file_path = self._image_file_paths[numpy.random.randint(low=0, high=len(self._image_file_paths))]
-        sigma = self._sigmas[numpy.random.randint(low=0, high=len(self._sigmas))]
-        contour_level = numpy.random.uniform(low=self._min_contour_level, high=self._max_contour_level)
-        contours = self._try_extract_contours(image_file_path=image_file_path, sigma=sigma, contour_level=contour_level)
-        return self._try_get_valid_contours(contours=contours)
+    @abstractmethod
+    def _get_valid_contours(self, task: LevelCurvesGeneratorTask, contours: List[numpy.ndarray]) -> List[numpy.ndarray]:
+        pass
 
-    def _try_extract_contours(self, image_file_path: str, sigma: int, contour_level: float) -> Union[None, List[numpy.ndarray]]:
-        try:
-            image = skimage.io.imread(image_file_path)
-        except:
-            return None
+    @abstractmethod
+    def _preprocess_image(self, task: LevelCurvesGeneratorTask, image: numpy.ndarray) -> numpy.ndarray:
+        pass
 
+    @abstractmethod
+    def _create_task_result(self, task: LevelCurvesGeneratorTask, contours: List[numpy.ndarray]) -> ParallelProcessorTaskResult:
+        pass
+
+    def _preprocess_contour(self, task: LevelCurvesGeneratorTask, contour: numpy.ndarray) -> numpy.ndarray:
+        planar_curve = PlanarCurve(points=contour)
+        planar_curve.center_curve()
+        return planar_curve.points
+
+    def _load_image(self, task: LevelCurvesGeneratorTask, image_file_path: str) -> numpy.ndarray:
+        image = skimage.io.imread(image_file_path)
         if len(image.shape) == 3 and image.shape[2] == 4:
             image = skimage.color.rgba2rgb(image)
         elif len(image.shape) == 2:
             image = skimage.color.gray2rgb(image)
 
         gray_image = skimage.color.rgb2gray(image)
+        return self._preprocess_image(task=task, image=gray_image)
 
-        gray_image_filtered = cv2.GaussianBlur(src=gray_image, ksize=(sigma, sigma), sigmaX=0)
-
-        # gray_image_filtered = skimage.filters.gaussian(gray_image, sigma=sigma)
-        contours = skimage.measure.find_contours(gray_image_filtered, contour_level)
+    def _extract_contours(self, task: LevelCurvesGeneratorTask, image: numpy.ndarray) -> List[numpy.ndarray]:
+        contours = skimage.measure.find_contours(image=image, level=task.contour_level)
         contours = [contour for contour in contours if self._min_points_count <= contour.shape[0] <= self._max_points_count]
-        # contours.sort(key=lambda contour: contour.shape[0], reverse=True)
+        contours = [self._preprocess_contour(task=task, contour=contour) for contour in contours]
         return contours
 
-    def _try_get_valid_contours(self, contours: List[numpy.ndarray]) -> List[numpy.ndarray]:
-        valid_contours = []
-        if contours is not None:
-            for contour in contours:
-                contour = contour[0:-1]
-                planar_curve = PlanarCurve(points=contour)
-                planar_curve.smooth_curve(iterations=self._smoothing_iterations, window_length=self._smoothing_window_length, poly_order=self._smoothing_poly_order)
-                if planar_curve.closed is False:
-                    continue
-
-                k_euclidean = planar_curve.calculate_euclidean_k()
-                flat_points = numpy.sum(numpy.array([1 if x < self._flat_point_threshold else 0 for x in numpy.abs(k_euclidean)]))
-                flat_points_ratio = flat_points / len(k_euclidean)
-                if flat_points_ratio > self._max_flat_points_ratio:
-                    continue
-
-                k_equiaffine = planar_curve.calculate_equiaffine_k()
-                k_equiaffine_cleaned = k_equiaffine[~numpy.isnan(k_equiaffine)]
-                equiaffine_std = numpy.std(k_equiaffine_cleaned)
-                if equiaffine_std < self._min_equiaffine_std:
-                    continue
-
-                valid_contours.append(planar_curve.points)
-
-        return valid_contours
+    def _process_task(self, task: ParallelProcessorTask) -> ParallelProcessorTaskResult:
+        task = typing.cast(LevelCurvesGeneratorTask, task)
+        image = self._load_image(task=task, image_file_path=task.image_file_path)
+        contours = self._extract_contours(task=task, image=image)
+        valid_contours = self._get_valid_contours(task=task, contours=contours)
+        return self._create_task_result(task=task, contours=valid_contours)
 
     def _get_image_file_paths(self) -> List[str]:
         image_file_paths = []
         for sub_dir_path, _, file_names in os.walk(self._images_base_dir_path):
-            if sub_dir_path == self._images_base_dir_path:
-                continue
+            # if sub_dir_path == self._images_base_dir_path:
+            #     continue
 
             for file_name in file_names:
                 image_file_path = os.path.normpath(os.path.join(sub_dir_path, file_name))
@@ -625,36 +662,277 @@ class LevelCurvesGenerator(ParallelProcessor):
 
         return image_file_paths
 
-    # def _zip_iterable(self) -> List:
-    #     image_file_paths = []
-    #     for sub_dir_path, _, file_names in os.walk(self._images_base_dir_path):
-    #         if sub_dir_path == self._images_base_dir_path:
-    #             continue
-    #
-    #         for file_name in file_names:
-    #             image_file_path = os.path.normpath(os.path.join(sub_dir_path, file_name))
-    #             image_file_paths.append(image_file_path)
-    #
-    #     image_files_count = len(image_file_paths)
-    #     sigmas_count = len(self._sigmas)
-    #     contour_levels_count = len(self._contour_levels)
-    #
-    #     max_curves_count = image_files_count * sigmas_count * contour_levels_count
-    #     # if curves_count > max_curves_count:
-    #     #     raise ValueError('curves_count exceeds maximum')
-    #
-    #     argument_packs = []
-    #     argument_packs.append([*image_file_paths] * (sigmas_count * contour_levels_count))
-    #     argument_packs.append([*self._sigmas] * (image_files_count * contour_levels_count))
-    #     argument_packs.append([*self._contour_levels] * (image_files_count * sigmas_count))
-    #
-    #     entry_names = inspect.getfullargspec(LevelCurveManager._zip_iterable).args[4:]
-    #     entry_names.insert(0, 'image_file_path')
-    #     entry_names.insert(1, 'sigma')
-    #     entry_names.insert(2, 'contour_level')
-    #     iterable = [dict(zip(entry_names, values)) for values in zip(*argument_packs)]
-    #
-    #     return iterable
+
+# =================================================
+# ImageLevelCurvesGenerator Class
+# =================================================
+class ImageLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
+    def __init__(self, image_file_path: str, contour_level: float, kernel_size: int):
+        super().__init__(image_file_path=image_file_path, contour_level=contour_level)
+        self._image_file_path = image_file_path
+        self._kernel_size = kernel_size
+
+    @property
+    def kernel_size(self) -> int:
+        return self._kernel_size
+
+
+class ImageLevelCurvesGenerator(LevelCurvesGenerator):
+    def __init__(
+            self,
+            images_base_dir_path: str,
+            curves_base_dir_path: str,
+            min_points_count: int,
+            max_points_count: int,
+            contour_levels: List[float],
+            kernel_sizes: List[int],
+            flat_point_threshold: float,
+            max_flat_points_ratio: float,
+            min_equiaffine_std: float,
+            smoothing_iterations: int,
+            smoothing_window_length: int,
+            smoothing_poly_order: int,
+            curves_file_name: str = 'curves.npy'):
+        self._kernel_sizes = kernel_sizes
+        self._contour_levels = contour_levels
+        self._flat_point_threshold = flat_point_threshold
+        self._max_flat_points_ratio = max_flat_points_ratio
+        self._min_equiaffine_std = min_equiaffine_std
+        self._smoothing_iterations = smoothing_iterations
+        self._smoothing_window_length = smoothing_window_length
+        self._smoothing_poly_order = smoothing_poly_order
+        self._curves_file_name = curves_file_name
+        super().__init__(images_base_dir_path=images_base_dir_path, curves_base_dir_path=curves_base_dir_path, min_points_count=min_points_count, max_points_count=max_points_count)
+
+    def _post_process(self):
+        curves = []
+        for task_result in self._task_results:
+            task_result = typing.cast(LevelCurvesGeneratorTaskResult, task_result)
+            curves.extend(task_result.curves)
+
+        curves_file_path = os.path.normpath(os.path.join(self._curves_base_dir_path, self._curves_file_name))
+        pathlib.Path(self._curves_base_dir_path).mkdir(parents=True, exist_ok=True)
+        numpy.save(file=curves_file_path, arr=curves, allow_pickle=True)
+
+    def _generate_tasks(self) -> List[ParallelProcessorTask]:
+        tasks = []
+        combinations = list(itertools.product(*[self._image_file_paths, self._contour_levels, self._kernel_sizes]))
+        for combination in combinations:
+            tasks.append(ImageLevelCurvesGeneratorTask(image_file_path=combination[0], contour_level=combination[1], kernel_size=combination[2]))
+        return tasks
+
+    def _preprocess_image(self, task: LevelCurvesGeneratorTask, image: numpy.ndarray) -> numpy.ndarray:
+        task = typing.cast(ImageLevelCurvesGeneratorTask, task)
+        return cv2.GaussianBlur(src=image, ksize=(task.kernel_size, task.kernel_size), sigmaX=0)
+
+    def _preprocess_contour(self, task: LevelCurvesGeneratorTask, contour: numpy.ndarray) -> numpy.ndarray:
+        contour = super()._preprocess_contour(task=task, contour=contour)
+        planar_curve = PlanarCurve(points=contour)
+        planar_curve.smooth_curve(iterations=self._smoothing_iterations, window_length=self._smoothing_window_length, poly_order=self._smoothing_poly_order)
+        return planar_curve.points
+
+    def _get_valid_contours(self, task: LevelCurvesGeneratorTask, contours: List[numpy.ndarray]) -> List[numpy.ndarray]:
+        valid_contours = []
+        for contour in contours:
+            # contour = contour[0:-1]
+            planar_curve = PlanarCurve(points=contour)
+            if planar_curve.closed is False:
+                continue
+
+            k_euclidean = planar_curve.calculate_euclidean_k()
+            flat_points = numpy.sum(numpy.array([1 if x < self._flat_point_threshold else 0 for x in numpy.abs(k_euclidean)]))
+            flat_points_ratio = flat_points / len(k_euclidean)
+            if flat_points_ratio > self._max_flat_points_ratio:
+                continue
+
+            k_equiaffine = planar_curve.calculate_equiaffine_k()
+            k_equiaffine_cleaned = k_equiaffine[~numpy.isnan(k_equiaffine)]
+            equiaffine_std = numpy.std(k_equiaffine_cleaned)
+            if equiaffine_std < self._min_equiaffine_std:
+                continue
+
+            valid_contours.append(planar_curve.points)
+
+        return valid_contours
+
+
+# =================================================
+# SilhouetteLevelCurvesGenerator Class
+# =================================================
+class SilhouetteLevelCurvesGeneratorTaskResult(LevelCurvesGeneratorTaskResult):
+    def __init__(self, task: ParallelProcessorTask, curves: List[numpy.ndarray], curves_base_dir_path: str):
+        super().__init__(task=task, curves=curves)
+        self._curves_base_dir_path = curves_base_dir_path
+
+    def post_process(self):
+        task = typing.cast(LevelCurvesGeneratorTask, self._task)
+        curves_file_path = os.path.normpath(os.path.join(self._curves_base_dir_path, f'{task.image_name}.npy'))
+        pathlib.Path(self._curves_base_dir_path).mkdir(parents=True, exist_ok=True)
+        numpy.save(file=curves_file_path, arr=self._curves, allow_pickle=True)
+
+
+class SilhouetteLevelCurvesGenerator(LevelCurvesGenerator):
+    def __init__(
+            self,
+            images_base_dir_path: str,
+            curves_base_dir_path: str,
+            min_points_count: int,
+            max_points_count: int,
+            contour_level: float):
+        self._contour_level = contour_level
+        super().__init__(images_base_dir_path=images_base_dir_path, curves_base_dir_path=curves_base_dir_path, min_points_count=min_points_count, max_points_count=max_points_count)
+
+    def _generate_tasks(self) -> List[ParallelProcessorTask]:
+        tasks = []
+        for image_file_path in self._image_file_paths:
+            tasks.append(LevelCurvesGeneratorTask(image_file_path=image_file_path, contour_level=self._contour_level))
+        return tasks
+
+    def _post_process(self):
+        pass
+
+    def _preprocess_image(self, task: LevelCurvesGeneratorTask, image: numpy.ndarray) -> numpy.ndarray:
+        image = cv2.copyMakeBorder(src=image, top=100, bottom=100, left=100, right=100, borderType=cv2.BORDER_CONSTANT, value=[255, 255, 255])
+        return image
+
+    def _get_valid_contours(self, task: LevelCurvesGeneratorTask, contours: List[numpy.ndarray]) -> List[numpy.ndarray]:
+        closed_contours = []
+        for contour in contours:
+            planar_curve = PlanarCurve(points=contour)
+            if planar_curve.closed is True:
+                closed_contours.append(contour)
+
+        valid_contours = []
+        for i, ref_contour in enumerate(closed_contours):
+            ref_planar_curve = PlanarCurve(points=ref_contour, closed=True)
+            valid = True
+            for j, contour in enumerate(closed_contours):
+                planar_curve = PlanarCurve(points=contour, closed=True)
+                if (ref_planar_curve.is_within(planar_curve=planar_curve) is True) and (i != j):
+                    valid = False
+
+            if valid is True:
+                valid_contours.append(ref_contour)
+
+        return valid_contours
+
+
+# =================================================
+# ShapeMatchingBenchmarkCurvesGenerator Class
+# =================================================
+class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessorTask):
+    def __init__(self, curves_file_path: str, sampling_ratio: float, multimodality: int, group: Group):
+        self._curves_file_path = curves_file_path
+        self._sampling_ratio = sampling_ratio
+        self._multimodality = multimodality
+        self._group = group
+
+    @property
+    def curves_file_path(self) -> str:
+        return self._curves_file_path
+
+    @property
+    def curves_file_name(self) -> str:
+        return pathlib.Path(self._curves_file_path).stem
+
+    @property
+    def sampling_ratio(self) -> float:
+        return self._sampling_ratio
+
+    @property
+    def sampling_ratio_string(self) -> str:
+        return str(self._sampling_ratio).replace(".", "_")
+
+    @property
+    def multimodality(self) -> int:
+        return self._multimodality
+
+    @property
+    def group(self) -> Group:
+        return self._group
+
+
+class ShapeMatchingBenchmarkCurvesGeneratorTaskResult(ParallelProcessorTaskResult):
+    def __init__(self, task: ParallelProcessorTask, sampled_planar_curves: List[PlanarCurve], benchmark_base_dir_path: str):
+        super().__init__(task=task)
+        self._sampled_planar_curves = sampled_planar_curves
+        self._benchmark_base_dir_path = benchmark_base_dir_path
+
+    def post_process(self):
+        task = typing.cast(ShapeMatchingBenchmarkCurvesGeneratorTask, self._task)
+        curves_file_path = os.path.normpath(os.path.join(self._benchmark_base_dir_path, f'{task.group.name}/{task.multimodality}/{task.curves_file_name}/{task.curves_file_name}_{task.sampling_ratio_string}.npy'))
+        pathlib.Path(os.path.dirname(curves_file_path)).mkdir(parents=True, exist_ok=True)
+        curves = [sampled_planar_curve.points for sampled_planar_curve in self._sampled_planar_curves]
+        numpy.save(file=curves_file_path, arr=curves, allow_pickle=True)
+
+        for i, sampled_planar_curve in enumerate(self._sampled_planar_curves):
+            fig, ax = matplotlib.pyplot.subplots(nrows=1, ncols=1, figsize=(5, 5))
+            sampled_planar_curve.reference_curve.plot_scattered_curve(ax=ax, cmap='red')
+            sampled_planar_curve.plot_scattered_curve(ax=ax, cmap='green')
+            matplotlib.pyplot.axis('off')
+            ax.axis('equal')
+            plot_file_path = os.path.normpath(os.path.join(self._benchmark_base_dir_path, f'plots/{task.curves_file_name}/{task.group.name}/{task.multimodality}/{task.sampling_ratio_string}/{task.curves_file_name}_{i}.png'))
+            pathlib.Path(os.path.dirname(plot_file_path)).mkdir(parents=True, exist_ok=True)
+            fig.savefig(plot_file_path)
+            matplotlib.pyplot.close(fig)
+
+    @property
+    def sampled_planar_curves(self) -> List[PlanarCurve]:
+        return self._sampled_planar_curves
+
+
+class ShapeMatchingBenchmarkCurvesGenerator(ParallelProcessor):
+    def __init__(
+            self,
+            curves_base_dir_path: str,
+            benchmark_base_dir_path: str,
+            sampling_ratios: List[float],
+            multimodalities: List[int],
+            groups: List[Group]):
+        self._curves_base_dir_path = os.path.normpath(curves_base_dir_path)
+        self._benchmark_base_dir_path = os.path.normpath(benchmark_base_dir_path)
+        self._sampling_ratios = sampling_ratios
+        self._multimodalities = multimodalities
+        self._groups = groups
+        self._curves_file_paths = self._get_curve_file_paths()
+        super().__init__()
+
+    def _post_process(self):
+        pass
+
+    def _generate_tasks(self) -> List[ParallelProcessorTask]:
+        tasks = []
+        combinations = list(itertools.product(*[self._curves_file_paths, self._sampling_ratios, self._multimodalities, self._groups]))
+        for combination in combinations:
+            tasks.append(ShapeMatchingBenchmarkCurvesGeneratorTask(curves_file_path=combination[0], sampling_ratio=combination[1], multimodality=combination[2], group=combination[3]))
+
+        return tasks
+
+    def _process_task(self, task: ParallelProcessorTask) -> ParallelProcessorTaskResult:
+        task = typing.cast(ShapeMatchingBenchmarkCurvesGeneratorTask, task)
+        curves = numpy.load(file=task.curves_file_path, allow_pickle=True)
+        sampled_planar_curves = []
+        for curve in curves:
+            planar_curve = PlanarCurve(points=curve)
+            discrete_distribution = discrete_distributions.MultimodalGaussianDiscreteDistribution(bins_count=planar_curve.points_count, multimodality=task.multimodality)
+            sampled_planar_curve = planar_curve.sample_curve(sampling_ratio=task.sampling_ratio, discrete_distribution=discrete_distribution)
+            transform = task.group.generate_random_group_action()
+            sampled_planar_curve.transform_curve(transform=transform)
+            sampled_planar_curves.append(sampled_planar_curve)
+
+        return ShapeMatchingBenchmarkCurvesGeneratorTaskResult(task=task, sampled_planar_curves=sampled_planar_curves, benchmark_base_dir_path=self._benchmark_base_dir_path)
+
+    def _get_curve_file_paths(self) -> List[str]:
+        curve_file_paths = []
+        for sub_dir_path, _, file_names in os.walk(self._curves_base_dir_path):
+            # if sub_dir_path == self._curves_base_dir_path:
+            #     continue
+
+            for file_name in file_names:
+                image_file_path = os.path.normpath(os.path.join(sub_dir_path, file_name))
+                curve_file_paths.append(image_file_path)
+
+        return curve_file_paths
 
 
 # =================================================

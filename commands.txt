@@ -1,0 +1,9 @@
+conda activate deep-signature
+cd /deep-signature
+export PYTHONPATH=.
+
+ srun -p mig -G 1 -c 80 --container-image=/home/royve/work/nvidia+pytorch+22.08-py3.sqsh --container-mounts /home/royve/work/data:/data,/home/royve/work/deep-signature:/deep-signature --pty bash 
+
+ python ./applets/generate_planar_curves.py --images-base-dir-path /data/images/train --curves-file-path /data/curves/train/curves.npy --sigmas 3 5 9 17 33 --min-contour-level 0.1 --max-contour-level 0.9 --min-points-count 300 --max-points-count 5000 --curves-count 150000 --flat-point-threshold 0.001 --max-flat-points-ratio 0.1 --min-equiaffine-std 0.05 --smoothing-iterations 6 --smoothing-window-length 99 --smoothing-poly-order 2 --workers-count 50
+
+ python ./applets/generate_planar_curves.py --images-base-dir-path /data/images/validation --curves-file-path /data/curves/validation/curves.npy --sigmas 3 5 9 17 33 --min-contour-level 0.1 --max-contour-level 0.9 --min-points-count 300 --max-points-count 5000 --curves-count 150000 --flat-point-threshold 0.001 --max-flat-points-ratio 0.1 --min-equiaffine-std 0.05 --smoothing-iterations 6 --smoothing-window-length 99 --smoothing-poly-order 2 --workers-count 50

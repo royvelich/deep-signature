@@ -11,9 +11,9 @@ import numpy
 import torch
 
 # deep signature
-from deep_signature.networks import ArcLengthNet
-from deep_signature.networks import CurvatureNet
-from deep_signature.networks import DifferentialInvariantsNet
+# from deep_signature.networks import ArcLengthNet
+# from deep_signature.networks import CurvatureNet
+# from deep_signature.networks import DifferentialInvariantsNet
 
 
 def create_data_generator(dir_path, fine=False, limit=None):
@@ -66,8 +66,10 @@ def insert_sorted(a, b):
 
 # https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
 def chunks(a: List, chunks_count: int) -> List[List[int]]:
-    chunk_size = len(a)//chunks_count
+    chunk_size = len(a) // chunks_count
     return [a[i:i + chunk_size] for i in range(0, len(a), chunk_size)]
+    #
+    # return [a[i:i + chunk_size] for i in range(0, len(a), chunk_size)]
 
 
 def list_subdirectories(base_dir='.'):
@@ -137,8 +139,8 @@ def get_arclength_default_min_offset(args):
     return args.supporting_points_count - 1
 
 
-def get_arclength_default_max_offset(args):
-    return 2 * get_arclength_default_min_offset(supporting_points_count=args.supporting_points_count)
+# def get_arclength_default_max_offset(args):
+#     return 2 * get_arclength_default_min_offset(supporting_points_count=args.supporting_points_count)
 
 
 def get_sample_points_count(args):
@@ -148,34 +150,34 @@ def get_sample_points_count(args):
     return 2*args.supporting_points_count + 1
 
 
-def load_models(base_dir, group, distributed=True, device=torch.device('cuda')):
-    models = {}
-    invariants = ['curvature', 'arclength', 'diff_inv']
-    neural_nets = [CurvatureNet, ArcLengthNet, DifferentialInvariantsNet]
-    for i, invariant in enumerate(invariants):
-        results_dir_path = get_results_dir(base_dir=base_dir, invariant=invariant, group=group)
-        neural_net = neural_nets[i]
-        model = neural_net(sample_points=settings.default_sample_points_count).cuda()
-        latest_subdir = get_latest_subdirectory(results_dir_path)
+# def load_models(base_dir, group, distributed=True, device=torch.device('cuda')):
+#     models = {}
+#     invariants = ['curvature', 'arclength', 'diff_inv']
+#     neural_nets = [CurvatureNet, ArcLengthNet, DifferentialInvariantsNet]
+#     for i, invariant in enumerate(invariants):
+#         results_dir_path = get_results_dir(base_dir=base_dir, invariant=invariant, group=group)
+#         neural_net = neural_nets[i]
+#         model = neural_net(sample_points=settings.default_sample_points_count).cuda()
+#         latest_subdir = get_latest_subdirectory(results_dir_path)
+#
+#         try:
+#             results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
+#             if distributed is True:
+#                 model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['module_file_path']).name}"))
+#             else:
+#                 model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['model_file_path']).name}"))
+#
+#             model.to(device)
+#             print(model)
+#             models[invariant] = model
+#         except:
+#             models[invariant] = None
+#
+#     return models
 
-        try:
-            results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-            if distributed is True:
-                model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['module_file_path']).name}"))
-            else:
-                model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['model_file_path']).name}"))
 
-            model.to(device)
-            print(model)
-            models[invariant] = model
-        except:
-            models[invariant] = None
-
-    return models
-
-
-def save_object_dict(obj, file_path):
-    dict = {key: value for key, value in obj.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
-    with open(file_path, "w") as text_file:
-        for key, value in dict.items():
-            text_file.write(f'{key}: {value}\n')
+# def save_object_dict(obj, file_path):
+#     dict = {key: value for key, value in obj.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
+#     with open(file_path, "w") as text_file:
+#         for key, value in dict.items():
+#             text_file.write(f'{key}: {value}\n')

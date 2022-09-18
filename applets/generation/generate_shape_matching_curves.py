@@ -1,0 +1,43 @@
+# python peripherals
+from argparse import ArgumentParser
+import warnings
+warnings.filterwarnings("ignore")
+
+# deep-signature
+from deep_signature import manifolds
+from deep_signature import groups
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('--curves-base-dir-path', type=str)
+    parser.add_argument('--benchmark-base-dir-path', type=str)
+    parser.add_argument('--sampling-ratios', nargs='+', type=float)
+    parser.add_argument('--multimodalities', nargs='+', type=int)
+    parser.add_argument('--groups', nargs='+', type=str)
+    parser.add_argument('--min-det', type=float)
+    parser.add_argument('--max-det', type=float)
+    parser.add_argument('--min-cond', type=float)
+    parser.add_argument('--max-cond', type=float)
+    parser.add_argument('--workers-count', type=int)
+    args = parser.parse_args()
+
+    group_list = []
+    for group_name in args.groups:
+        if group_name == 'euclidean':
+            group_list.append(groups.EuclideanGroup())
+        if group_name == 'equiaffine':
+            group_list.append(groups.EquiaffineGroup(min_cond=args.min_cond, max_cond=args.max_cond))
+        if group_name == 'similarity':
+            group_list.append(groups.SimilarityGroup(min_det=args.min_det, max_det=args.max_det))
+        if group_name == 'affine':
+            group_list.append(groups.AffineGroup(min_det=args.min_det, max_det=args.max_det, min_cond=args.min_cond, max_cond=args.max_cond))
+
+    shape_matching_benchmark_curves_generator = manifolds.ShapeMatchingBenchmarkCurvesGenerator(
+        curves_base_dir_path=args.curves_base_dir_path,
+        benchmark_base_dir_path=args.benchmark_base_dir_path,
+        sampling_ratios=args.sampling_ratios,
+        multimodalities=args.multimodalities,
+        groups=group_list)
+
+    shape_matching_benchmark_curves_generator.process(workers_count=args.workers_count)
