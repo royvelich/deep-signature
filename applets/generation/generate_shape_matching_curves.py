@@ -11,8 +11,6 @@ from deep_signature.base import SeedableObject
 
 
 if __name__ == '__main__':
-    utils.fix_random_seeds()
-
     parser = ArgumentParser()
     parser.add_argument('--curves-base-dir-path', type=str)
     parser.add_argument('--benchmark-base-dir-path', type=str)
