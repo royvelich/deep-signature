@@ -55,15 +55,19 @@ class ParallelProcessor(ABC):
 
         print('')
 
+        print('Draining _completed_tasks_queue')
         while self._completed_tasks_queue.empty() is False:
             self._completed_tasks.append(self._completed_tasks_queue.get())
 
+        print('Draining _completed_workers_queue')
         while self._completed_workers_queue.empty() is False:
             self._completed_workers_queue.get()
 
+        print('Joining processes')
         for worker in workers:
             worker.join()
 
+        print('Running post-process')
         self._post_process()
 
     @property
