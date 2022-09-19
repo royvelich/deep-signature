@@ -64,7 +64,7 @@ class ParallelProcessor(ABC):
             else:
                 self._completed_tasks.append(completed_task)
 
-            if sentinels_count == self.tasks_count:
+            if sentinels_count == workers_count:
                 break
 
         print('Joining processes')
