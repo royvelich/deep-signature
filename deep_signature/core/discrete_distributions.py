@@ -1,6 +1,5 @@
 # python peripherals
 from abc import ABC, abstractmethod
-from typing import Tuple, Union
 
 # numpy
 import numpy
@@ -9,13 +8,11 @@ import numpy
 import scipy.stats
 
 # matplotlib
-import matplotlib
-import matplotlib.collections
 import matplotlib.axes
 
 # deep-signature
-import deep_signature.visualization
-from deep_signature.base import SeedableObject
+import deep_signature.manifolds.planar_curves.visualization
+from deep_signature.core.base import SeedableObject
 
 
 class DiscreteDistribution(ABC, SeedableObject):
@@ -35,7 +32,7 @@ class DiscreteDistribution(ABC, SeedableObject):
     def plot_dist(self, ax: matplotlib.axes.Axes, line_width: float = 2, alpha: float = 1.0, cmap: str = 'hsv'):
         x = numpy.array(list(range(self._pdf.shape[0])))
         y = self._pdf
-        deep_signature.visualization.plot_multicolor_line(x=x, y=y, ax=ax, line_width=line_width, alpha=alpha, cmap=cmap)
+        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=y, ax=ax, line_width=line_width, alpha=alpha, cmap=cmap)
 
     @abstractmethod
     def _generate_pdf(self) -> numpy.ndarray:

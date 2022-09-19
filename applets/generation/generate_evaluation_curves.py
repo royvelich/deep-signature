@@ -21,7 +21,6 @@ import matplotlib.pyplot as plt
 
 # deep-signature
 from deep_signature.data_manipulation import curve_processing
-from deep_signature import discrete_distributions
 from deep_signature.linalg import transformations
 
 # shapely

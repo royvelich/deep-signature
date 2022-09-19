@@ -19,7 +19,7 @@ import torch
 from deep_signature.manifold_generation import LevelCurveGenerator
 
 # utils
-from deep_signature import utils as common_utils
+from deep_signature.core import utils as common_utils
 from utils import evaluation as evaluation_utils
 from utils import plot as plot_utils
 from utils import settings

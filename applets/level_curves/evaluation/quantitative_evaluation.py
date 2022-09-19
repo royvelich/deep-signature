@@ -16,7 +16,7 @@ from deep_signature.data_manipulation import curve_processing
 from deep_signature.linalg import transformations
 
 # common
-from deep_signature import utils as common_utils
+from deep_signature.core import utils as common_utils
 from utils import evaluation as evaluation_utils
 from utils import settings
 

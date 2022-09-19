@@ -1,14 +1,14 @@
 import torch
 import numpy
-from deep_signature.datasets import DeepSignatureEuclideanCurvatureTupletsOnlineDataset
-from deep_signature.datasets import DeepSignatureSimilarityCurvatureTupletsOnlineDataset
-from deep_signature.datasets import DeepSignatureEquiaffineCurvatureTupletsOnlineDataset
-from deep_signature.datasets import DeepSignatureAffineCurvatureTupletsOnlineDataset
-from deep_signature.networks import CurvatureNet
-from deep_signature.losses import CurvatureLoss
-from deep_signature.trainers import ModelTrainer
+from deep_signature.training.datasets import DeepSignatureEuclideanCurvatureTupletsOnlineDataset
+from deep_signature.training.datasets import DeepSignatureSimilarityCurvatureTupletsOnlineDataset
+from deep_signature.training.datasets import DeepSignatureEquiaffineCurvatureTupletsOnlineDataset
+from deep_signature.training.datasets import DeepSignatureAffineCurvatureTupletsOnlineDataset
+from deep_signature.training.networks import CurvatureNet
+from deep_signature.training.losses import CurvatureLoss
+from deep_signature.training.trainers import ModelTrainer
 from utils import settings
-from deep_signature import utils as common_utils
+from deep_signature.core import utils as common_utils
 from argparse import ArgumentParser
 
 

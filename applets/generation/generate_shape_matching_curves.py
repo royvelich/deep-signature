@@ -5,9 +5,9 @@ warnings.filterwarnings("ignore")
 
 # deep-signature
 from deep_signature import manifolds
-from deep_signature import groups
-from deep_signature import utils
-from deep_signature.base import SeedableObject
+from deep_signature.manifolds.planar_curves import groups
+from deep_signature.core import utils
+from deep_signature.core.base import SeedableObject
 
 
 if __name__ == '__main__':

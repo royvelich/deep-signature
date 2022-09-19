@@ -1,13 +1,12 @@
 # python peripherals
-from abc import ABC, abstractmethod
-from typing import Union
+from abc import ABC
 
 # numpy
 import numpy
 
 # deep-signature
-import deep_signature.transformations
-from deep_signature.base import SeedableObject
+import deep_signature.core.transformations
+from deep_signature.core.base import SeedableObject
 
 
 class Group(ABC, SeedableObject):
@@ -29,7 +28,7 @@ class Group(ABC, SeedableObject):
         radians_v = self._rng.uniform(low=0, high=2*numpy.pi, size=1)
         det = float(self._rng.uniform(low=self._min_det, high=self._max_det, size=1))
         cond = float(self._rng.uniform(low=self._min_cond, high=self._max_cond, size=1))
-        return deep_signature.transformations.generate_affine_transform_2d(det=det, cond=cond, radians_u=radians_u, radians_v=radians_v)
+        return deep_signature.core.transformations.generate_affine_transform_2d(det=det, cond=cond, radians_u=radians_u, radians_v=radians_v)
 
 
 class AffineGroup(Group):

@@ -1,11 +1,8 @@
 import numpy
-import matplotlib.pyplot as plt
-from sklearn.mixture import GaussianMixture
 
-
-from deep_signature.discrete_distributions import MultimodalGaussianDiscreteDistribution
+from deep_signature.core.discrete_distributions import MultimodalGaussianDiscreteDistribution
 from deep_signature.manifolds import PlanarCurve
-import deep_signature.transformations
+import deep_signature.core.transformations
 
 def uniform_proposal(x, delta=2.0):
     return numpy.random.uniform(x - delta, x + delta)
@@ -38,7 +35,7 @@ if __name__ == '__main__':
     pointer = numpy.array([radius, 0])
     circle = numpy.empty((points_count, 2))
     for i in range(points_count):
-        circle[i] = numpy.matmul(deep_signature.transformations.generate_rotation_transform_2d(radians=i * radians_delta), pointer)
+        circle[i] = numpy.matmul(deep_signature.core.transformations.generate_rotation_transform_2d(radians=i * radians_delta), pointer)
     planar_curve = PlanarCurve(points=circle, closed=True)
     planar_curve.center_curve()
 
@@ -47,17 +44,7 @@ if __name__ == '__main__':
     k_equiaffine_cleaned = k_equiaffine[~numpy.isnan(k_equiaffine)]
     equiaffine_std = numpy.std(k_equiaffine_cleaned)
 
-
-
-
-
-
-
-
-
-    import numpy as np
     import numpy.random
-    import scipy.stats as ss
     import matplotlib.pyplot as plt
 
     dist = MultimodalGaussianDiscreteDistribution(bins_count=2000, multimodality=20)

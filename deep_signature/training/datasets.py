@@ -1,17 +1,16 @@
 # python peripherals
 import numpy
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import random
-from typing import Union
 
 # torch
 from torch.utils.data import Dataset
 
 # deep_signature
 from deep_signature.manifolds import PlanarCurvesManager, PlanarCurve
-from deep_signature.discrete_distributions import MultimodalGaussianDiscreteDistribution
-from deep_signature.groups import Group
-from deep_signature.base import SeedableObject
+from deep_signature.core.discrete_distributions import MultimodalGaussianDiscreteDistribution
+from deep_signature.manifolds.planar_curves.groups import Group
+from deep_signature.core.base import SeedableObject
 
 
 class TupletsDataset(Dataset, SeedableObject):

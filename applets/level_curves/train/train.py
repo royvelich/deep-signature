@@ -10,19 +10,19 @@ import torch
 import torch.distributed as dist
 
 # deep-signature
-from deep_signature.datasets import CurvatureTupletsDataset
-from deep_signature.datasets import ArclengthTupletsDataset
-from deep_signature.datasets import DifferentialInvariantsTupletsDataset
-from deep_signature.networks import CurvatureNet
-from deep_signature.networks import ArcLengthNet
-from deep_signature.networks import DifferentialInvariantsNet
-from deep_signature.networks import DifferentialInvariantsNetBYOL
-from deep_signature.losses import ArcLengthLoss
-from deep_signature.losses import DifferentialInvariantsLoss
-from deep_signature.losses import DifferentialInvariantsLossBYOL
-from deep_signature.trainers import ModelTrainer
+from deep_signature.training.datasets import CurvatureTupletsDataset
+from deep_signature.training.datasets import ArclengthTupletsDataset
+from deep_signature.training.datasets import DifferentialInvariantsTupletsDataset
+from deep_signature.training.networks import CurvatureNet
+from deep_signature.training.networks import ArcLengthNet
+from deep_signature.training.networks import DifferentialInvariantsNet
+from deep_signature.training.networks import DifferentialInvariantsNetBYOL
+from deep_signature.training.losses import ArcLengthLoss
+from deep_signature.training.losses import DifferentialInvariantsLoss
+from deep_signature.training.losses import DifferentialInvariantsLossBYOL
+from deep_signature.training.trainers import ModelTrainer
 from utils import settings
-from deep_signature import utils as common_utils
+from deep_signature.core import utils as common_utils
 
 
 def fix_random_seeds(seed=30):

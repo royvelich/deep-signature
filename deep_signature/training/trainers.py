@@ -5,18 +5,16 @@ import itertools
 from datetime import datetime
 from pathlib import Path
 from timeit import default_timer as timer
-import json
-import pickle
 
 # torch
 import torch
 from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler, SequentialSampler
+from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data.distributed import DistributedSampler
 from lightly.loss import NegativeCosineSimilarity
 
 # deep-signature
-from utils import settings
+from deep_signature.core.utils import settings
 
 
 class ModelTrainer:

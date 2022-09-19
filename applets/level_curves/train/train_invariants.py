@@ -1,15 +1,15 @@
 import torch
 import numpy
 import os
-from deep_signature.datasets import DeepSignatureEuclideanCurveTupletsOnlineDataset
-from deep_signature.datasets import DeepSignatureSimilarityCurveTupletsOnlineDataset
-from deep_signature.datasets import DeepSignatureEquiaffineCurveTupletsOnlineDataset
-from deep_signature.datasets import DeepSignatureAffineCurveTupletsOnlineDataset
-from deep_signature.networks import DeepSignatureCurveNet
-from deep_signature.losses import DeepSignatureCurveLoss
-from deep_signature.trainers import ModelTrainer
+from deep_signature.training.datasets import DeepSignatureEuclideanCurveTupletsOnlineDataset
+from deep_signature.training.datasets import DeepSignatureSimilarityCurveTupletsOnlineDataset
+from deep_signature.training.datasets import DeepSignatureEquiaffineCurveTupletsOnlineDataset
+from deep_signature.training.datasets import DeepSignatureAffineCurveTupletsOnlineDataset
+from deep_signature.training.networks import DeepSignatureCurveNet
+from deep_signature.training.losses import DeepSignatureCurveLoss
+from deep_signature.training.trainers import ModelTrainer
 from utils import settings
-from deep_signature import utils as common_utils
+from deep_signature.core import utils as common_utils
 from argparse import ArgumentParser
 import torch.distributed as dist
 

@@ -16,7 +16,6 @@ from utils import settings
 from hausdorff import hausdorff_distance
 
 # https://stackoverflow.com/questions/36074455/python-matplotlib-with-a-line-color-gradient-and-colorbar
-from deep_signature import discrete_distributions
 
 
 # matplotlib

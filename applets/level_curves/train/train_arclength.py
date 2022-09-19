@@ -1,14 +1,14 @@
 import torch
 import numpy
-from deep_signature.datasets import DeepSignatureEuclideanArclengthTupletsOnlineDataset
-from deep_signature.datasets import DeepSignatureSimilarityArclengthTupletsOnlineDataset
-from deep_signature.datasets import DeepSignatureEquiaffineArclengthTupletsOnlineDataset
-from deep_signature.datasets import DeepSignatureAffineArclengthTupletsOnlineDataset
-from deep_signature.networks import ArcLengthNet
-from deep_signature.losses import ArcLengthLoss
-from deep_signature.trainers import ModelTrainer
+from deep_signature.training.datasets import DeepSignatureEuclideanArclengthTupletsOnlineDataset
+from deep_signature.training.datasets import DeepSignatureSimilarityArclengthTupletsOnlineDataset
+from deep_signature.training.datasets import DeepSignatureEquiaffineArclengthTupletsOnlineDataset
+from deep_signature.training.datasets import DeepSignatureAffineArclengthTupletsOnlineDataset
+from deep_signature.training.networks import ArcLengthNet
+from deep_signature.training.losses import ArcLengthLoss
+from deep_signature.training.trainers import ModelTrainer
 from utils import settings
-from deep_signature import utils as common_utils
+from deep_signature.core import utils as common_utils
 from argparse import ArgumentParser
 
 
