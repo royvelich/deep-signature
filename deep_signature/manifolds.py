@@ -59,7 +59,7 @@ from deep_signature.base import SeedableObject
 # =================================================
 class PlanarCurve(SeedableObject):
     def __init__(self, points: numpy.ndarray, closed: Union[None, bool] = None, seed: Union[None, int] = None):
-        super(SeedableObject, self).__init__(seed=seed)
+        super(SeedableObject, self).__init__()
         self._points = points
 
         if closed is None:
@@ -612,7 +612,7 @@ class LevelCurvesGenerator(ParallelProcessor):
                 image_file_path = os.path.normpath(os.path.join(sub_dir_path, file_name))
                 image_file_paths.append(image_file_path)
 
-        return image_file_paths
+        return image_file_paths[:10]
 
 
 # =================================================
@@ -696,7 +696,7 @@ class ImageLevelCurvesGenerator(LevelCurvesGenerator):
 
     def _post_process(self):
         curves = []
-        for task in self._tasks:
+        for task in self._completed_tasks:
             curves.extend(task.curves)
 
         curves_file_path = os.path.normpath(os.path.join(self._curves_base_dir_path, self._curves_file_name))

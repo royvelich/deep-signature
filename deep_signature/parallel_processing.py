@@ -32,6 +32,7 @@ class ParallelProcessor(ABC):
         self._completed_tasks_queue = Queue()
         self._completed_workers_queue = Queue()
         self._tasks = self._generate_tasks()
+        self._completed_tasks = []
 
     def process(self, workers_count: int):
         tasks_chunks = numpy.array_split(self._tasks, workers_count)
@@ -45,13 +46,17 @@ class ParallelProcessor(ABC):
 
         print('')
 
-        while (self._completed_workers_queue.qsize() < workers_count) or (self._completed_tasks_queue.qsize() < self.tasks_count):
-            print(f'\rTask {self._completed_tasks_queue.qsize()} / {self.tasks_count}', end='')
+        while True:
+            completed_workers_count = self._completed_workers_queue.qsize()
+            completed_tasks_count = self._completed_tasks_queue.qsize()
+            print(f'\rTask {completed_tasks_count} / {self.tasks_count}', end='')
+            if (completed_workers_count == workers_count) and (completed_tasks_count == self.tasks_count):
+                break
 
         print('')
 
         while self._completed_tasks_queue.empty() is False:
-            self._completed_tasks_queue.get()
+            self._completed_tasks.append(self._completed_tasks_queue.get())
 
         while self._completed_workers_queue.empty() is False:
             self._completed_workers_queue.get()
@@ -81,5 +86,5 @@ class ParallelProcessor(ABC):
             except:
                 pass
 
-            self._completed_tasks_queue.put(task.identifier)
+            self._completed_tasks_queue.put(task)
         self._completed_workers_queue.put(worker_id)
