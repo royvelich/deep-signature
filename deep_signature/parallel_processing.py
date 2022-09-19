@@ -55,7 +55,7 @@ class ParallelProcessor(ABC):
 
         print('')
 
-        print('Draining _completed_tasks_queue')
+        print('Draining queue')
         sentinels_count = 0
         while True:
             completed_task = self._completed_tasks_queue.get()
@@ -73,6 +73,8 @@ class ParallelProcessor(ABC):
 
         print('Running post-process')
         self._post_process()
+
+        print('Done!')
 
     @property
     def tasks_count(self) -> int:
