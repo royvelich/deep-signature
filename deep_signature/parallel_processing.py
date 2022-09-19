@@ -56,12 +56,16 @@ class ParallelProcessor(ABC):
         print('')
 
         print('Draining _completed_tasks_queue')
-        while self._completed_tasks_queue.empty() is False:
-            self._completed_tasks.append(self._completed_tasks_queue.get())
+        sentinels_count = 0
+        while True:
+            completed_task = self._completed_tasks_queue.get()
+            if completed_task is None:
+                sentinels_count = sentinels_count + 1
+            else:
+                self._completed_tasks.append(completed_task)
 
-        print('Draining _completed_workers_queue')
-        while self._completed_workers_queue.empty() is False:
-            self._completed_workers_queue.get()
+            if sentinels_count == self.tasks_count:
+                break
 
         print('Joining processes')
         for worker in workers:
@@ -91,4 +95,4 @@ class ParallelProcessor(ABC):
                 pass
 
             self._completed_tasks_queue.put(task)
-        self._completed_workers_queue.put(worker_id)
+        self._completed_tasks_queue.put(None)
