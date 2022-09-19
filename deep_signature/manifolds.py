@@ -605,14 +605,11 @@ class LevelCurvesGenerator(ParallelProcessor):
     def _get_image_file_paths(self) -> List[str]:
         image_file_paths = []
         for sub_dir_path, _, file_names in os.walk(self._images_base_dir_path):
-            # if sub_dir_path == self._images_base_dir_path:
-            #     continue
-
             for file_name in file_names:
                 image_file_path = os.path.normpath(os.path.join(sub_dir_path, file_name))
                 image_file_paths.append(image_file_path)
 
-        return image_file_paths[:10]
+        return image_file_paths
 
 
 # =================================================
