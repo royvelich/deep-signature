@@ -46,10 +46,11 @@ class ParallelProcessor(ABC):
 
         print('')
 
+        total_tasks_count = self.tasks_count + workers_count
         while True:
             completed_tasks_count = self._completed_tasks_queue.qsize()
-            print(f'\rTask {completed_tasks_count} / {self.tasks_count}', end='')
-            if completed_tasks_count == self.tasks_count:
+            print(f'\rTask {completed_tasks_count} / {total_tasks_count}', end='')
+            if completed_tasks_count == total_tasks_count:
                 break
 
         print('')
