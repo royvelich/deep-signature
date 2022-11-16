@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('--max-cond', type=float)
     parser.add_argument('--fig-size', nargs='+', type=int)
     parser.add_argument('--point-size', type=float)
-    parser.add_argument('--workers-count', type=int)
+    parser.add_argument('--num-workers', type=int)
     parser.add_argument('--seed', type=int)
     args = parser.parse_args()
 

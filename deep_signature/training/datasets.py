@@ -72,7 +72,7 @@ class CurveNeighborhoodTupletsDataset(TupletsDataset):
 
     def _extract_curve_neighborhood_points(self, planar_curve: PlanarCurve, center_point_index: int) -> numpy.ndarray:
         group_action = self._group.generate_random_group_action()
-        curve_neighborhood = planar_curve.extract_curve_neighborhood(center_point_index=center_point_index, supporting_points_count=self._supporting_points_count)
+        curve_neighborhood = planar_curve.extract_curve_neighborhood_wrt_reference(center_point_index=center_point_index, supporting_points_count=self._supporting_points_count)
         curve_neighborhood.transform_curve(transform=group_action)
         curve_neighborhood.normalize_curve(force_ccw=False, force_endpoint=False)
         return curve_neighborhood.points

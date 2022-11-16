@@ -4,7 +4,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # deep-signature
-from deep_signature import manifolds
+from deep_signature.manifolds.planar_curves.generation import ImageLevelCurvesGenerator
 from deep_signature.core import utils
 from deep_signature.core.base import SeedableObject
 
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('--max-points-count', type=int)
     parser.add_argument('--kernel-sizes', nargs='+', type=int)
     parser.add_argument('--contour-levels', nargs='+', type=float)
-    parser.add_argument('--workers-count', type=int)
+    parser.add_argument('--num-workers', type=int)
     parser.add_argument('--min-equiaffine-std', type=float)
     parser.add_argument('--smoothing-iterations', type=int)
     parser.add_argument('--smoothing-window-length', type=int)
@@ -31,7 +31,8 @@ if __name__ == '__main__':
 
     SeedableObject.seed = args.seed
 
-    image_level_curves_generator = manifolds.ImageLevelCurvesGenerator(
+    image_level_curves_generator = ImageLevelCurvesGenerator(
+        num_workers=args.num_workers,
         images_base_dir_path=args.images_base_dir_path,
         curves_base_dir_path=args.curves_base_dir_path,
         min_points_count=args.min_points_count,
@@ -45,4 +46,4 @@ if __name__ == '__main__':
         smoothing_window_length=args.smoothing_window_length,
         smoothing_poly_order=args.smoothing_poly_order)
 
-    image_level_curves_generator.process(workers_count=args.workers_count)
+    image_level_curves_generator.process()

@@ -9,32 +9,33 @@ dependencies:
   - pytorch
   - torchaudio
   - torchvision
-  - cudatoolkit=11.3
-  - ipython
+  - cudatoolkit=11.6
+#  - ipython
   - numpy
   - scipy
   - scikit-learn
   - scikit-image
   - jupyterlab
   - matplotlib
-  - jupyter
-  - pandas
-  - cython
-  - pytest
-  - tqdm
+#  - jupyter
+#  - pandas
+#  - cython
+#  - pytest
+#  - tqdm
   - opencv
-  - freetype=2.10.*
+#  - freetype=2.10.*
   - plotly
-  - ipykernel
-  - python-kaleido
-  - numba
+#  - ipykernel
+#  - python-kaleido
+#  - numba
   - shapely
-  - numexpr
-  - bottleneck
-  - openpyxl
+#  - numexpr
+#  - bottleneck
+#  - openpyxl
   - pip
-  - libwebp
+#  - libwebp
   - pip:
       - hausdorff
       - lightly
       - wandb
+      - typed-argument-parser

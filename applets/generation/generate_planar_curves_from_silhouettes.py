@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('--min-points-count', type=int)
     parser.add_argument('--max-points-count', type=int)
     parser.add_argument('--contour-level', type=float)
-    parser.add_argument('--workers-count', type=int)
+    parser.add_argument('--num-workers', type=int)
     parser.add_argument('--seed', type=int)
     args = parser.parse_args()
 
@@ -25,6 +25,7 @@ if __name__ == '__main__':
     SeedableObject.seed = args.seed
 
     silhouette_level_curves_generator = manifolds.SilhouetteLevelCurvesGenerator(
+        num_workers=args.num_workers,
         images_base_dir_path=args.images_base_dir_path,
         curves_base_dir_path=args.curves_base_dir_path,
         min_points_count=args.min_points_count,
@@ -32,4 +33,3 @@ if __name__ == '__main__':
         contour_level=args.contour_level)
 
     silhouette_level_curves_generator.process(workers_count=args.workers_count)
-

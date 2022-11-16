@@ -15,6 +15,10 @@ import scipy.signal
 # sklearn
 import sklearn.preprocessing
 
+# pytorch
+import torch
+import torch.nn
+
 # deep_signature
 from deep_signature.core.discrete_distributions import DiscreteDistribution
 
@@ -29,23 +33,30 @@ import matplotlib.figure
 # deep_signature
 import deep_signature.manifolds.planar_curves.visualization
 from deep_signature.core.base import SeedableObject
+from deep_signature.core import transformations
 
 
 # =================================================
 # PlanarCurve Class
 # =================================================
 class PlanarCurve(SeedableObject):
-    def __init__(self, points: numpy.ndarray, closed: Union[None, bool] = None):
+    def __init__(self, points: numpy.ndarray, closed: Union[None, bool] = None, reference_curve: Union[None, PlanarCurve] = None, reference_indices: Union[None, numpy.ndarray] = None):
         super(SeedableObject, self).__init__()
         self._points = points
+        self._indices = numpy.array(list(range(points.shape[0])))
 
         if closed is None:
             self._closed = self.is_closed()
         else:
             self._closed = closed
 
-        self._reference_curve = self
-        self._reference_indices = numpy.array(list(range(self._points.shape[0])))
+        if reference_curve is None:
+            self._reference_curve = self
+            self._reference_indices = self._indices
+        else:
+            self._reference_curve = reference_curve
+            self._reference_indices = reference_indices
+
         self._discrete_distribution = None
 
     # -------------------------------------------------
@@ -55,6 +66,10 @@ class PlanarCurve(SeedableObject):
     @property
     def points(self) -> numpy.ndarray:
         return self._points
+
+    @property
+    def indices(self) -> numpy.ndarray:
+        return self._indices
 
     @property
     def points_count(self) -> int:
@@ -263,6 +278,18 @@ class PlanarCurve(SeedableObject):
         return ks
 
     # -------------------------------------------------
+    # prediction
+    # -------------------------------------------------
+    def predict_curve_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device) -> numpy.ndarray:
+        curve_neighborhoods = self.extract_curve_neighborhoods(supporting_points_count=supporting_points_count)
+        for curve_neighborhood in curve_neighborhoods:
+            curve_neighborhood.normalize_curve(force_ccw=False, force_endpoint=False)
+            batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(curve_neighborhood.points), dim=0), dim=0).to(device)
+            with torch.no_grad():
+                x = model(batch_data)
+                diff_invariants = torch.squeeze(torch.squeeze(x, dim=0), dim=0).cpu().detach().numpy()
+
+    # -------------------------------------------------
     # curve smoothing
     # -------------------------------------------------
 
@@ -295,22 +322,47 @@ class PlanarCurve(SeedableObject):
         points_count = self._points.shape[0]
         sampling_points_count = int(sampling_ratio * points_count)
         indices = discrete_distribution.sample_pdf(samples_count=sampling_points_count)
-        sampled_planar_curve = PlanarCurve(points=self._points[indices], closed=self._closed)
-        sampled_planar_curve._reference_curve = self
-        sampled_planar_curve._reference_indices = indices
+        sampled_planar_curve = PlanarCurve(points=self._points[indices], closed=self._closed, reference_curve=self, reference_indices=indices)
         sampled_planar_curve._discrete_distribution = discrete_distribution
         return sampled_planar_curve
 
-    def extract_curve_neighborhood(self, center_point_index: int, supporting_points_count: int) -> PlanarCurve:
+    def extract_curve_neighborhood_wrt_reference(self, center_point_index: int, supporting_points_count: int) -> PlanarCurve:
         reference_curve_indices = self._reference_indices.copy()
         reference_curve_indices = numpy.append(arr=reference_curve_indices, values=[center_point_index])
         reference_curve_indices = numpy.unique(ar=reference_curve_indices)
-        center_point_meta_index = numpy.where(reference_curve_indices == center_point_index)[0]
+        return self._extract_curve_neighborhood(center_point_index=center_point_index, supporting_points_count=supporting_points_count, curve_indices=reference_curve_indices, add_reference_curve=False)
+        # center_point_meta_index = numpy.where(reference_curve_indices == center_point_index)[0]
+        # curve_neighborhood_meta_indices = numpy.arange(start=center_point_meta_index - supporting_points_count, stop=center_point_meta_index + supporting_points_count + 1)
+        # curve_neighborhood_meta_indices = numpy.mod(curve_neighborhood_meta_indices, reference_curve_indices.shape[0])
+        # curve_neighborhood_indices = reference_curve_indices[curve_neighborhood_meta_indices]
+        # curve_neighborhood_points = self._reference_curve.points[curve_neighborhood_indices]
+        # return PlanarCurve(points=curve_neighborhood_points, closed=False)
+
+    def extract_curve_neighborhood(self, center_point_index: int, supporting_points_count: int) -> PlanarCurve:
+        return self._extract_curve_neighborhood(center_point_index=center_point_index, supporting_points_count=supporting_points_count, curve_indices=self.indices, add_reference_curve=True)
+
+    def extract_curve_neighborhoods(self, supporting_points_count: int) -> List[PlanarCurve]:
+        curve_neighborhoods = []
+        for index in self.indices:
+            curve_neighborhoods.append(self.extract_curve_neighborhood(center_point_index=index, supporting_points_count=supporting_points_count))
+
+        return curve_neighborhoods
+
+    def _extract_curve_neighborhood(self, center_point_index: int, supporting_points_count: int, curve_indices: numpy.ndarray, add_reference_curve: bool) -> PlanarCurve:
+        center_point_meta_index = numpy.where(curve_indices == center_point_index)[0]
         curve_neighborhood_meta_indices = numpy.arange(start=center_point_meta_index - supporting_points_count, stop=center_point_meta_index + supporting_points_count + 1)
-        curve_neighborhood_meta_indices = numpy.mod(curve_neighborhood_meta_indices, reference_curve_indices.shape[0])
-        curve_neighborhood_indices = reference_curve_indices[curve_neighborhood_meta_indices]
+        curve_neighborhood_meta_indices = numpy.mod(curve_neighborhood_meta_indices, curve_indices.shape[0])
+        curve_neighborhood_indices = curve_indices[curve_neighborhood_meta_indices]
         curve_neighborhood_points = self._reference_curve.points[curve_neighborhood_indices]
-        return PlanarCurve(points=curve_neighborhood_points, closed=False)
+
+        if add_reference_curve is True:
+            reference_curve = self
+            reference_indices = curve_neighborhood_indices
+        else:
+            reference_curve = None
+            reference_indices = None
+
+        return PlanarCurve(points=curve_neighborhood_points, closed=False, reference_curve=reference_curve, reference_indices=reference_indices)
 
     # def extract_curve_section(self, start_point_index: int, end_point_index: int, supporting_points_count: int) -> PlanarCurve:
     #     if rng is None:

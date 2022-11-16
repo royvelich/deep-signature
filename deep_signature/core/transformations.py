@@ -26,6 +26,10 @@ def generate_horizontal_reflection_transform_2d() -> numpy.ndarray:
     return numpy.array([[1, 0], [0, -1]])
 
 
+def generate_vertical_reflection_transform_2d() -> numpy.ndarray:
+    return numpy.array([[-1, 0], [0, 1]])
+
+
 def generate_affine_transform_2d(det: float, cond: float, radians_u: float, radians_v: float) -> numpy.ndarray:
     U = generate_rotation_transform_2d(radians=radians_u)
     V = generate_rotation_transform_2d(radians=radians_v)
