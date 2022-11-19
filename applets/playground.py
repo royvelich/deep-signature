@@ -1,7 +1,7 @@
 import numpy
 
 from deep_signature.core.discrete_distributions import MultimodalGaussianDiscreteDistribution
-from deep_signature.manifolds import PlanarCurve
+from deep_signature.manifolds.planar_curves.implementation import PlanarCurve
 import deep_signature.core.transformations
 
 def uniform_proposal(x, delta=2.0):
@@ -23,7 +23,19 @@ def metropolis_sampler(p, nsamples, proposal=uniform_proposal):
 def gaussian(x, mu, sigma):
     return 1. / sigma / numpy.sqrt(2 * numpy.pi) * numpy.exp(-((x - mu) ** 2) / 2. / sigma / sigma)
 
+
+class MyClass:
+    def myprop(self):
+        return 5
+
+
 if __name__ == '__main__':
+
+    bla = MyClass()
+    foo = dict()
+    h = f'{bla.myprop=}'.split('=')[0]
+
+
     min_radius = 1
     max_radius = 10
     sampling_density = 100

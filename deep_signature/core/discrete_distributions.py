@@ -63,17 +63,19 @@ class MultimodalGaussianDiscreteDistribution(DiscreteDistribution):
             current_pdf = numpy.roll(a=current_pdf, shift=shift)
             pdf += current_pdf * weight
 
-        pdf = pdf + 1e-5
+        # pdf = pdf + 1e-5
         pdf = pdf / numpy.sum(pdf)
         return pdf
 
     def _generate_scales(self) -> numpy.ndarray:
-        mean = self._bins_count * 0.05
-        sd = mean
-        lower = self._bins_count * 0.01
-        upper = self._bins_count * 0.5
-        truncated_normal = MultimodalGaussianDiscreteDistribution._generate_truncated_normal(mean=mean, sd=sd, lower=lower, upper=upper)
-        return truncated_normal.rvs(self._multimodality)
+        # mean = self._bins_count * 0.25
+        # sd = self._bins_count * 0.25
+        # lower = self._bins_count * 0.01
+        # upper = self._bins_count * 0.5
+        # truncated_normal = MultimodalGaussianDiscreteDistribution._generate_truncated_normal(mean=mean, sd=sd, lower=lower, upper=upper)
+        # return truncated_normal.rvs(self._multimodality)
+        return self._rng.integers(low=self._bins_count//16, high=self._bins_count//8, size=self._multimodality)
+
 
     # https://stackoverflow.com/questions/36894191/how-to-get-a-normal-distribution-within-a-range-in-numpy
     @staticmethod

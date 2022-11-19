@@ -18,7 +18,7 @@ dependencies:
   - jupyterlab
   - matplotlib
 #  - jupyter
-#  - pandas
+  - pandas
 #  - cython
 #  - pytest
 #  - tqdm
@@ -27,7 +27,7 @@ dependencies:
   - plotly
 #  - ipykernel
 #  - python-kaleido
-#  - numba
+  - numba
   - shapely
 #  - numexpr
 #  - bottleneck
@@ -35,7 +35,7 @@ dependencies:
   - pip
 #  - libwebp
   - pip:
-      - hausdorff
+#      - hausdorff
       - lightly
       - wandb
       - typed-argument-parser

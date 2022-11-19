@@ -7,7 +7,7 @@ import random
 from torch.utils.data import Dataset
 
 # deep_signature
-from deep_signature.manifolds import PlanarCurvesManager, PlanarCurve
+from deep_signature.manifolds.planar_curves.implementation import PlanarCurvesManager, PlanarCurve
 from deep_signature.core.discrete_distributions import MultimodalGaussianDiscreteDistribution
 from deep_signature.manifolds.planar_curves.groups import Group
 from deep_signature.core.base import SeedableObject

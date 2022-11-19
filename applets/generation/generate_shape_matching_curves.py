@@ -6,6 +6,7 @@ warnings.filterwarnings("ignore")
 # deep-signature
 from deep_signature import manifolds
 from deep_signature.manifolds.planar_curves import groups
+from deep_signature.manifolds.planar_curves.generation import ShapeMatchingBenchmarkCurvesGenerator
 from deep_signature.core import utils
 from deep_signature.core.base import SeedableObject
 
@@ -42,7 +43,8 @@ if __name__ == '__main__':
         if group_name == 'affine':
             group_list.append(groups.AffineGroup(min_det=args.min_det, max_det=args.max_det, min_cond=args.min_cond, max_cond=args.max_cond))
 
-    shape_matching_benchmark_curves_generator = manifolds.ShapeMatchingBenchmarkCurvesGenerator(
+    shape_matching_benchmark_curves_generator = ShapeMatchingBenchmarkCurvesGenerator(
+        num_workers=args.num_workers,
         curves_base_dir_path=args.curves_base_dir_path,
         benchmark_base_dir_path=args.benchmark_base_dir_path,
         sampling_ratios=args.sampling_ratios,
@@ -51,4 +53,4 @@ if __name__ == '__main__':
         fig_size=tuple(args.fig_size),
         point_size=args.point_size)
 
-    shape_matching_benchmark_curves_generator.process(workers_count=args.workers_count)
+    shape_matching_benchmark_curves_generator.process()

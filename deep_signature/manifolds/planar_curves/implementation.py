@@ -41,7 +41,7 @@ from deep_signature.core import transformations
 # =================================================
 class PlanarCurve(SeedableObject):
     def __init__(self, points: numpy.ndarray, closed: Union[None, bool] = None, reference_curve: Union[None, PlanarCurve] = None, reference_indices: Union[None, numpy.ndarray] = None):
-        super(SeedableObject, self).__init__()
+        super().__init__()
         self._points = points
         self._indices = numpy.array(list(range(points.shape[0])))
 
@@ -280,14 +280,18 @@ class PlanarCurve(SeedableObject):
     # -------------------------------------------------
     # prediction
     # -------------------------------------------------
-    def predict_curve_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device) -> numpy.ndarray:
+    def predict_curve_local_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device) -> numpy.ndarray:
+        local_signature = numpy.zeros([self.points_count, 2])
         curve_neighborhoods = self.extract_curve_neighborhoods(supporting_points_count=supporting_points_count)
-        for curve_neighborhood in curve_neighborhoods:
+        model = model.to(device=device)
+        for i, curve_neighborhood in enumerate(curve_neighborhoods):
             curve_neighborhood.normalize_curve(force_ccw=False, force_endpoint=False)
             batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(curve_neighborhood.points), dim=0), dim=0).to(device)
             with torch.no_grad():
                 x = model(batch_data)
-                diff_invariants = torch.squeeze(torch.squeeze(x, dim=0), dim=0).cpu().detach().numpy()
+                local_signature[i, :] = torch.squeeze(torch.squeeze(x, dim=0), dim=0).cpu().detach().numpy()
+
+        return local_signature
 
     # -------------------------------------------------
     # curve smoothing

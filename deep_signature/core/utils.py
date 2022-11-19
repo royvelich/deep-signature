@@ -1,94 +1,68 @@
 # python peripherals
+import logging
+from typing import List, TypeVar, Generic, cast, Type
 import os
-import json
-import pathlib
-from pathlib import Path
 import multiprocessing
-from typing import List
-import random
+from pathlib import Path
+
+# torch
+import torch
 
 # numpy
 import numpy
 
-# pytorch
-import torch
-
-# deep signature
-# from deep_signature.networks import ArcLengthNet
-# from deep_signature.networks import CurvatureNet
-# from deep_signature.networks import DifferentialInvariantsNet
+# tap
+from tap import Tap
 
 
-def save_command_args(dir_path: str, args: object):
-    pathlib.Path(dir_path)
-    with open(os.path.join(dir_path, 'args.txt'), 'w') as f:
-        json.dump(args.__dict__, f, indent=2)
+T = TypeVar('T')
 
 
-def fix_random_seeds(seed: int = 42):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    numpy.random.seed(seed)
-    random.seed(seed)
+#################################
+#           Logging             #
+#################################
+def create_log_file_path(file_name: str, results_dir_path: str) -> str:
+    return os.path.normpath(os.path.join(results_dir_path, f'{file_name}.log'))
 
 
-def create_data_generator(dir_path, fine=False, limit=None):
-    npy_file_paths = []
-    base_dir_path = os.path.normpath(dir_path)
-    for sub_dir_path, _, file_names in os.walk(base_dir_path):
-        for file_name in file_names:
-            npy_file_path = os.path.normpath(os.path.join(sub_dir_path, file_name))
-            npy_file_paths.append(npy_file_path)
+class NewLineFormatter(logging.Formatter):
+    def __init__(self, fmt: str, datefmt: str):
+        logging.Formatter.__init__(self, fmt=fmt, datefmt=datefmt)
 
-    if fine is False:
-        for npy_file_path in npy_file_paths[:limit]:
-            data_objects = numpy.load(file=npy_file_path, allow_pickle=True)
-            yield data_objects
-    else:
-        i = 0
-        for npy_file_path in npy_file_paths:
-            data_objects = numpy.load(file=npy_file_path, allow_pickle=True)
-            for data_object in data_objects:
-                if i == limit:
-                    return
+    def format(self, record: logging.LogRecord) -> str:
+        msg = logging.Formatter.format(self, record)
 
-                i += 1
-                yield data_object
+        if record.message != "":
+            parts = msg.split(record.message)
+            msg = msg.replace('\n', '\n' + parts[0])
+
+        return msg
 
 
-def par_proc(map_func, reduce_func, iterable, label, pool=None, chunksize=None):
-    if pool is None:
-        print('    - Creating pool... ', end='')
-        pool = multiprocessing.Pool()
-        print('Done.')
+# https://stackoverflow.com/questions/22934616/multi-line-logging-in-python
+def create_logger(log_file_path: Path, name: str, level: int) -> logging.Logger:
+    fmt = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+    datefmt = '%m-%d %H:%M'
+    formatter = NewLineFormatter(fmt=fmt, datefmt=datefmt)
+    handler = logging.FileHandler(filename=str(log_file_path))
+    handler.setFormatter(fmt=formatter)
 
-    if chunksize is None:
-        chunksize = int(len(iterable) / multiprocessing.cpu_count())
+    console = logging.StreamHandler()
+    console.setLevel(level=level)
+    console.setFormatter(fmt=formatter)
 
-    iterable_length = len(iterable)
-    format_string = '\r    - Generating {0}... {1:.1%} Done.'
+    logger = logging.getLogger(name=name)
+    logger.setLevel(level=level)
+    logger.addHandler(hdlr=handler)
+    logger.addHandler(hdlr=console)
 
-    print(f'    - Generating {label}...', end='')
-    for i, processed_data in enumerate(pool.imap_unordered(func=map_func, iterable=iterable, chunksize=chunksize)):
-        reduce_func(processed_data)
-        print(format_string.format(label, (i + 1) / iterable_length), end='')
-    print()
-
-
-def insert_sorted(a, b):
-    ii = numpy.searchsorted(a, b)
-    return numpy.unique(numpy.insert(a, ii, b))
+    return logger
 
 
-# https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
-def chunks(a: List, chunks_count: int) -> List[List[int]]:
-    chunk_size = len(a) // chunks_count
-    return [a[i:i + chunk_size] for i in range(0, len(a), chunk_size)]
-    #
-    # return [a[i:i + chunk_size] for i in range(0, len(a), chunk_size)]
-
-
-def list_subdirectories(base_dir='.'):
+###########################################
+#           Directory Listing             #
+###########################################
+def list_subdirectories(base_dir: str = '.') -> List[str]:
     result = []
     for current_sub_dir in os.listdir(base_dir):
         full_sub_dir_path = os.path.join(base_dir, current_sub_dir)
@@ -98,102 +72,108 @@ def list_subdirectories(base_dir='.'):
     return result
 
 
-def get_latest_subdirectory(base_dir='.'):
-    subdirectories = list_subdirectories(base_dir)
+def get_latest_subdirectory(base_dir: str = '.') -> str:
+    subdirectories = list_subdirectories(base_dir=base_dir)
     return os.path.normpath(max(subdirectories, key=os.path.getmtime))
 
 
-def get_dataset_dir(data_dir, invariant, group, purpose):
-    return f'{data_dir}/datasets/{invariant}/{group}/{purpose}'
+#######################################
+#           Text Formatting           #
+#######################################
+def generate_title_text(text: str) -> str:
+    text_len = len(text)
+    decoration_len = text_len * 2
+    space_len = decoration_len - 2 - text_len
+    if space_len % 2 != 0:
+        decoration_len = decoration_len + 1
+        space_len = space_len + 1
+
+    half_space_len = space_len // 2
+    title = '#' * decoration_len + '\n'
+    title = title + f"{'#'}{' ' * half_space_len}{text.upper()}{' ' * half_space_len}{'#'}" + '\n'
+    title = title + '#' * decoration_len
+    return title
 
 
-def get_train_dataset_dir(data_dir, invariant, group):
-    return get_dataset_dir(data_dir=data_dir, invariant=invariant, group=group, purpose='train')
+def generate_bullet_text(text: str, indentation: int) -> str:
+    tab = '\t'
+    return f"{tab * indentation} - {text}"
 
 
-def get_validation_dataset_dir(data_dir, invariant, group):
-    return get_dataset_dir(data_dir=data_dir, invariant=invariant, group=group, purpose='validation')
+def generate_captioned_bullet_text(text: str, value: object, indentation: int, padding: int, newline: bool = False) -> str:
+    tab = '\t'
+    nl = '\n'
+    text = text + ':'
+    value_str = str(value)
+
+    if newline:
+        inner_indentation = indentation + 1
+        white_space = tab * inner_indentation
+        value_str = value_str.replace('\n', f'\n{white_space}')
+        value_str = f'{white_space}' + value_str
+
+    return f'{tab * indentation} - {text:{" "}{"<"}{padding}}{nl if newline else ""}{value_str}'
 
 
-def get_results_dir(base_dir, invariant, group):
-    return f'{base_dir}/results/{invariant}/{group}'
+def generate_serialized_object_text(text: str, obj: object) -> str:
+    return generate_title_text(text=text) + '\n' + f'{obj}'
 
 
-def get_curves_dir(data_dir, purpose):
-    return f'{data_dir}/curves/{purpose}'
+def generate_batch_loss_text(epoch_index: int, batch_index: int, batch_loss: float, average_batch_loss: float, index_padding: int, loss_padding: int, batch_count: int, batch_duration: float, indentation: int):
+    tab = '\t'
+    fill = " "
+    align = "<"
+    return f'{tab*indentation} - [Epoch {epoch_index:{fill}{align}{index_padding}} | Batch {batch_index:{fill}{align}{index_padding}} / {batch_count}]: Batch Loss = {batch_loss:{fill}{align}{loss_padding}}, Avg. Batch Loss = {average_batch_loss:{fill}{align}{loss_padding}}, Batch Duration: {batch_duration} sec.'
 
 
-def get_train_curves_dir(data_dir):
-    return get_curves_dir(data_dir=data_dir, purpose='train')
+#######################################
+#           Miscellaneous             #
+#######################################
+def calculate_batches_per_epoch(dataset_size: int, batch_size: int) -> int:
+    return int(numpy.ceil(dataset_size / batch_size))
 
 
-def get_validation_curves_dir(data_dir):
-    return get_curves_dir(data_dir=data_dir, purpose='validation')
+def get_device():
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
+
+    return device
 
 
-def get_test_curves_dir(data_dir):
-    return get_curves_dir(data_dir=data_dir, purpose='test')
+def get_cpu_count() -> int:
+    return multiprocessing.cpu_count()
 
 
-def get_images_dir(data_dir, purpose):
-    return f'{data_dir}/images/{purpose}'
+def to_int(x: str) -> int:
+    try:
+        return int(x)
+    except ValueError:
+        return 0
 
 
-def get_train_images_dir(data_dir):
-    return get_images_dir(data_dir=data_dir, purpose='train')
+def save_object_dict(obj: object, file_path: str):
+    object_dict = {key: value for key, value in obj.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
+    with open(file_path, "w") as text_file:
+        for key, value in object_dict.items():
+            text_file.write(f'{key}: {value}\n')
 
 
-def get_validation_images_dir(data_dir):
-    return get_images_dir(data_dir=data_dir, purpose='validation')
+def argument_parser_type_cast(instance_type: Type[T], arguments_parser_name: str) -> T:
+    argument_parser_class = globals()[arguments_parser_name]
+    argument_parser = cast(Tap, argument_parser_class())
+    return cast(instance_type, argument_parser.parse_args())
 
 
-def get_test_images_dir(data_dir):
-    return get_images_dir(data_dir=data_dir, purpose='test')
+def fix_random_seeds(seed: int = 42):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    numpy.random.seed(seed)
+    random.seed(seed)
 
 
-def get_arclength_default_min_offset(args):
-    return args.supporting_points_count - 1
-
-
-# def get_arclength_default_max_offset(args):
-#     return 2 * get_arclength_default_min_offset(supporting_points_count=args.supporting_points_count)
-
-
-def get_sample_points_count(args):
-    if args.invariant == 'arclength':
-        return args.supporting_points_count
-
-    return 2*args.supporting_points_count + 1
-
-
-# def load_models(base_dir, group, distributed=True, device=torch.device('cuda')):
-#     models = {}
-#     invariants = ['curvature', 'arclength', 'diff_inv']
-#     neural_nets = [CurvatureNet, ArcLengthNet, DifferentialInvariantsNet]
-#     for i, invariant in enumerate(invariants):
-#         results_dir_path = get_results_dir(base_dir=base_dir, invariant=invariant, group=group)
-#         neural_net = neural_nets[i]
-#         model = neural_net(sample_points=settings.default_sample_points_count).cuda()
-#         latest_subdir = get_latest_subdirectory(results_dir_path)
-#
-#         try:
-#             results = numpy.load(f"{latest_subdir}/results.npy", allow_pickle=True).item()
-#             if distributed is True:
-#                 model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['module_file_path']).name}"))
-#             else:
-#                 model.load_state_dict(torch.load(f"{latest_subdir}/{Path(results['model_file_path']).name}"))
-#
-#             model.to(device)
-#             print(model)
-#             models[invariant] = model
-#         except:
-#             models[invariant] = None
-#
-#     return models
-
-
-# def save_object_dict(obj, file_path):
-#     dict = {key: value for key, value in obj.__dict__.items() if isinstance(value, str) or isinstance(value, int) or isinstance(value, float)}
-#     with open(file_path, "w") as text_file:
-#         for key, value in dict.items():
-#             text_file.write(f'{key}: {value}\n')
+def save_command_args(dir_path: str, args: object):
+    pathlib.Path(dir_path)
+    with open(os.path.join(dir_path, 'args.txt'), 'w') as f:
+        json.dump(args.__dict__, f, indent=2)
