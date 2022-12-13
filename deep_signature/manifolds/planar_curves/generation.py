@@ -1,14 +1,17 @@
 # python peripherals
 from __future__ import annotations
 
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 from abc import abstractmethod
 import os
-import pathlib
+from pathlib import Path
 import itertools
 
 # numpy
 import numpy
+
+# tap
+from tap import Tap
 
 # deep_signature
 from deep_signature.core import discrete_distributions
@@ -86,13 +89,13 @@ class LevelCurvesGeneratorTask(ParallelProcessingTask):
 
     @property
     def image_name(self) -> str:
-        return pathlib.Path(self._image_file_path).stem
+        return Path(self._image_file_path).stem
 
     @property
     def curves(self) -> List[numpy.ndarray]:
         return self._curves
 
-    def process(self):
+    def _process(self):
         image = self._load_image()
         preprocessed_image = self._preprocess_image(image=image)
         contours = self._extract_contours(image=preprocessed_image)
@@ -128,20 +131,28 @@ class LevelCurvesGeneratorTask(ParallelProcessingTask):
         return contours
 
 
-class LevelCurvesGenerator(ParallelProcessor):
+class LevelCurvesGenerator(TaskParallelProcessor):
     def __init__(
             self,
+            name: str,
+            log_dir_path: Path,
             num_workers: int,
-            images_base_dir_path: str,
-            curves_base_dir_path: str,
+            images_base_dir_path: Path,
+            curves_base_dir_path: Path,
             min_points_count: int,
-            max_points_count: int):
+            max_points_count: int,
+            max_image_files: Optional[int] = None):
         self._images_base_dir_path = os.path.normpath(images_base_dir_path)
         self._curves_base_dir_path = os.path.normpath(curves_base_dir_path)
         self._min_points_count = min_points_count
         self._max_points_count = max_points_count
+        self._max_image_files = max_image_files
         self._image_file_paths = self._get_image_file_paths()
-        super().__init__(num_workers=num_workers)
+        super().__init__(name=name, log_dir_path=log_dir_path, num_workers=num_workers)
+
+    @abstractmethod
+    def _generate_tasks(self) -> List[ParallelProcessingTask]:
+        pass
 
     def _get_image_file_paths(self) -> List[str]:
         image_file_paths = []
@@ -150,7 +161,7 @@ class LevelCurvesGenerator(ParallelProcessor):
                 image_file_path = os.path.normpath(os.path.join(sub_dir_path, file_name))
                 image_file_paths.append(image_file_path)
 
-        return image_file_paths[:20]
+        return image_file_paths[:self._max_image_files]
 
 
 # =================================================
@@ -168,7 +179,10 @@ class ImageLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
         self._max_flat_points_ratio = max_flat_points_ratio
         self._min_equiaffine_std = min_equiaffine_std
 
-    def post_process(self):
+    def _pre_process(self):
+        pass
+
+    def _post_process(self):
         pass
 
     def _preprocess_image(self, image: numpy.ndarray) -> numpy.ndarray:
@@ -208,9 +222,11 @@ class ImageLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
 class ImageLevelCurvesGenerator(LevelCurvesGenerator):
     def __init__(
             self,
+            name: str,
+            log_dir_path: Path,
             num_workers: int,
-            images_base_dir_path: str,
-            curves_base_dir_path: str,
+            images_base_dir_path: Path,
+            curves_base_dir_path: Path,
             min_points_count: int,
             max_points_count: int,
             contour_levels: List[float],
@@ -221,6 +237,7 @@ class ImageLevelCurvesGenerator(LevelCurvesGenerator):
             smoothing_iterations: int,
             smoothing_window_length: int,
             smoothing_poly_order: int,
+            max_image_files: Optional[int] = None,
             curves_file_name: str = 'curves.npy'):
         self._kernel_sizes = kernel_sizes
         self._contour_levels = contour_levels
@@ -231,15 +248,18 @@ class ImageLevelCurvesGenerator(LevelCurvesGenerator):
         self._smoothing_window_length = smoothing_window_length
         self._smoothing_poly_order = smoothing_poly_order
         self._curves_file_name = curves_file_name
-        super().__init__(num_workers=num_workers, images_base_dir_path=images_base_dir_path, curves_base_dir_path=curves_base_dir_path, min_points_count=min_points_count, max_points_count=max_points_count)
+        super().__init__(name=name, log_dir_path=log_dir_path, num_workers=num_workers, images_base_dir_path=images_base_dir_path, curves_base_dir_path=curves_base_dir_path, min_points_count=min_points_count, max_points_count=max_points_count, max_image_files=max_image_files)
 
-    def _post_process(self):
+    def _pre_join(self):
+        pass
+
+    def _post_join(self):
         curves = []
         for task in self._completed_tasks:
             curves.extend(task.curves)
 
         curves_file_path = os.path.normpath(os.path.join(self._curves_base_dir_path, self._curves_file_name))
-        pathlib.Path(self._curves_base_dir_path).mkdir(parents=True, exist_ok=True)
+        Path(self._curves_base_dir_path).mkdir(parents=True, exist_ok=True)
         numpy.save(file=curves_file_path, arr=curves, allow_pickle=True)
 
     def _generate_tasks(self) -> List[ParallelProcessingTask]:
@@ -282,9 +302,12 @@ class SilhouetteLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
         super().__init__(image_file_path=image_file_path, contour_level=contour_level, min_points_count=min_points_count, max_points_count=max_points_count)
         self._curves_base_dir_path = curves_base_dir_path
 
-    def post_process(self):
+    def _pre_process(self):
+        pass
+
+    def _post_process(self):
         curves_file_path = os.path.normpath(os.path.join(self._curves_base_dir_path, f'{self.image_name}.npy'))
-        pathlib.Path(self._curves_base_dir_path).mkdir(parents=True, exist_ok=True)
+        Path(self._curves_base_dir_path).mkdir(parents=True, exist_ok=True)
         numpy.save(file=curves_file_path, arr=self._curves, allow_pickle=True)
 
     def _preprocess_image(self, image: numpy.ndarray) -> numpy.ndarray:
@@ -316,14 +339,25 @@ class SilhouetteLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
 class SilhouetteLevelCurvesGenerator(LevelCurvesGenerator):
     def __init__(
             self,
+            name: str,
+            log_dir_path: Path,
             num_workers: int,
-            images_base_dir_path: str,
-            curves_base_dir_path: str,
+            images_base_dir_path: Path,
+            curves_base_dir_path: Path,
             min_points_count: int,
             max_points_count: int,
-            contour_level: float):
+            contour_level: float,
+            max_image_files: Optional[int] = None):
         self._contour_level = contour_level
-        super().__init__(num_workers=num_workers, images_base_dir_path=images_base_dir_path, curves_base_dir_path=curves_base_dir_path, min_points_count=min_points_count, max_points_count=max_points_count)
+        super().__init__(
+            name=name,
+            log_dir_path=log_dir_path,
+            num_workers=num_workers,
+            images_base_dir_path=images_base_dir_path,
+            curves_base_dir_path=curves_base_dir_path,
+            min_points_count=min_points_count,
+            max_points_count=max_points_count,
+            max_image_files=max_image_files)
 
     def _generate_tasks(self) -> List[ParallelProcessingTask]:
         tasks = []
@@ -332,7 +366,10 @@ class SilhouetteLevelCurvesGenerator(LevelCurvesGenerator):
 
         return tasks
 
-    def _post_process(self):
+    def _pre_join(self):
+        pass
+
+    def _post_join(self):
         pass
 
 
@@ -357,7 +394,7 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
 
     @property
     def _curves_file_name(self) -> str:
-        return pathlib.Path(self._curves_file_path).stem
+        return Path(self._curves_file_path).stem
 
     def _pre_process(self):
         pass
@@ -375,7 +412,7 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
     def _post_process(self):
         relative_dir_path = ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_dir_path(curves_file_name=self._curves_file_name, group=self._group, multimodality=self._multimodality, sampling_ratio=self._sampling_ratio)
         curves_file_path = os.path.normpath(os.path.join(self._benchmark_base_dir_path, relative_dir_path, '.npy'))
-        pathlib.Path(os.path.dirname(curves_file_path)).mkdir(parents=True, exist_ok=True)
+        Path(os.path.dirname(curves_file_path)).mkdir(parents=True, exist_ok=True)
         curves = [sampled_planar_curve.points for sampled_planar_curve in self._sampled_planar_curves]
         numpy.save(file=curves_file_path, arr=curves, allow_pickle=True)
         for curve_index, sampled_planar_curve in enumerate(self._sampled_planar_curves):
@@ -391,7 +428,7 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
 
     def _save_fig(self, fig: matplotlib.figure.Figure, plot_file_dir_path: str, file_format: str, curve_index: int):
         plot_file_path = os.path.normpath(os.path.join(self._benchmark_base_dir_path, f'{plot_file_dir_path}/{file_format}/{self._curves_file_name}_{curve_index}.{file_format}'))
-        pathlib.Path(os.path.dirname(plot_file_path)).mkdir(parents=True, exist_ok=True)
+        Path(os.path.dirname(plot_file_path)).mkdir(parents=True, exist_ok=True)
         fig.savefig(plot_file_path, format=file_format)
 
     @staticmethod
@@ -406,9 +443,11 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
 class ShapeMatchingBenchmarkCurvesGenerator(TaskParallelProcessor):
     def __init__(
             self,
+            name: str,
+            log_dir_path: Path,
             num_workers: int,
-            curves_base_dir_path: str,
-            benchmark_base_dir_path: str,
+            curves_base_dir_path: Path,
+            benchmark_base_dir_path: Path,
             sampling_ratios: List[float],
             multimodalities: List[int],
             groups: List[Group],
@@ -422,7 +461,7 @@ class ShapeMatchingBenchmarkCurvesGenerator(TaskParallelProcessor):
         self._fig_size = fig_size
         self._point_size = point_size
         self._curves_file_paths = self._get_curve_file_paths()
-        super().__init__(num_workers=num_workers)
+        super().__init__(name=name, log_dir_path=log_dir_path, num_workers=num_workers)
 
     def _generate_tasks(self) -> List[ParallelProcessingTask]:
         tasks = []
@@ -446,6 +485,12 @@ class ShapeMatchingBenchmarkCurvesGenerator(TaskParallelProcessor):
                 point_size=combination[6]))
 
         return tasks
+
+    def _pre_join(self):
+        pass
+
+    def _post_join(self):
+        pass
 
     def _get_curve_file_paths(self) -> List[str]:
         curve_file_paths = []

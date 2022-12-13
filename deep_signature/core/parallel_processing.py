@@ -4,14 +4,15 @@ from multiprocessing import Process, Queue
 from pathlib import Path
 import time
 from abc import ABC, abstractmethod
-from typing import List, Union
+from typing import List, Union, cast
 import traceback
 
 # numpy
 import numpy
 
 # deep-signature
-from deep_signature.core.base import SeedableObject, OutputObject
+from deep_signature.core.base import SeedableObject, LoggerObject
+
 
 # =================================================
 # ParallelProcessorBase Class
@@ -30,11 +31,11 @@ class ParallelProcessorBase(ABC):
     def __setstate__(self, d):
         self.__dict__.update(d)
 
-    def process(self):
+    def start(self):
         num_workers_digits = len(str(self._num_workers))
 
-        print('Running Pre-Process')
-        self._pre_process()
+        print('Running Pre Start')
+        self._pre_start()
 
         self._workers = [Process(target=self._worker_func, args=tuple([worker_id],)) for worker_id in range(self._num_workers)]
 
@@ -44,8 +45,8 @@ class ParallelProcessorBase(ABC):
             print(f'\rWorker Started {i+1:{" "}{"<"}{num_workers_digits}} / {self._num_workers:{" "}{">"}{num_workers_digits}}', end='')
         print('')
 
-        print('Running Post-Process')
-        self._post_process()
+        print('Running Post Start')
+        self._post_start()
 
     def join(self):
         print('Running Pre-Join')
@@ -59,11 +60,11 @@ class ParallelProcessorBase(ABC):
         self._post_join()
 
     @abstractmethod
-    def _pre_process(self):
+    def _pre_start(self):
         pass
 
     @abstractmethod
-    def _post_process(self):
+    def _post_start(self):
         pass
 
     @abstractmethod
@@ -107,9 +108,9 @@ class ParallelProcessingTask(ABC):
 # =================================================
 # TaskParallelProcessor Class
 # =================================================
-class TaskParallelProcessor(ParallelProcessorBase, OutputObject):
-    def __init__(self, name: str, output_dir_path: Path, num_workers: int, **kw: object):
-        super().__init__(name=name, output_dir_path=output_dir_path, num_workers=num_workers, **kw)
+class TaskParallelProcessor(ParallelProcessorBase, LoggerObject):
+    def __init__(self, name: str, log_dir_path: Path, num_workers: int, **kw: object):
+        super().__init__(name=name, log_dir_path=log_dir_path, num_workers=num_workers, **kw)
         self._tasks_queue = Queue()
         self._completed_tasks_queue = Queue()
         self._tasks = self._generate_tasks()
@@ -119,14 +120,14 @@ class TaskParallelProcessor(ParallelProcessorBase, OutputObject):
     def tasks_count(self) -> int:
         return len(self._tasks)
 
-    def _pre_process(self):
+    def _pre_start(self):
         for task in self._tasks:
             self._tasks_queue.put(obj=task)
 
         for _ in range(self._num_workers):
             self._tasks_queue.put(obj=None)
 
-    def _post_process(self):
+    def _post_start(self):
         total_tasks_count = self.tasks_count + self._num_workers
         last_remaining_tasks_count = numpy.inf
         total_tasks_count_digits = len(str(total_tasks_count))
@@ -154,9 +155,11 @@ class TaskParallelProcessor(ParallelProcessorBase, OutputObject):
             if sentinels_count == self._num_workers:
                 break
 
+    @abstractmethod
     def _pre_join(self):
         pass
 
+    @abstractmethod
     def _post_join(self):
         pass
 
@@ -166,7 +169,7 @@ class TaskParallelProcessor(ParallelProcessorBase, OutputObject):
 
     def _worker_func(self, worker_id: int):
         while True:
-            task = self._tasks_queue.get()
+            task = cast(typ=ParallelProcessingTask, val=self._tasks_queue.get())
             if task is None:
                 self._completed_tasks_queue.put(None)
                 return

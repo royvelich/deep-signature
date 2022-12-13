@@ -53,4 +53,4 @@ if __name__ == '__main__':
         fig_size=tuple(args.fig_size),
         point_size=args.point_size)
 
-    shape_matching_benchmark_curves_generator.process()
+    shape_matching_benchmark_curves_generator.start()

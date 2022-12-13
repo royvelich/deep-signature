@@ -4,6 +4,8 @@ from typing import List, TypeVar, Generic, cast, Type
 import os
 import multiprocessing
 from pathlib import Path
+import random
+import json
 
 # torch
 import torch
@@ -174,6 +176,11 @@ def fix_random_seeds(seed: int = 42):
 
 
 def save_command_args(dir_path: str, args: object):
-    pathlib.Path(dir_path)
+    Path(dir_path)
     with open(os.path.join(dir_path, 'args.txt'), 'w') as f:
         json.dump(args.__dict__, f, indent=2)
+
+
+def save_tap(dir_path: Path, typed_argument_parser: Tap, file_name: str = 'args.json'):
+    file_path = dir_path / file_name
+    typed_argument_parser.save(path=str(file_path))

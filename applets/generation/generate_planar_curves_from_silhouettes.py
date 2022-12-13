@@ -32,4 +32,4 @@ if __name__ == '__main__':
         max_points_count=args.max_points_count,
         contour_level=args.contour_level)
 
-    silhouette_level_curves_generator.process(workers_count=args.workers_count)
+    silhouette_level_curves_generator.start(workers_count=args.workers_count)

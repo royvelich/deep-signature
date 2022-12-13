@@ -1,49 +1,69 @@
 # python peripherals
 from argparse import ArgumentParser
+from typing import List, Optional
 import warnings
-warnings.filterwarnings("ignore")
+from pathlib import Path
+from datetime import datetime
 
 # deep-signature
 from deep_signature.manifolds.planar_curves.generation import ImageLevelCurvesGenerator
 from deep_signature.core import utils
 from deep_signature.core.base import SeedableObject
 
+# tap
+from tap import Tap
+
+# warnings.filterwarnings("ignore")
+
+
+class GeneratePlanarCurvesFromImagesArgumentParser(Tap):
+    name: str = 'GeneratePlanarCurvesFromImages'
+    seed: int
+    num_workers: int
+    images_base_dir_path: Path
+    curves_base_dir_path: Path
+    min_points_count: int
+    max_points_count: int
+    contour_levels: List[float]
+    kernel_sizes: List[int]
+    flat_point_threshold: float
+    max_flat_points_ratio: float
+    min_equiaffine_std: float
+    smoothing_iterations: int
+    smoothing_window_length: int
+    smoothing_poly_order: int
+    curves_file_name: str = 'curves.npy'
+    max_image_files: Optional[int] = None
+
 
 if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('--images-base-dir-path', type=str)
-    parser.add_argument('--curves-base-dir-path', type=str)
-    parser.add_argument('--min-points-count', type=int)
-    parser.add_argument('--max-points-count', type=int)
-    parser.add_argument('--kernel-sizes', nargs='+', type=int)
-    parser.add_argument('--contour-levels', nargs='+', type=float)
-    parser.add_argument('--num-workers', type=int)
-    parser.add_argument('--min-equiaffine-std', type=float)
-    parser.add_argument('--smoothing-iterations', type=int)
-    parser.add_argument('--smoothing-window-length', type=int)
-    parser.add_argument('--smoothing-poly-order', type=int)
-    parser.add_argument('--flat-point-threshold', type=float)
-    parser.add_argument('--max-flat-points-ratio', type=float)
-    parser.add_argument('--seed', type=int)
-    args = parser.parse_args()
+    image_level_curves_generator_parser = GeneratePlanarCurvesFromImagesArgumentParser().parse_args()
 
-    utils.save_command_args(dir_path=args.curves_base_dir_path, args=args)
+    datetime_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    curves_base_dir_path = image_level_curves_generator_parser.curves_base_dir_path / Path(datetime_string)
 
-    SeedableObject.seed = args.seed
+    utils.save_tap(
+        dir_path=curves_base_dir_path,
+        typed_argument_parser=image_level_curves_generator_parser)
+
+    SeedableObject.seed = image_level_curves_generator_parser.seed
 
     image_level_curves_generator = ImageLevelCurvesGenerator(
-        num_workers=args.num_workers,
-        images_base_dir_path=args.images_base_dir_path,
-        curves_base_dir_path=args.curves_base_dir_path,
-        min_points_count=args.min_points_count,
-        max_points_count=args.max_points_count,
-        kernel_sizes=args.kernel_sizes,
-        contour_levels=args.contour_levels,
-        flat_point_threshold=args.flat_point_threshold,
-        max_flat_points_ratio=args.max_flat_points_ratio,
-        min_equiaffine_std=args.min_equiaffine_std,
-        smoothing_iterations=args.smoothing_iterations,
-        smoothing_window_length=args.smoothing_window_length,
-        smoothing_poly_order=args.smoothing_poly_order)
+        name=image_level_curves_generator_parser.name,
+        log_dir_path=image_level_curves_generator_parser.log_dir_path,
+        num_workers=image_level_curves_generator_parser.num_workers,
+        images_base_dir_path=image_level_curves_generator_parser.images_base_dir_path,
+        curves_base_dir_path=image_level_curves_generator_parser.curves_base_dir_path,
+        min_points_count=image_level_curves_generator_parser.min_points_count,
+        max_points_count=image_level_curves_generator_parser.max_points_count,
+        kernel_sizes=image_level_curves_generator_parser.kernel_sizes,
+        contour_levels=image_level_curves_generator_parser.contour_levels,
+        flat_point_threshold=image_level_curves_generator_parser.flat_point_threshold,
+        max_flat_points_ratio=image_level_curves_generator_parser.max_flat_points_ratio,
+        min_equiaffine_std=image_level_curves_generator_parser.min_equiaffine_std,
+        smoothing_iterations=image_level_curves_generator_parser.smoothing_iterations,
+        smoothing_window_length=image_level_curves_generator_parser.smoothing_window_length,
+        smoothing_poly_order=image_level_curves_generator_parser.smoothing_poly_order)
 
-    image_level_curves_generator.process()
+    image_level_curves_generator.start()
+    image_level_curves_generator.join()

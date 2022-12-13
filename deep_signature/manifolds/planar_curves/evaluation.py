@@ -200,8 +200,8 @@ class PlanarCurvesShapeMatchingEvaluator(TaskParallelProcessor):
 
         return tasks
 
-    def _post_process(self):
-        super()._post_process()
+    def _post_start(self):
+        super()._post_start()
 
         df_list = []
         for completed_task in self._completed_tasks:

@@ -80,9 +80,9 @@ if __name__ == '__main__':
         max_offset=args.max_offset,
         anchor_points_count=args.anchor_points_count)
 
-    validation_dataset.process()
+    validation_dataset.start()
     validation_dataset.stop()
-    train_dataset.process()
+    train_dataset.start()
 
     model = ArcLengthNet(sample_points=args.supporting_points_count)
 

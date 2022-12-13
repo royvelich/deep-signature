@@ -9,7 +9,7 @@ dependencies:
   - pytorch
   - torchaudio
   - torchvision
-  - cudatoolkit=11.6
+  - cudatoolkit=11.3
 #  - ipython
   - numpy
   - scipy
@@ -22,7 +22,7 @@ dependencies:
 #  - cython
 #  - pytest
 #  - tqdm
-  - opencv
+#  - opencv
 #  - freetype=2.10.*
   - plotly
 #  - ipykernel
@@ -39,3 +39,5 @@ dependencies:
       - lightly
       - wandb
       - typed-argument-parser
+      - gitpython
+      - opencv-python

@@ -15,7 +15,7 @@ from torch.utils.data.distributed import DistributedSampler
 from lightly.loss import NegativeCosineSimilarity
 
 # deep-signature
-from deep_signature.core.base import OutputObject
+from deep_signature.core.base import LoggerObject
 from deep_signature.core import utils
 
 
@@ -24,11 +24,11 @@ class EpochProcessor(Protocol):
         ...
 
 
-class ModelTrainer(OutputObject):
+class ModelTrainer(LoggerObject):
     def __init__(
             self,
             name: str,
-            output_dir_path: Path,
+            log_dir_path: Path,
             model: torch.nn.Module,
             loss: torch.nn.Module,
             optimizer: torch.nn.Module,
@@ -40,7 +40,7 @@ class ModelTrainer(OutputObject):
             num_workers: int,
             checkpoint_rate: int,
             device: torch.device):
-        super().__init__(name=name, output_dir_path=output_dir_path)
+        super().__init__(name=name, log_dir_path=log_dir_path)
         self._model = model
         self._loss = loss
         self._optimizer = optimizer
@@ -106,7 +106,7 @@ class ModelTrainer(OutputObject):
                 break
 
     def _train(self):
-        trainer_results_dir_path = os.path.normpath(os.path.join(self._output_dir_path, self._name))
+        trainer_results_dir_path = os.path.normpath(os.path.join(self._log_dir_path, self._name))
         Path(trainer_results_dir_path).mkdir(parents=True, exist_ok=True)
         self._train_epochs(results_dir_path=trainer_results_dir_path)
 
@@ -221,9 +221,9 @@ class ModelTrainer(OutputObject):
         else:
             model_file_name = f'model.pt'
 
-        return os.path.normpath(os.path.join(self._output_dir_path, model_file_name))
+        return os.path.normpath(os.path.join(self._log_dir_path, model_file_name))
 
     def _create_results_dir_path(self) -> str:
-        results_dir_path = os.path.normpath(os.path.join(self._output_dir_path, self._name))
+        results_dir_path = os.path.normpath(os.path.join(self._log_dir_path, self._name))
         Path(results_dir_path).mkdir(parents=True, exist_ok=True)
         return results_dir_path

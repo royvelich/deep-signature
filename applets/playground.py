@@ -31,6 +31,9 @@ class MyClass:
 
 if __name__ == '__main__':
 
+    a = [1,2,3,4,5]
+    b = a[:2]
+
     bla = MyClass()
     foo = dict()
     h = f'{bla.myprop=}'.split('=')[0]
