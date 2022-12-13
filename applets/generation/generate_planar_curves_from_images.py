@@ -50,10 +50,10 @@ if __name__ == '__main__':
 
     image_level_curves_generator = ImageLevelCurvesGenerator(
         name=image_level_curves_generator_parser.name,
-        log_dir_path=image_level_curves_generator_parser.log_dir_path,
+        log_dir_path=curves_base_dir_path,
         num_workers=image_level_curves_generator_parser.num_workers,
         images_base_dir_path=image_level_curves_generator_parser.images_base_dir_path,
-        curves_base_dir_path=image_level_curves_generator_parser.curves_base_dir_path,
+        curves_base_dir_path=curves_base_dir_path,
         min_points_count=image_level_curves_generator_parser.min_points_count,
         max_points_count=image_level_curves_generator_parser.max_points_count,
         kernel_sizes=image_level_curves_generator_parser.kernel_sizes,

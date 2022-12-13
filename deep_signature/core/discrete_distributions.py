@@ -40,8 +40,10 @@ class DiscreteDistribution(ABC, SeedableObject):
 
 
 class MultimodalGaussianDiscreteDistribution(DiscreteDistribution):
-    def __init__(self, bins_count: int, multimodality: int):
+    def __init__(self, bins_count: int, multimodality: int, min_scale_ratio: float = 0.05, max_scale_ratio: float = 0.2):
         self._multimodality = multimodality
+        self._min_scale_ratio = min_scale_ratio
+        self._max_scale_ratio = max_scale_ratio
         super().__init__(bins_count=bins_count)
 
     def _generate_pdf(self) -> numpy.ndarray:
@@ -63,18 +65,11 @@ class MultimodalGaussianDiscreteDistribution(DiscreteDistribution):
             current_pdf = numpy.roll(a=current_pdf, shift=shift)
             pdf += current_pdf * weight
 
-        # pdf = pdf + 1e-5
         pdf = pdf / numpy.sum(pdf)
         return pdf
 
     def _generate_scales(self) -> numpy.ndarray:
-        # mean = self._bins_count * 0.25
-        # sd = self._bins_count * 0.25
-        # lower = self._bins_count * 0.01
-        # upper = self._bins_count * 0.5
-        # truncated_normal = MultimodalGaussianDiscreteDistribution._generate_truncated_normal(mean=mean, sd=sd, lower=lower, upper=upper)
-        # return truncated_normal.rvs(self._multimodality)
-        return self._rng.integers(low=self._bins_count//16, high=self._bins_count//8, size=self._multimodality)
+        return self._rng.integers(low=int(self._bins_count*self._min_scale_ratio), high=int(self._bins_count*self._max_scale_ratio), size=self._multimodality)
 
 
     # https://stackoverflow.com/questions/36894191/how-to-get-a-normal-distribution-within-a-range-in-numpy

@@ -549,4 +549,4 @@ class PlanarCurvesManager(SeedableObject):
         self._planar_curves = [PlanarCurve(points=points, closed=True) for points in curves_points]
         for planar_curve in self._planar_curves:
             planar_curve.center_curve()
-        random.shuffle(self._planar_curves)
+        # random.shuffle(self._planar_curves)

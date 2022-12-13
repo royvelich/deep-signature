@@ -182,5 +182,6 @@ def save_command_args(dir_path: str, args: object):
 
 
 def save_tap(dir_path: Path, typed_argument_parser: Tap, file_name: str = 'args.json'):
+    dir_path.mkdir(parents=True, exist_ok=True)
     file_path = dir_path / file_name
     typed_argument_parser.save(path=str(file_path))
