@@ -249,6 +249,8 @@ class ImageLevelCurvesGenerator(LevelCurvesGenerator):
         self._smoothing_poly_order = smoothing_poly_order
         self._curves_file_name = curves_file_name
         super().__init__(name=name, log_dir_path=log_dir_path, num_workers=num_workers, images_base_dir_path=images_base_dir_path, curves_base_dir_path=curves_base_dir_path, min_points_count=min_points_count, max_points_count=max_points_count, max_image_files=max_image_files)
+        self._logger.info(msg=f'images_base_dir_path: {images_base_dir_path}')
+        self._logger.info(msg=f'images_base_dir_path: {curves_base_dir_path}')
 
     def _pre_join(self):
         pass
@@ -275,7 +277,7 @@ class ImageLevelCurvesGenerator(LevelCurvesGenerator):
             [self._smoothing_poly_order],
             [self._flat_point_threshold],
             [self._max_flat_points_ratio],
-            [self._min_equiaffine_std]]))
+            [self._min_equiaffine_std]]))[:100]
 
         for combination in combinations:
             tasks.append(ImageLevelCurvesGeneratorTask(

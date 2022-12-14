@@ -13,8 +13,6 @@ from deep_signature.core.base import SeedableObject
 # tap
 from tap import Tap
 
-SeedableObject.set_seed(seed=42)
-
 
 class GeneratePlanarCurvesFromImagesArgumentParser(Tap):
     name: str = 'GeneratePlanarCurvesFromImages'
@@ -38,6 +36,7 @@ class GeneratePlanarCurvesFromImagesArgumentParser(Tap):
 
 if __name__ == '__main__':
     image_level_curves_generator_parser = GeneratePlanarCurvesFromImagesArgumentParser().parse_args()
+    SeedableObject.set_seed(seed=image_level_curves_generator_parser.seed)
 
     datetime_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     curves_base_dir_path = image_level_curves_generator_parser.curves_base_dir_path / Path(datetime_string)
@@ -46,7 +45,8 @@ if __name__ == '__main__':
         dir_path=curves_base_dir_path,
         typed_argument_parser=image_level_curves_generator_parser)
 
-    SeedableObject.seed = image_level_curves_generator_parser.seed
+    utils.save_codebase(
+        dir_path=curves_base_dir_path)
 
     image_level_curves_generator = ImageLevelCurvesGenerator(
         name=image_level_curves_generator_parser.name,
