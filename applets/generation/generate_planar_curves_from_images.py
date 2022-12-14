@@ -13,7 +13,7 @@ from deep_signature.core.base import SeedableObject
 # tap
 from tap import Tap
 
-# warnings.filterwarnings("ignore")
+SeedableObject.set_seed(seed=42)
 
 
 class GeneratePlanarCurvesFromImagesArgumentParser(Tap):

@@ -11,10 +11,14 @@ from deep_signature.core import utils
 
 
 class SeedableObject:
-    seed: Union[None, int] = None
+    _rng = numpy.random.default_rng()
+
+    @staticmethod
+    def set_seed(seed: int):
+        SeedableObject._rng = numpy.random.default_rng(seed=seed)
 
     def __init__(self):
-        self._rng = numpy.random.default_rng(seed=SeedableObject.seed)
+        self._rng = SeedableObject._rng
 
     @property
     def rng(self) -> numpy.random.Generator:
