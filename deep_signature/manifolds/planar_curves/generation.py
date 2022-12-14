@@ -277,7 +277,7 @@ class ImageLevelCurvesGenerator(LevelCurvesGenerator):
             [self._smoothing_poly_order],
             [self._flat_point_threshold],
             [self._max_flat_points_ratio],
-            [self._min_equiaffine_std]]))[:100]
+            [self._min_equiaffine_std]]))
 
         for combination in combinations:
             tasks.append(ImageLevelCurvesGeneratorTask(
