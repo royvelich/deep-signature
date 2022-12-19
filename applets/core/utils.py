@@ -29,7 +29,7 @@ def save_tap(dir_path: Path, typed_argument_parser: Tap, file_name: str = 'args.
 
 
 def save_codebase(dir_path: Path):
-    repo = git.Repo('..', search_parent_directories=True)
+    repo = git.Repo('../..', search_parent_directories=True)
     codebase_source_dir_path = repo.working_tree_dir
     codebase_destination_dir_path = dir_path / 'code'
     shutil.copytree(src=codebase_source_dir_path, dst=codebase_destination_dir_path, symlinks=True, ignore=shutil.ignore_patterns('.git', '.idea', '__pycache__'))
