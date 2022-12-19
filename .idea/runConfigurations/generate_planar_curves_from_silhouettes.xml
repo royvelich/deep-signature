@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="train_curvature_euclidean" type="PythonConfigurationType" factoryName="Python" folderName="Legacy">
+  <configuration default="false" name="generate_planar_curves_from_silhouettes" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
     <module name="deep-signature" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -7,13 +7,13 @@
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
     <option name="SDK_HOME" value="" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/applets/level_curves" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/applets/generation" />
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/applets/level_curves/train/train_curvature.py" />
-    <option name="PARAMETERS" value="--group &quot;euclidean&quot;" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/applets/generation/generate_planar_curves_from_silhouettes.py" />
+    <option name="PARAMETERS" value="--images_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/vector-images/export/1x --results_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/curves/silhouettes --min_points_count 300 --max_points_count 7000 --contour_level 0.7 --num_workers 10 --seed 42" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="true" />
     <option name="MODULE_MODE" value="false" />

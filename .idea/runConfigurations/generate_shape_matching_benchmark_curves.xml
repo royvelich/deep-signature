@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="train_curvature_euclidean" type="PythonConfigurationType" factoryName="Python" folderName="Legacy">
+  <configuration default="false" name="generate_shape_matching_benchmark_curves" type="PythonConfigurationType" factoryName="Python">
     <module name="deep-signature" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -7,13 +7,13 @@
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
     <option name="SDK_HOME" value="" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/applets/level_curves" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/applets/generation" />
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/applets/level_curves/train/train_curvature.py" />
-    <option name="PARAMETERS" value="--group &quot;euclidean&quot;" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/applets/generation/generate_shape_matching_curves.py" />
+    <option name="PARAMETERS" value="--seed 42 --curves_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/curves/silhouettes/2022-12-16-01-06-26 --results_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/curves/benchmark --sampling_ratios 1 0.9 0.8 0.7 0.6 0.5 --multimodalities 5 10 --groups euclidean equiaffine similarity affine --min_det 1.5 --max_det 3 --min_cond 1.5 --max_cond 3 --fig_size 10 10 --point_size 0.5 --num_workers 15" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="true" />
     <option name="MODULE_MODE" value="false" />

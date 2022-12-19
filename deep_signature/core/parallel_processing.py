@@ -2,26 +2,26 @@
 import os
 from multiprocessing import Process, Queue
 from pathlib import Path
-import time
+import random
 from abc import ABC, abstractmethod
-from typing import List, Union, cast
+from typing import List, Optional, cast
 import traceback
 
 # numpy
 import numpy
 
 # deep-signature
-from deep_signature.core.base import SeedableObject, LoggerObject
+from deep_signature.core.base import LoggerObject
 
 
 # =================================================
 # ParallelProcessorBase Class
 # =================================================
 class ParallelProcessorBase(ABC, LoggerObject):
-    def __init__(self, name: str, log_dir_path: Path, num_workers: int, **kw: object):
+    def __init__(self, log_dir_path: Path, num_workers: int, **kw: object):
         self._num_workers = num_workers
         self._workers = []
-        super().__init__(name=name, log_dir_path=log_dir_path, **kw)
+        super().__init__(log_dir_path=log_dir_path, **kw)
 
     def __getstate__(self):
         d = dict(self.__dict__)
@@ -109,11 +109,13 @@ class ParallelProcessingTask(ABC):
 # TaskParallelProcessor Class
 # =================================================
 class TaskParallelProcessor(ParallelProcessorBase):
-    def __init__(self, name: str, log_dir_path: Path, num_workers: int, **kw: object):
-        super().__init__(name=name, log_dir_path=log_dir_path, num_workers=num_workers, **kw)
+    def __init__(self, log_dir_path: Path, num_workers: int, max_tasks: Optional[int] = None, **kw: object):
+        super().__init__(log_dir_path=log_dir_path, num_workers=num_workers, **kw)
         self._tasks_queue = Queue()
         self._completed_tasks_queue = Queue()
-        self._tasks = self._generate_tasks()
+        self._max_tasks = max_tasks
+        tasks = self._generate_tasks()
+        self._tasks = random.sample(tasks, max_tasks)
         self._completed_tasks = []
 
     @property
@@ -128,14 +130,12 @@ class TaskParallelProcessor(ParallelProcessorBase):
             self._tasks_queue.put(obj=None)
 
     def _post_start(self):
-        total_tasks_count = self.tasks_count + self._num_workers
         last_remaining_tasks_count = numpy.inf
-        total_tasks_count_digits = len(str(total_tasks_count))
+        tasks_count_digits = len(str(self.tasks_count))
         while True:
             remaining_tasks_count = self._tasks_queue.qsize()
             if last_remaining_tasks_count > remaining_tasks_count:
-
-                print(f'\rRemaining Tasks {remaining_tasks_count:{" "}{"<"}{total_tasks_count_digits}} / {total_tasks_count:{" "}{">"}{total_tasks_count_digits}}', end='')
+                print(f'\rRemaining Tasks {numpy.maximum(remaining_tasks_count - self._num_workers, 0):{" "}{"<"}{tasks_count_digits}} / {self.tasks_count:{" "}{">"}{tasks_count_digits}}', end='')
                 last_remaining_tasks_count = remaining_tasks_count
 
             if remaining_tasks_count == 0:

@@ -1,27 +1,17 @@
 # python peripherals
 import logging
-from typing import List, TypeVar, Generic, cast, Type
+from typing import List
 import os
 import multiprocessing
 from pathlib import Path
 import random
 import json
-import shutil
 
 # torch
 import torch
 
 # numpy
 import numpy
-
-# tap
-from tap import Tap
-
-# git
-import git
-
-
-T = TypeVar('T')
 
 
 #################################
@@ -166,12 +156,6 @@ def save_object_dict(obj: object, file_path: str):
             text_file.write(f'{key}: {value}\n')
 
 
-def argument_parser_type_cast(instance_type: Type[T], arguments_parser_name: str) -> T:
-    argument_parser_class = globals()[arguments_parser_name]
-    argument_parser = cast(Tap, argument_parser_class())
-    return cast(instance_type, argument_parser.parse_args())
-
-
 def fix_random_seeds(seed: int = 42):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -183,16 +167,3 @@ def save_command_args(dir_path: str, args: object):
     Path(dir_path)
     with open(os.path.join(dir_path, 'args.txt'), 'w') as f:
         json.dump(args.__dict__, f, indent=2)
-
-
-def save_tap(dir_path: Path, typed_argument_parser: Tap, file_name: str = 'args.json'):
-    dir_path.mkdir(parents=True, exist_ok=True)
-    file_path = dir_path / file_name
-    typed_argument_parser.save(path=str(file_path))
-
-
-def save_codebase(dir_path: Path):
-    repo = git.Repo('.', search_parent_directories=True)
-    codebase_source_dir_path = repo.working_tree_dir
-    codebase_destination_dir_path = dir_path / 'code'
-    shutil.copytree(src=codebase_source_dir_path, dst=codebase_destination_dir_path, symlinks=True, ignore=shutil.ignore_patterns('.git', '.idea', '__pycache__'))

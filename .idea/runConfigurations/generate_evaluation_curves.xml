@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="generate_evaluation_curves" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+  <configuration default="false" name="generate_evaluation_curves" type="PythonConfigurationType" factoryName="Python" folderName="Legacy" nameIsGenerated="true">
     <module name="deep-signature" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="C:\GitHub\deep-signature\applets\generation\generate_evaluation_curves.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/applets/generation/generate_evaluation_curves.py" />
     <option name="PARAMETERS" value="--images_dir &quot;$PROJECT_DIR$/../../deep-signature-data/vector-images/yellow_background/2x&quot; --curves_dir &quot;$PROJECT_DIR$/../../deep-signature-data/level-curves/curves/test_raw&quot;" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="true" />

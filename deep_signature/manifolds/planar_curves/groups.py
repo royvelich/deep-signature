@@ -1,5 +1,7 @@
 # python peripherals
+from __future__ import annotations
 from abc import ABC
+from typing import Optional
 
 # numpy
 import numpy
@@ -29,6 +31,17 @@ class Group(ABC, SeedableObject):
         det = float(self._rng.uniform(low=self._min_det, high=self._max_det, size=1))
         cond = float(self._rng.uniform(low=self._min_cond, high=self._max_cond, size=1))
         return deep_signature.core.transformations.generate_affine_transform_2d(det=det, cond=cond, radians_u=radians_u, radians_v=radians_v)
+
+    @staticmethod
+    def from_group_name(name: str, min_det: Optional[float] = None, max_det: Optional[float] = None, min_cond: Optional[float] = None, max_cond: Optional[float] = None) -> Group:
+        if name == 'euclidean':
+            return EuclideanGroup()
+        elif name == 'similarity':
+            return SimilarityGroup(min_det=min_det, max_det=max_det)
+        elif name == 'equiaffine':
+            return EquiaffineGroup(min_cond=min_cond, max_cond=max_cond)
+        elif name == 'affine':
+            return AffineGroup(min_det=min_det, max_det=max_det, min_cond=min_cond, max_cond=max_cond)
 
 
 class AffineGroup(Group):

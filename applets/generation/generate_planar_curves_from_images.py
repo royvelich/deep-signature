@@ -1,25 +1,15 @@
 # python peripherals
-from argparse import ArgumentParser
 from typing import List, Optional
-import warnings
 from pathlib import Path
-from datetime import datetime
 
 # deep-signature
+from applets.core.utils import AppArgumentParser, init_app
 from deep_signature.manifolds.planar_curves.generation import ImageLevelCurvesGenerator
-from deep_signature.core import utils
-from deep_signature.core.base import SeedableObject
-
-# tap
-from tap import Tap
 
 
-class GeneratePlanarCurvesFromImagesArgumentParser(Tap):
-    name: str = 'GeneratePlanarCurvesFromImages'
-    seed: int
+class GeneratePlanarCurvesFromImagesArgumentParser(AppArgumentParser):
     num_workers: int
     images_base_dir_path: Path
-    curves_base_dir_path: Path
     min_points_count: int
     max_points_count: int
     contour_levels: List[float]
@@ -30,40 +20,28 @@ class GeneratePlanarCurvesFromImagesArgumentParser(Tap):
     smoothing_iterations: int
     smoothing_window_length: int
     smoothing_poly_order: int
-    curves_file_name: str = 'curves.npy'
-    max_image_files: Optional[int] = None
+    max_tasks: Optional[int] = None
 
 
 if __name__ == '__main__':
-    image_level_curves_generator_parser = GeneratePlanarCurvesFromImagesArgumentParser().parse_args()
-    SeedableObject.set_seed(seed=image_level_curves_generator_parser.seed)
-
-    datetime_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    curves_base_dir_path = image_level_curves_generator_parser.curves_base_dir_path / Path(datetime_string)
-
-    utils.save_tap(
-        dir_path=curves_base_dir_path,
-        typed_argument_parser=image_level_curves_generator_parser)
-
-    utils.save_codebase(
-        dir_path=curves_base_dir_path)
+    parser = init_app(typed_argument_parser_class=GeneratePlanarCurvesFromImagesArgumentParser)
 
     image_level_curves_generator = ImageLevelCurvesGenerator(
-        name=image_level_curves_generator_parser.name,
-        log_dir_path=curves_base_dir_path,
-        num_workers=image_level_curves_generator_parser.num_workers,
-        images_base_dir_path=image_level_curves_generator_parser.images_base_dir_path,
-        curves_base_dir_path=curves_base_dir_path,
-        min_points_count=image_level_curves_generator_parser.min_points_count,
-        max_points_count=image_level_curves_generator_parser.max_points_count,
-        kernel_sizes=image_level_curves_generator_parser.kernel_sizes,
-        contour_levels=image_level_curves_generator_parser.contour_levels,
-        flat_point_threshold=image_level_curves_generator_parser.flat_point_threshold,
-        max_flat_points_ratio=image_level_curves_generator_parser.max_flat_points_ratio,
-        min_equiaffine_std=image_level_curves_generator_parser.min_equiaffine_std,
-        smoothing_iterations=image_level_curves_generator_parser.smoothing_iterations,
-        smoothing_window_length=image_level_curves_generator_parser.smoothing_window_length,
-        smoothing_poly_order=image_level_curves_generator_parser.smoothing_poly_order)
+        log_dir_path=parser.results_base_dir_path,
+        num_workers=parser.num_workers,
+        images_base_dir_path=parser.images_base_dir_path,
+        curves_base_dir_path=parser.results_base_dir_path,
+        min_points_count=parser.min_points_count,
+        max_points_count=parser.max_points_count,
+        kernel_sizes=parser.kernel_sizes,
+        contour_levels=parser.contour_levels,
+        flat_point_threshold=parser.flat_point_threshold,
+        max_flat_points_ratio=parser.max_flat_points_ratio,
+        min_equiaffine_std=parser.min_equiaffine_std,
+        smoothing_iterations=parser.smoothing_iterations,
+        smoothing_window_length=parser.smoothing_window_length,
+        smoothing_poly_order=parser.smoothing_poly_order,
+        max_tasks=parser.max_tasks)
 
     image_level_curves_generator.start()
     image_level_curves_generator.join()

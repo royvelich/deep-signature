@@ -1,10 +1,9 @@
 # python peripherals
 from __future__ import annotations
-
 from typing import Union, List, Callable
 import os
-import random
 import itertools
+from pathlib import Path
 
 # numpy
 import numpy
@@ -278,9 +277,9 @@ class PlanarCurve(SeedableObject):
         return ks
 
     # -------------------------------------------------
-    # prediction
+    # approximation
     # -------------------------------------------------
-    def predict_curve_local_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device) -> numpy.ndarray:
+    def approximate_curve_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device) -> numpy.ndarray:
         local_signature = numpy.zeros([self.points_count, 2])
         curve_neighborhoods = self.extract_curve_neighborhoods(supporting_points_count=supporting_points_count)
         model = model.to(device=device)
@@ -523,9 +522,10 @@ class PlanarCurve(SeedableObject):
 # PlanarCurvesManager Class
 # =================================================
 class PlanarCurvesManager(SeedableObject):
-    def __init__(self):
+    def __init__(self, curves_file_path: Path):
         super().__init__()
-        self._planar_curves = []
+        self._curves_file_path = curves_file_path
+        self._planar_curves = self._load_curves()
 
     @property
     def planar_curves(self) -> List[PlanarCurve]:
@@ -535,18 +535,12 @@ class PlanarCurvesManager(SeedableObject):
     def planar_curves_count(self) -> int:
         return len(self._planar_curves)
 
-    # def plot_curves(self, curves_count: int, figsize: Tuple[int, int]):
-    #     for i in range(curves_count):
-    #         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-    #         self._planar_curves[i].plot_curve(ax=ax)
-
     def get_random_planar_curve(self) -> PlanarCurve:
         index = self._rng.integers(low=0, high=len(self._planar_curves))
         return self._planar_curves[index]
 
-    def load(self, curves_file_path: str):
-        curves_points = numpy.load(file=os.path.normpath(path=curves_file_path), allow_pickle=True)
-        self._planar_curves = [PlanarCurve(points=points, closed=True) for points in curves_points]
-        for planar_curve in self._planar_curves:
-            planar_curve.center_curve()
-        # random.shuffle(self._planar_curves)
+    def _load_curves(self) -> List[PlanarCurve]:
+        curves_points = numpy.load(file=os.path.normpath(path=self._curves_file_path), allow_pickle=True)
+        planar_curves = [PlanarCurve(points=points, closed=True) for points in curves_points]
+        return planar_curves
+
