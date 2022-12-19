@@ -115,7 +115,8 @@ class TaskParallelProcessor(ParallelProcessorBase):
         self._completed_tasks_queue = Queue()
         self._max_tasks = max_tasks
         tasks = self._generate_tasks()
-        self._tasks = random.sample(tasks, max_tasks)
+        if max_tasks is not None:
+            self._tasks = random.sample(tasks, max_tasks)
         self._completed_tasks = []
 
     @property
