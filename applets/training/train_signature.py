@@ -34,6 +34,7 @@ class TrainSignatureArgumentParser(utils.AppArgumentParser):
     training_dataset_size: int
     validation_dataset_size: int
     training_num_workers: int
+    validation_num_workers: int
     evaluation_num_workers: int
     evaluation_benchmark_dir_path: Path
     evaluation_curves_count_per_collection: int
