@@ -1,8 +1,8 @@
 program: train_signature_euclidean_desktop
 method: random
 parameters:
-    training_curves_file_path:
-    validation_curves_file_path:
+    training_curves_file_path: "C:/deep-signature-data-new/curves/train/2022-12-20-02-02-52"
+    validation_curves_file_path: "C:/deep-signature-data-new/curves/validation/2022-12-20-09-02-36"
     group_name:
       value: 'euclidean'
     supporting_points_count:
