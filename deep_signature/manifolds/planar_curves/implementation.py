@@ -64,7 +64,7 @@ class PlanarCurve(SeedableObject):
 
     @property
     def points(self) -> numpy.ndarray:
-        return self._points
+        return self._points.astype(numpy.float32)
 
     @property
     def indices(self) -> numpy.ndarray:
@@ -542,5 +542,7 @@ class PlanarCurvesManager(SeedableObject):
     def _load_curves(self) -> List[PlanarCurve]:
         curves_points = numpy.load(file=os.path.normpath(path=self._curves_file_path), allow_pickle=True)
         planar_curves = [PlanarCurve(points=points, closed=True) for points in curves_points]
+        for planar_curve in planar_curves:
+            planar_curve.center_curve()
         return planar_curves
 

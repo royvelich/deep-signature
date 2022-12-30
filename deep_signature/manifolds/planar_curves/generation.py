@@ -409,8 +409,8 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
             self._sampled_planar_curves.append(sampled_planar_curve)
 
     def _post_process(self):
-        relative_dir_path = ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_dir_path(curves_file_name=self._curves_file_name, group_name=self._group.name, multimodality=self._multimodality, sampling_ratio=self._sampling_ratio)
-        curves_file_path = os.path.normpath(os.path.join(self._benchmark_base_dir_path, relative_dir_path, 'curves.npy'))
+        relative_file_path = ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_file_path(curves_file_name=self._curves_file_name, group_name=self._group.name, multimodality=self._multimodality, sampling_ratio=self._sampling_ratio)
+        curves_file_path = os.path.normpath(os.path.join(self._benchmark_base_dir_path, relative_file_path))
         Path(os.path.dirname(curves_file_path)).mkdir(parents=True, exist_ok=True)
         curves = [sampled_planar_curve.points for sampled_planar_curve in self._sampled_planar_curves]
         numpy.save(file=curves_file_path, arr=curves, allow_pickle=True)
@@ -420,7 +420,7 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
             sampled_planar_curve.plot_scattered_curve(ax=ax, cmap='green')
             matplotlib.pyplot.axis('off')
             ax.axis('equal')
-            plot_file_dir_path = os.path.normpath(os.path.join('plots', relative_dir_path))
+            plot_file_dir_path = os.path.normpath(os.path.join('plots', relative_file_path.parent))
             self._save_fig(fig=fig, plot_file_dir_path=plot_file_dir_path, file_format='png', curve_index=curve_index)
             self._save_fig(fig=fig, plot_file_dir_path=plot_file_dir_path, file_format='svg', curve_index=curve_index)
             matplotlib.pyplot.close(fig)
@@ -431,9 +431,14 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
         fig.savefig(plot_file_path, format=file_format)
 
     @staticmethod
-    def get_relative_dir_path(curves_file_name: str, group_name: str, multimodality: int, sampling_ratio: float) -> str:
+    def get_relative_dir_path(curves_file_name: str, group_name: str, multimodality: int, sampling_ratio: float) -> Path:
         sampling_ratio_str = str(sampling_ratio).replace(".", "_")
-        return f'{curves_file_name}/{group_name}/{multimodality}/{sampling_ratio_str}'
+        return Path(f'{curves_file_name}/{group_name}/{multimodality}/{sampling_ratio_str}')
+
+    @staticmethod
+    def get_relative_file_path(curves_file_name: str, group_name: str, multimodality: int, sampling_ratio: float) -> Path:
+        relative_dir_path = ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_dir_path(curves_file_name=curves_file_name, group_name=group_name, multimodality=multimodality, sampling_ratio=sampling_ratio)
+        return relative_dir_path / 'curves.npy'
 
 
 # =================================================

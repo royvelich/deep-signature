@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/applets/generation/generate_planar_curves_from_silhouettes.py" />
-    <option name="PARAMETERS" value="--images_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/vector-images/export/1x --results_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/curves/silhouettes --min_points_count 300 --max_points_count 7000 --contour_level 0.7 --num_workers 10 --seed 42" />
+    <option name="PARAMETERS" value="--images_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/vector-images/export/1x --results_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/curves/silhouettes --min_points_count 200 --max_points_count 7000 --contour_level 0.7 --num_workers 10 --seed 42" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="true" />
     <option name="MODULE_MODE" value="false" />

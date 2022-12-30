@@ -1,8 +1,14 @@
 program: train_signature_euclidean_desktop
 method: random
 parameters:
-    training_curves_file_path: "C:/deep-signature-data-new/curves/train/2022-12-20-02-02-52"
-    validation_curves_file_path: "C:/deep-signature-data-new/curves/validation/2022-12-20-09-02-36"
+    seed:
+      value: 42
+    results_base_dir_path:
+      value: "C:/deep-signature-data-new/training"
+    training_curves_file_path:
+      value: "C:/deep-signature-data-new/curves/train/2022-12-20-02-02-52/curves.npy"
+    validation_curves_file_path:
+      value: "C:/deep-signature-data-new/curves/validation/2022-12-20-09-02-36/curves.npy"
     group_name:
       value: 'euclidean'
     supporting_points_count:
@@ -24,27 +30,35 @@ parameters:
     training_dataset_size:
       value: 100000
     validation_dataset_size:
-      value: 20000
+      value: 100000
+    training_items_buffer_size:
+      value: 10000
+    validation_items_buffer_size:
+      value: 10000
+    training_items_queue_maxsize:
+      value: 500000
+    validation_items_queue_maxsize:
+      value: 500000
     training_num_workers:
       value: 10
     validation_num_workers:
-      value: 2
+      value: 5
     evaluation_num_workers:
       value: 2
     evaluation_benchmark_dir_path:
-      value: "C:/deep-signature-data-new/curves/benchmark/2022-12-16-01-11-24"
+      value: "C:/deep-signature-data-new/curves/benchmark/2022-12-29-22-02-03"
     evaluation_curves_count_per_collection:
-      value: 30
+      value: 2
     evaluation_curve_collections_file_names:
-      value: ["cats, cacti"]
+      value: ["cats", "cacti"]
     evaluation_sampling_ratios:
-      value [0.6, 0.7, 0.8, 0.9]
+      value: [0.6, 0.7, 0.8]
     evaluation_multimodality:
       value: 5
     epochs:
       value: 100
     batch_size:
-      value: 20000
+      value: 10000
     learning_rate:
       values: [0.1, 0.01, 0.001]
     checkpoint_rate:
@@ -59,4 +73,19 @@ parameters:
       values: [64, 128, 256]
     hidden_layer_repetitions:
       values: [1, 2, 3]
-
+    training_min_det:
+      value: 1
+    training_max_det:
+      value: 4
+    training_min_cond:
+      value: 1
+    training_max_cond:
+      value: 4
+    validation_min_det:
+      value: 2
+    validation_max_det:
+      value: 2
+    validation_min_cond:
+      value: 2
+    validation_max_cond:
+      value: 2

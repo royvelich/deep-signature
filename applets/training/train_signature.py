@@ -10,7 +10,7 @@ import torch
 import wandb
 
 # deep-signature
-from applets.core.utils import AppArgumentParser, init_app
+from applets.core.utils import init_app_wandb, init_app_tap, AppArgumentParser
 from deep_signature.manifolds.planar_curves.groups import Group
 from deep_signature.core import utils
 from deep_signature.manifolds.planar_curves.implementation import PlanarCurvesManager
@@ -21,6 +21,7 @@ from deep_signature.training.losses import DifferentialInvariantsLoss
 from deep_signature.training.trainers import ModelTrainer
 from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesApproximatedSignatureComparator
 from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesShapeMatchingEvaluator
+from deep_signature.core.parallel_processing import GetItemPolicy
 
 
 class TrainSignatureArgumentParser(AppArgumentParser):
@@ -37,6 +38,10 @@ class TrainSignatureArgumentParser(AppArgumentParser):
     max_negative_example_offset: int
     training_dataset_size: int
     validation_dataset_size: int
+    validation_items_queue_maxsize: int
+    training_items_queue_maxsize: int
+    training_items_buffer_size: int
+    validation_items_buffer_size: int
     training_num_workers: int
     validation_num_workers: int
     evaluation_num_workers: int
@@ -46,7 +51,8 @@ class TrainSignatureArgumentParser(AppArgumentParser):
     evaluation_sampling_ratios: List[float]
     evaluation_multimodality: int
     epochs: int
-    batch_size: int
+    training_batch_size: int
+    validation_batch_size: int
     learning_rate: float
     checkpoint_rate: int
     history_size: int = 800
@@ -71,92 +77,116 @@ os.environ["WANDB_CONFIG_DIR"] = "C:/sweeps/config_dir"
 
 
 def main():
-    wandb.init()
+    # wandb.init()
+    # wandb_config = wandb.config
+    # results_dir_path = init_app_wandb(wandb_config=wandb_config)
+    wandb_config = TrainSignatureArgumentParser().parse_args()
+    results_dir_path = init_app_tap(parser=wandb_config)
 
-    # parser = init_app(typed_argument_parser_class=TrainSignatureArgumentParser)
-    # training_planar_curves_manager = PlanarCurvesManager(curves_file_path=parser.training_curves_file_path)
-    # training_group = Group.from_group_name(name=parser.group_name, min_det=parser.training_min_det, max_det=parser.training_max_det, min_cond=parser.training_min_cond, max_cond=parser.training_max_cond)
-    #
-    # validation_planar_curves_manager = PlanarCurvesManager(curves_file_path=parser.validation_curves_file_path)
-    # validation_group = Group.from_group_name(name=parser.group_name, min_det=parser.validation_min_det, max_det=parser.validation_max_det, min_cond=parser.validation_min_cond, max_cond=parser.validation_max_cond)
-    #
-    # training_dataset = CurveNeighborhoodTupletsDataset(
-    #     planar_curves_manager=training_planar_curves_manager,
-    #     group=training_group,
-    #     dataset_size=parser.training_dataset_size,
-    #     supporting_points_count=parser.supporting_points_count,
-    #     negative_examples_count=parser.negative_examples_count,
-    #     min_sampling_ratio=parser.min_sampling_ratio,
-    #     max_sampling_ratio=parser.max_sampling_ratio,
-    #     min_multimodality=parser.min_multimodality,
-    #     max_multimodality=parser.max_multimodality,
-    #     min_negative_example_offset=parser.min_negative_example_offset,
-    #     max_negative_example_offset=parser.max_negative_example_offset)
-    #
-    # validation_dataset = CurveNeighborhoodTupletsDataset(
-    #     planar_curves_manager=validation_planar_curves_manager,
-    #     group=validation_group,
-    #     dataset_size=parser.validation_dataset_size,
-    #     supporting_points_count=parser.supporting_points_count,
-    #     negative_examples_count=parser.negative_examples_count,
-    #     min_sampling_ratio=parser.min_sampling_ratio,
-    #     max_sampling_ratio=parser.max_sampling_ratio,
-    #     min_multimodality=parser.min_multimodality,
-    #     max_multimodality=parser.max_multimodality,
-    #     min_negative_example_offset=parser.min_negative_example_offset,
-    #     max_negative_example_offset=parser.max_negative_example_offset)
-    #
-    # activation_fns = {
-    #     'sine': lambda out_features_size: Sine(),
-    #     'relu': lambda out_features_size: torch.nn.ReLU(),
-    #     'gelu': lambda out_features_size: torch.nn.GELU()
-    # }
-    #
-    # create_batch_norm_fn: Callable[[int], torch.nn.Module] = lambda out_features_size: torch.nn.BatchNorm1d(num_features=out_features_size)
-    #
-    # model = DeepSignaturesNet(
-    #     sample_points=2*parser.supporting_points_count + 1,
-    #     in_features_size=parser.in_features_size,
-    #     out_features_size=2,
-    #     hidden_layer_repetitions=parser.hidden_layer_repetitions,
-    #     create_activation_fn=activation_fns[parser.activation_fn],
-    #     create_batch_norm_fn=create_batch_norm_fn,
-    #     dropout_p=None)
-    #
-    # loss_fn = DifferentialInvariantsLoss()
-    # optimizer = torch.optim.LBFGS(model.parameters(), lr=parser.learning_rate, line_search_fn='strong_wolfe', history_size=parser.history_size)
-    #
-    # comparator = PlanarCurvesApproximatedSignatureComparator(
-    #     model=model,
-    #     supporting_points_count=parser.supporting_points_count,
-    #     device=torch.device('cpu'))
-    #
-    # evaluator = PlanarCurvesShapeMatchingEvaluator(
-    #     log_dir_path=parser.results_base_dir_path,
-    #     num_workers=parser.evaluation_num_workers,
-    #     curves_count_per_collection=parser.evaluation_curves_count_per_collection,
-    #     curve_collections_file_names=parser.evaluation_curve_collections_file_names,
-    #     benchmark_dir_path=parser.evaluation_benchmark_dir_path,
-    #     sampling_ratios=parser.evaluation_sampling_ratios,
-    #     multimodalities=[parser.evaluation_multimodality],
-    #     group_names=[parser.group_name],
-    #     planar_curves_signature_comparator=comparator)
-    #
-    # model_trainer = ModelTrainer(
-    #     results_dir_path=parser.results_base_dir_path,
-    #     model=model,
-    #     loss_fn=loss_fn,
-    #     optimizer=optimizer,
-    #     train_dataset=training_dataset,
-    #     validation_dataset=validation_dataset,
-    #     evaluator=evaluator,
-    #     epochs=parser.epochs,
-    #     batch_size=parser.batch_size,
-    #     num_workers=parser.training_num_workers,
-    #     checkpoint_rate=parser.checkpoint_rate,
-    #     device=torch.device('cuda'))
+    training_planar_curves_manager = PlanarCurvesManager(curves_file_path=wandb_config.training_curves_file_path)
+    training_group = Group.from_group_name(name=wandb_config.group_name, min_det=wandb_config.training_min_det, max_det=wandb_config.training_max_det, min_cond=wandb_config.training_min_cond, max_cond=wandb_config.training_max_cond)
+
+    validation_planar_curves_manager = PlanarCurvesManager(curves_file_path=wandb_config.validation_curves_file_path)
+    validation_group = Group.from_group_name(name=wandb_config.group_name, min_det=wandb_config.validation_min_det, max_det=wandb_config.validation_max_det, min_cond=wandb_config.validation_min_cond, max_cond=wandb_config.validation_max_cond)
+
+    validation_dataset = CurveNeighborhoodTupletsDataset(
+        planar_curves_manager=validation_planar_curves_manager,
+        group=validation_group,
+        dataset_size=wandb_config.validation_dataset_size,
+        supporting_points_count=wandb_config.supporting_points_count,
+        negative_examples_count=wandb_config.negative_examples_count,
+        min_sampling_ratio=wandb_config.min_sampling_ratio,
+        max_sampling_ratio=wandb_config.max_sampling_ratio,
+        min_multimodality=wandb_config.min_multimodality,
+        max_multimodality=wandb_config.max_multimodality,
+        min_negative_example_offset=wandb_config.min_negative_example_offset,
+        max_negative_example_offset=wandb_config.max_negative_example_offset,
+        log_dir_path=results_dir_path,
+        num_workers=wandb_config.validation_num_workers,
+        items_queue_maxsize=wandb_config.validation_items_queue_maxsize,
+        items_buffer_size=wandb_config.validation_items_buffer_size,
+        get_item_policy=GetItemPolicy.Keep)
+
+    validation_dataset.start()
+    validation_dataset.stop()
+    validation_dataset.join()
+
+    training_dataset = CurveNeighborhoodTupletsDataset(
+        planar_curves_manager=training_planar_curves_manager,
+        group=training_group,
+        dataset_size=wandb_config.training_dataset_size,
+        supporting_points_count=wandb_config.supporting_points_count,
+        negative_examples_count=wandb_config.negative_examples_count,
+        min_sampling_ratio=wandb_config.min_sampling_ratio,
+        max_sampling_ratio=wandb_config.max_sampling_ratio,
+        min_multimodality=wandb_config.min_multimodality,
+        max_multimodality=wandb_config.max_multimodality,
+        min_negative_example_offset=wandb_config.min_negative_example_offset,
+        max_negative_example_offset=wandb_config.max_negative_example_offset,
+        log_dir_path=results_dir_path,
+        num_workers=wandb_config.training_num_workers,
+        items_queue_maxsize=wandb_config.training_items_queue_maxsize,
+        items_buffer_size=wandb_config.training_items_buffer_size,
+        get_item_policy=GetItemPolicy.TryReplace)
+
+    training_dataset.start()
+
+    activation_fns = {
+        'sine': lambda out_features_size: Sine(),
+        'relu': lambda out_features_size: torch.nn.ReLU(),
+        'gelu': lambda out_features_size: torch.nn.GELU()
+    }
+
+    create_batch_norm_fn: Callable[[int], torch.nn.Module] = lambda out_features_size: torch.nn.BatchNorm1d(num_features=out_features_size)
+
+    model = DeepSignaturesNet(
+        sample_points=2*wandb_config.supporting_points_count + 1,
+        in_features_size=wandb_config.in_features_size,
+        out_features_size=2,
+        hidden_layer_repetitions=wandb_config.hidden_layer_repetitions,
+        create_activation_fn=activation_fns[wandb_config.activation_fn],
+        create_batch_norm_fn=create_batch_norm_fn,
+        dropout_p=None)
+
+    model.share_memory()
+
+    loss_fn = DifferentialInvariantsLoss()
+    optimizer = torch.optim.LBFGS(model.parameters(), lr=wandb_config.learning_rate, line_search_fn='strong_wolfe', history_size=wandb_config.history_size)
+
+    comparator = PlanarCurvesApproximatedSignatureComparator(
+        model=model,
+        supporting_points_count=wandb_config.supporting_points_count,
+        device=torch.device('cpu'))
+
+    evaluator = PlanarCurvesShapeMatchingEvaluator(
+        log_dir_path=results_dir_path,
+        num_workers=wandb_config.evaluation_num_workers,
+        curves_count_per_collection=wandb_config.evaluation_curves_count_per_collection,
+        curve_collections_file_names=wandb_config.evaluation_curve_collections_file_names,
+        benchmark_dir_path=wandb_config.evaluation_benchmark_dir_path,
+        sampling_ratios=wandb_config.evaluation_sampling_ratios,
+        multimodalities=[wandb_config.evaluation_multimodality],
+        group_names=[wandb_config.group_name],
+        planar_curves_signature_comparator=comparator)
+
+    model_trainer = ModelTrainer(
+        results_dir_path=results_dir_path,
+        model=model,
+        loss_fn=loss_fn,
+        optimizer=optimizer,
+        train_dataset=training_dataset,
+        validation_dataset=validation_dataset,
+        evaluator=evaluator,
+        epochs=wandb_config.epochs,
+        training_batch_size=wandb_config.training_batch_size,
+        validation_batch_size=wandb_config.validation_batch_size,
+        num_workers=0,
+        checkpoint_rate=wandb_config.checkpoint_rate,
+        device=torch.device('cuda'))
+
+    model_trainer.train()
 
 
 if __name__ == '__main__':
-    # wandb.login()
-    wandb.agent('gip-technion/deep-signatures/dreee04i', function=main, count=1)
+    main()
+    # wandb.agent('gip-technion/deep-signatures/1qqd5w9w', function=main, count=1)

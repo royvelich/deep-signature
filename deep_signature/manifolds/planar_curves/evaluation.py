@@ -1,8 +1,7 @@
 # python peripherals
 from __future__ import annotations
-from typing import Tuple, List, cast
+from typing import List, cast
 import os
-import pathlib
 import itertools
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -13,28 +12,6 @@ import numpy
 # pandas
 import pandas
 
-# deep_signature
-from deep_signature.core import discrete_distributions
-
-# skimage
-import skimage.io
-import skimage.color
-import skimage.filters
-import skimage.measure
-
-# opencv
-import cv2
-
-# skimage
-import skimage.io
-import skimage.color
-import skimage.measure
-
-# matplotlib
-import matplotlib
-import matplotlib.axes
-import matplotlib.figure
-
 # pytorch
 import torch
 import torch.nn
@@ -42,7 +19,6 @@ import torch.nn
 # deep_signature
 from deep_signature.manifolds.planar_curves.implementation import PlanarCurve
 from deep_signature.core.parallel_processing import TaskParallelProcessor, ParallelProcessingTask
-from deep_signature.manifolds.planar_curves.groups import Group
 from deep_signature.manifolds.planar_curves.generation import ShapeMatchingBenchmarkCurvesGeneratorTask
 from deep_signature.metrics import hausdorff
 
@@ -57,7 +33,7 @@ class PlanarCurvesSignatureComparator(ABC):
     def compare_signatures(self, curve1: PlanarCurve, curve2: PlanarCurve) -> float:
         curve1_signature = self._calculate_signature(curve=curve1)
         curve2_signature = self._calculate_signature(curve=curve2)
-        return hausdorff.hausdorff_distance(subset1=curve1_signature, curve2=curve2_signature)
+        return hausdorff.hausdorff_distance(subset1=curve1_signature, subset2=curve2_signature, distance_function=hausdorff.euclidean)
 
     @abstractmethod
     def _calculate_signature(self, curve: PlanarCurve) -> numpy.ndarray:
@@ -110,13 +86,13 @@ class PlanarCurvesShapeMatchingEvaluatorTask(ParallelProcessingTask):
     def _pre_process(self):
         pass
 
-    def _process(self):
-        query_curves_file_path = self._benchmark_dir_path / ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_dir_path(curves_file_name=self._curves_file_name, sampling_ratio=self._sampling_ratio, multimodality=self._multimodality, group_name=self._group_name)
-        database_curves_file_path = self._benchmark_dir_path / ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_dir_path(curves_file_name=self._curves_file_name, sampling_ratio=1.0, multimodality=self._multimodality, group_name=self._group_name)
+    def _process(self, *argv):
+        query_curves_file_path = self._benchmark_dir_path / ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_file_path(curves_file_name=self._curves_file_name, sampling_ratio=self._sampling_ratio, multimodality=self._multimodality, group_name=self._group_name)
+        database_curves_file_path = self._benchmark_dir_path / ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_file_path(curves_file_name=self._curves_file_name, sampling_ratio=1.0, multimodality=self._multimodality, group_name=self._group_name)
         query_curves = numpy.load(file=str(query_curves_file_path), allow_pickle=True)
-        query_curve = query_curves[self._query_curve_id]
+        query_curve = PlanarCurve(points=query_curves[self._query_curve_id])
         database_curves = numpy.load(file=str(database_curves_file_path), allow_pickle=True)
-        database_curve = database_curves[self._database_curve_id]
+        database_curve = PlanarCurve(points=database_curves[self._database_curve_id])
         signature_comparison = self._planar_curves_signature_comparator.compare_signatures(curve1=query_curve, curve2=database_curve)
         data = {
             'curves_file_name': [self._curves_file_name],
@@ -127,7 +103,6 @@ class PlanarCurvesShapeMatchingEvaluatorTask(ParallelProcessingTask):
             'database_curve_id': [self._database_curve_id],
             'signature_comparison': [signature_comparison]
         }
-
         self._df = pandas.DataFrame(data=data)
 
     def _post_process(self):
@@ -167,6 +142,15 @@ class PlanarCurvesShapeMatchingEvaluator(TaskParallelProcessor):
     def df(self) -> pandas.DataFrame:
         return self._df
 
+    def get_evaluation_score(self) -> float:
+        return self._df['signature_comparison'].mean()
+    #
+    # def _get_states_to_remove(self) -> List[str]:
+    #     return ['_planar_curves_signature_comparator']
+
+    # def _get_args(self) -> List[object]:
+    #     return [self._planar_curves_signature_comparator]
+
     def _generate_tasks(self) -> List[ParallelProcessingTask]:
         tasks = []
         curve_ids = list(range(self._curves_count_per_collection))
@@ -177,8 +161,8 @@ class PlanarCurvesShapeMatchingEvaluator(TaskParallelProcessor):
             [self._benchmark_dir_path],
             self._sampling_ratios,
             self._multimodalities,
-            self._group_names,
-            [self._planar_curves_signature_comparator]]))
+            self._group_names],
+            [self._planar_curves_signature_comparator]))
 
         for combination in combinations:
             tasks.append(PlanarCurvesShapeMatchingEvaluatorTask(
@@ -195,7 +179,6 @@ class PlanarCurvesShapeMatchingEvaluator(TaskParallelProcessor):
 
     def _post_start(self):
         super()._post_start()
-
         df_list = []
         for completed_task in self._completed_tasks:
             completed_task = cast(typ=PlanarCurvesShapeMatchingEvaluatorTask, val=completed_task)

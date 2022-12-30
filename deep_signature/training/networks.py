@@ -38,50 +38,148 @@ class BYOL(torch.nn.Module):
         return z
 
 
+
+
+
 class DeepSignaturesNet(torch.nn.Module):
     def __init__(self, sample_points: int, in_features_size: int, out_features_size: int, hidden_layer_repetitions: int, create_activation_fn: Callable[[int], torch.nn.Module], create_batch_norm_fn: Callable[[int], torch.nn.Module], dropout_p: float = None):
-        super().__init__()
-        self._sample_points = sample_points
-        self._in_features_size = in_features_size
-        self._out_features_size = out_features_size
-        self._hidden_layer_repetitions = hidden_layer_repetitions
-        self._create_activation_fn = create_activation_fn
-        self._create_batch_norm_fn = create_batch_norm_fn
-        self._dropout_p = dropout_p
-        self._regressor = self._create_regressor()
+        super(DeepSignaturesNet, self).__init__()
+        self._L = 4
+        # self._regressor = DifferentialInvariantsNet._create_regressor(in_features=2*sample_points*2*self._L)
+        self._regressor = DeepSignaturesNet._create_regressor(in_features=2*sample_points)
+        # self._regressor = DifferentialInvariantsNet._create_regressor(in_features=9*sample_points)
 
     def forward(self, in_features):
-        x = in_features.reshape([in_features.shape[0] * in_features.shape[1], in_features.shape[2] * in_features.shape[3]])
-        output = self._regressor(x).reshape([in_features.shape[0], in_features.shape[1], 2])
+        # x = in_features.reshape([in_features.shape[0] * in_features.shape[1], in_features.shape[2] * in_features.shape[3]])
+        # coeffs = torch.pow(2, torch.linspace(0, self._L-1, steps=self._L)).repeat_interleave(2).cuda()
+        # x2 = x.unsqueeze(-1).expand(x.shape[0], x.shape[1], 2*self._L)
+        # x3 = x2 * coeffs * numpy.pi
+        # for i in range(2*self._L):
+        #     if i % 2 == 0:
+        #         x3[:, :, i] = torch.sin(x3[:, :, i])
+        #     else:
+        #         x3[:, :, i] = torch.cos(x3[:, :, i])
+        #
+        # x4 = x3.reshape([x3.shape[0], x3.shape[1] * x3.shape[2]])
+        #
+        # regressor_output = self._regressor(x4)
+        # output = regressor_output.reshape([in_features.shape[0], in_features.shape[1], 2])
+
+        # x = in_features[:, :, :, 0]
+        # y = in_features[:, :, :, 1]
+        # x2 = x * x
+        # y2 = y * y
+        # xy = x * y
+        # x3 = x * x * x
+        # y3 = y * y * y
+        # xxy = x * x * y
+        # xyy = x * y * y
+        #
+        # extended_in_features = torch.stack((x, y, x2, y2, xy, x3, y3, xxy, xyy), dim=-1)
+        # z = extended_in_features.reshape([extended_in_features.shape[0] * extended_in_features.shape[1], extended_in_features.shape[2] * extended_in_features.shape[3]])
+        # output = self._regressor(z).reshape([in_features.shape[0], in_features.shape[1], 2])
+
+
+        z = in_features.reshape([in_features.shape[0] * in_features.shape[1], in_features.shape[2] * in_features.shape[3]])
+        output = self._regressor(z).reshape([in_features.shape[0], in_features.shape[1], 2])
+
         return output
 
-    def _create_regressor(self):
+    @staticmethod
+    def _create_regressor(in_features):
         linear_modules = []
-        in_features_size = 2 * self._sample_points
-        out_features_size = self._in_features_size
-        while out_features_size > 2:
-            for _ in range(self._hidden_layer_repetitions):
-                linear_modules.extend(self._create_hidden_layer(in_features_size=in_features_size, out_features_size=out_features_size))
-            in_features_size = out_features_size
-            out_features_size = int(out_features_size / 2)
+        in_features = in_features
+        out_features = 64
+        p = None
+        while out_features > 2:
+            linear_modules.extend(DeepSignaturesNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+            linear_modules.extend(DeepSignaturesNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+            # linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=out_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+            in_features = out_features
+            out_features = int(out_features / 2)
 
-        linear_modules.append(torch.nn.Linear(in_features=in_features_size, out_features=2))
+        # for _ in range(7):
+        #     linear_modules.extend(DifferentialInvariantsNet._create_hidden_layer(in_features=in_features, out_features=out_features, p=p, use_batch_norm=True, weights_init=None))
+        #     in_features = out_features
+
+        linear_modules.append(torch.nn.Linear(in_features=in_features, out_features=2))
+
         return torch.nn.Sequential(*linear_modules)
 
-    def _create_hidden_layer(self, in_features_size: int, out_features_size: int):
+    @staticmethod
+    def _create_hidden_layer(in_features, out_features, p=None, use_batch_norm=False, weights_init=None):
         linear_modules = []
-        linear_module = torch.nn.Linear(in_features=in_features_size, out_features=out_features_size)
+        linear_module = torch.nn.Linear(in_features=in_features, out_features=out_features)
+
         linear_modules.append(linear_module)
 
-        if self._create_batch_norm_fn is not None:
-            linear_modules.append(self._create_batch_norm_fn(out_features_size))
+        if use_batch_norm:
+            # linear_modules.append(DBN(num_features=out_features, num_groups=1))
+            linear_modules.append(torch.nn.BatchNorm1d(out_features))
 
-        linear_modules.append(self._create_activation_fn(out_features_size))
+        # linear_modules.append(Sine())
+        linear_modules.append(torch.nn.ReLU())
+        # linear_modules.append(torch.nn.PReLU(num_parameters=out_features))
 
-        if self._dropout_p is not None:
-            linear_modules.append(torch.nn.Dropout(p=self._dropout_p))
+        if p is not None:
+            linear_modules.append(torch.nn.Dropout(p))
 
         return linear_modules
+
+
+
+
+
+
+
+# class DeepSignaturesNet(torch.nn.Module):
+#     def __init__(self, sample_points: int, in_features_size: int, out_features_size: int, hidden_layer_repetitions: int, create_activation_fn: Callable[[int], torch.nn.Module], create_batch_norm_fn: Callable[[int], torch.nn.Module], dropout_p: float = None):
+#         super().__init__()
+#         self._sample_points = sample_points
+#         self._in_features_size = in_features_size
+#         self._out_features_size = out_features_size
+#         self._hidden_layer_repetitions = hidden_layer_repetitions
+#         # self._create_activation_fn = create_activation_fn
+#         # self._create_batch_norm_fn = create_batch_norm_fn
+#         self._dropout_p = dropout_p
+#         self._regressor = self._create_regressor(create_activation_fn=create_activation_fn, create_batch_norm_fn=create_batch_norm_fn)
+#
+#     # def __getstate__(self):
+#     #     d = dict(self.__dict__)
+#     #     del d['_create_activation_fn']
+#     #     del d['_create_batch_norm_fn']
+#     #     return d
+#
+#     def forward(self, in_features):
+#         x = in_features.reshape([in_features.shape[0] * in_features.shape[1], in_features.shape[2] * in_features.shape[3]])
+#         output = self._regressor(x).reshape([in_features.shape[0], in_features.shape[1], 2])
+#         return output
+#
+#     def _create_regressor(self, create_activation_fn: Callable[[int], torch.nn.Module], create_batch_norm_fn: Callable[[int], torch.nn.Module]):
+#         linear_modules = []
+#         in_features_size = 2 * self._sample_points
+#         out_features_size = self._in_features_size
+#         while out_features_size > 2:
+#             for i in range(self._hidden_layer_repetitions):
+#                 linear_modules.extend(self._create_hidden_layer(in_features_size=in_features_size if i == 0 else out_features_size, out_features_size=out_features_size, create_activation_fn=create_activation_fn, create_batch_norm_fn=create_batch_norm_fn))
+#
+#             in_features_size = out_features_size
+#             out_features_size = int(out_features_size / 2)
+#
+#         linear_modules.append(torch.nn.Linear(in_features=in_features_size, out_features=2))
+#         return torch.nn.Sequential(*linear_modules)
+#
+#     def _create_hidden_layer(self, in_features_size: int, out_features_size: int, create_activation_fn: Callable[[int], torch.nn.Module], create_batch_norm_fn: Callable[[int], torch.nn.Module]):
+#         linear_modules = []
+#         linear_module = torch.nn.Linear(in_features=in_features_size, out_features=out_features_size)
+#         linear_modules.append(linear_module)
+#         linear_modules.append(create_batch_norm_fn(out_features_size))
+#         linear_modules.append(create_activation_fn(out_features_size))
+#
+#         if self._dropout_p is not None:
+#             linear_modules.append(torch.nn.Dropout(p=self._dropout_p))
+#
+#         return linear_modules
 
 
 class DeepSignaturesNetBYOL(torch.nn.Module):

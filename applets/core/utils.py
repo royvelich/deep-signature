@@ -1,11 +1,14 @@
 # python peripherals
-from typing import TypeVar, Type
+from typing import TypeVar, Type, Union
 from pathlib import Path
 import shutil
 from datetime import datetime
 
 # tap
 from tap import Tap
+
+# wandb
+import wandb
 
 # git
 import git
@@ -35,18 +38,27 @@ def save_codebase(dir_path: Path):
     shutil.copytree(src=codebase_source_dir_path, dst=codebase_destination_dir_path, symlinks=True, ignore=shutil.ignore_patterns('.git', '.idea', '__pycache__'))
 
 
-def init_app(typed_argument_parser_class: Type[T]) -> T:
-    parser = typed_argument_parser_class().parse_args()
-    SeedableObject.set_seed(seed=parser.seed)
-
+def _init_app(config: Union[wandb.Config, AppArgumentParser]) -> Path:
+    SeedableObject.set_seed(seed=config.seed)
     datetime_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    parser.results_base_dir_path = parser.results_base_dir_path / Path(datetime_string)
-
-    save_tap(
-        dir_path=parser.results_base_dir_path,
-        typed_argument_parser=parser)
+    results_base_dir_path = Path(config.results_base_dir_path) / Path(datetime_string)
 
     save_codebase(
-        dir_path=parser.results_base_dir_path)
+        dir_path=results_base_dir_path)
 
-    return parser
+    return results_base_dir_path
+
+
+def init_app_tap(parser: AppArgumentParser) -> Path:
+    results_base_dir_path = _init_app(config=parser)
+
+    save_tap(
+        dir_path=results_base_dir_path,
+        typed_argument_parser=parser)
+
+    return results_base_dir_path
+
+
+def init_app_wandb(wandb_config: wandb.Config) -> Path:
+    results_base_dir_path = _init_app(config=wandb_config)
+    return results_base_dir_path

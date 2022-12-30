@@ -119,7 +119,11 @@ def generate_batch_loss_text(epoch_index: int, batch_index: int, batch_loss: flo
     tab = '\t'
     fill = " "
     align = "<"
-    return f'{tab*indentation} - [Epoch {epoch_index:{fill}{align}{index_padding}} | Batch {batch_index:{fill}{align}{index_padding}} / {batch_count}]: Batch Loss = {batch_loss:{fill}{align}{loss_padding}}, Avg. Batch Loss = {average_batch_loss:{fill}{align}{loss_padding}}, Batch Duration: {batch_duration} sec.'
+    return f'{tab*indentation} - [Epoch {epoch_index+1:{fill}{align}{index_padding}} | Batch {batch_index+1:{fill}{align}{index_padding}} / {batch_count}]: Batch Loss = {batch_loss:{fill}{align}{loss_padding}}, Avg. Batch Loss = {average_batch_loss:{fill}{align}{loss_padding}}, Batch Duration: {batch_duration} sec.'
+
+
+def generate_epoch_text(epoch_index: int, epoch_name: str) -> str:
+    return f'{epoch_name} Epoch #{epoch_index}'
 
 
 #######################################

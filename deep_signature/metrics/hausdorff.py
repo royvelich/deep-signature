@@ -9,7 +9,7 @@ import numpy
 import numba
 
 
-@numba.jit(nopython=True, fastmath=True)
+# @numba.jit(nopython=True, fastmath=True)
 def _get_min_distance(point: numpy.ndarray, subset: numpy.ndarray, max_distance: float, distance_function: Callable[[numpy.ndarray, numpy.ndarray], float]) -> Optional[float]:
 	min_distance = numpy.inf
 	for i in range(subset.shape[0]):
@@ -22,7 +22,7 @@ def _get_min_distance(point: numpy.ndarray, subset: numpy.ndarray, max_distance:
 	return min_distance
 
 
-@numba.jit(nopython=True, fastmath=True)
+# @numba.jit(nopython=True, fastmath=True)
 def _get_max_min_distance(subset1: numpy.ndarray, subset2: numpy.ndarray, max_distance: Optional[float], distance_function: Callable[[numpy.ndarray, numpy.ndarray], float]) -> float:
 	if max_distance is None:
 		max_distance = 0.0
@@ -35,7 +35,7 @@ def _get_max_min_distance(subset1: numpy.ndarray, subset2: numpy.ndarray, max_di
 	return max_distance
 
 
-@numba.jit(nopython=True, fastmath=True)
+# @numba.jit(nopython=True, fastmath=True)
 def manhattan(subset1: numpy.ndarray, subset2: numpy.ndarray) -> float:
 	n = subset1.shape[0]
 	ret = 0.
@@ -44,7 +44,7 @@ def manhattan(subset1: numpy.ndarray, subset2: numpy.ndarray) -> float:
 	return ret
 
 
-@numba.jit(nopython=True, fastmath=True)
+# @numba.jit(nopython=True, fastmath=True)
 def euclidean(subset1: numpy.ndarray, subset2: numpy.ndarray) -> float:
 	n = subset1.shape[0]
 	ret = 0.
@@ -53,7 +53,7 @@ def euclidean(subset1: numpy.ndarray, subset2: numpy.ndarray) -> float:
 	return sqrt(ret)
 
 
-@numba.jit(nopython=True, fastmath=True)
+# @numba.jit(nopython=True, fastmath=True)
 def chebyshev(subset1: numpy.ndarray, subset2: numpy.ndarray) -> float:
 	n = subset1.shape[0]
 	ret = -1*numpy.inf
@@ -64,7 +64,7 @@ def chebyshev(subset1: numpy.ndarray, subset2: numpy.ndarray) -> float:
 	return ret
 
 
-@numba.jit(nopython=True, fastmath=True)
+# @numba.jit(nopython=True, fastmath=True)
 def cosine(subset1: numpy.ndarray, subset2: numpy.ndarray) -> float:
 	n = subset1.shape[0]
 	xy_dot = 0.
@@ -77,7 +77,7 @@ def cosine(subset1: numpy.ndarray, subset2: numpy.ndarray) -> float:
 	return 1.-xy_dot/(sqrt(x_norm)*sqrt(y_norm))
 
 
-@numba.jit(nopython=True, fastmath=True)
+# @numba.jit(nopython=True, fastmath=True)
 def haversine(array_x: numpy.ndarray, array_y: numpy.ndarray) -> float:
 	R = 6378.0
 	radians = numpy.pi / 180.0
@@ -91,7 +91,7 @@ def haversine(array_x: numpy.ndarray, array_y: numpy.ndarray) -> float:
 	return R * 2 * asin(sqrt(a))
 
 
-@numba.jit(nopython=True, fastmath=True)
+# @numba.jit(nopython=True, fastmath=True)
 def hausdorff_distance(subset1: numpy.ndarray, subset2: numpy.ndarray, distance_function: Callable[[numpy.ndarray, numpy.ndarray], float]) -> float:
 	max_min_distance1 = _get_max_min_distance(subset1=subset1, subset2=subset2, max_distance=None, distance_function=distance_function)
 	max_min_distance2 = _get_max_min_distance(subset1=subset2, subset2=subset1, max_distance=max_min_distance1, distance_function=distance_function)

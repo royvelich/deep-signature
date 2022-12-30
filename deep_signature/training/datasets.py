@@ -2,6 +2,8 @@
 import numpy
 from abc import abstractmethod
 import random
+from pathlib import Path
+from typing import Optional
 
 # torch
 from torch.utils.data import Dataset
@@ -11,12 +13,12 @@ from deep_signature.manifolds.planar_curves.implementation import PlanarCurvesMa
 from deep_signature.core.discrete_distributions import MultimodalGaussianDiscreteDistribution
 from deep_signature.manifolds.planar_curves.groups import Group
 from deep_signature.core.base import SeedableObject
+from deep_signature.core.parallel_processing import InfiniteOnlineParallelProcessor, GetItemPolicy
 
 
 class TupletsDataset(Dataset, SeedableObject):
-    def __init__(self, planar_curves_manager: PlanarCurvesManager, group: Group, dataset_size: int):
-        super(Dataset, self).__init__()
-        super(SeedableObject, self).__init__()
+    def __init__(self, planar_curves_manager: PlanarCurvesManager, group: Group, dataset_size: int, **kw: object):
+        super().__init__(**kw)
         self._planar_curves_manager = planar_curves_manager
         self._group = group
         self._dataset_size = dataset_size
@@ -25,13 +27,38 @@ class TupletsDataset(Dataset, SeedableObject):
         return self._dataset_size
 
     @abstractmethod
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         pass
 
 
-class CurveNeighborhoodTupletsDataset(TupletsDataset):
-    def __init__(self, planar_curves_manager: PlanarCurvesManager, group: Group, dataset_size: int, supporting_points_count: int, negative_examples_count: int, min_sampling_ratio: float, max_sampling_ratio: float, min_multimodality: int, max_multimodality: int, min_negative_example_offset: int, max_negative_example_offset: int):
-        super().__init__(planar_curves_manager=planar_curves_manager, group=group, dataset_size=dataset_size)
+class CurveNeighborhoodTupletsDataset(InfiniteOnlineParallelProcessor, TupletsDataset):
+    def __init__(
+            self,
+            planar_curves_manager: PlanarCurvesManager,
+            group: Group,
+            dataset_size: int,
+            supporting_points_count: int,
+            negative_examples_count: int,
+            min_sampling_ratio: float,
+            max_sampling_ratio: float,
+            min_multimodality: int,
+            max_multimodality: int,
+            min_negative_example_offset: int,
+            max_negative_example_offset: int,
+            log_dir_path: Path,
+            num_workers: int,
+            items_queue_maxsize: int,
+            items_buffer_size: int,
+            get_item_policy: GetItemPolicy):
+        super().__init__(
+            planar_curves_manager=planar_curves_manager,
+            group=group,
+            dataset_size=dataset_size,
+            log_dir_path=log_dir_path,
+            num_workers=num_workers,
+            items_queue_maxsize=items_queue_maxsize,
+            items_buffer_size=items_buffer_size,
+            get_item_policy=get_item_policy)
         self._supporting_points_count = supporting_points_count
         self._negative_examples_count = negative_examples_count
         self._min_sampling_ratio = min_sampling_ratio
@@ -41,7 +68,7 @@ class CurveNeighborhoodTupletsDataset(TupletsDataset):
         self._min_negative_example_offset = min_negative_example_offset
         self._max_negative_example_offset = max_negative_example_offset
 
-    def __getitem__(self, index):
+    def _generate_item(self, item_id: Optional[int]) -> object:
         tuplet = []
         planar_curve = self._planar_curves_manager.get_random_planar_curve()
         center_point_index = planar_curve.get_random_point_index()

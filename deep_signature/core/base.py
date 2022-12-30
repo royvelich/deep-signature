@@ -25,7 +25,7 @@ class SeedableObject:
         random.seed(seed)
         SeedableObject._rng = numpy.random.default_rng(seed=seed)
 
-    def __init__(self, seed: Optional[int] = None):
+    def __init__(self, seed: Optional[int] = None, **kw: object):
         if seed is None:
             self._rng = SeedableObject._rng
         else:

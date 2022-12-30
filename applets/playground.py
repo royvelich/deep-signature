@@ -1,4 +1,5 @@
 import numpy
+import torch
 
 from deep_signature.core.discrete_distributions import MultimodalGaussianDiscreteDistribution
 from deep_signature.manifolds.planar_curves.implementation import PlanarCurve
@@ -30,6 +31,8 @@ class MyClass:
 
 
 if __name__ == '__main__':
+
+    bla = torch.tensor([1,2,3])
 
     a = [1,2,3,4,5]
     b = a[:2]
