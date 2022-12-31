@@ -30,21 +30,21 @@ parameters:
     max_negative_example_offset:
       value: 100
     training_dataset_size:
-      value: 100000
+      value: 1000
     validation_dataset_size:
-      value: 20000
+      value: 1000
     training_items_buffer_size:
-      value: 100000
+      value: 1000
     validation_items_buffer_size:
-      value: 20000
+      value: 1000
     training_items_queue_maxsize:
-      value: 200000
+      value: 2000
     validation_items_queue_maxsize:
-      value: 200000
+      value: 2000
     training_num_workers:
-      value: 10
+      value: 3
     validation_num_workers:
-      value: 5
+      value: 3
     evaluation_num_workers:
       value: 2
     evaluation_benchmark_dir_path:
@@ -60,9 +60,9 @@ parameters:
     epochs:
       value: 100
     training_batch_size:
-      value: 100000
+      value: 1000
     validation_batch_size:
-      value: 20000
+      value: 1000
     learning_rate:
       values: [0.1, 0.01, 0.001]
     checkpoint_rate:

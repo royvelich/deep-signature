@@ -22,7 +22,7 @@ from lightly.loss import NegativeCosineSimilarity
 # deep-signature
 from deep_signature.core.base import LoggerObject
 from deep_signature.core import utils
-from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesShapeMatchingEvaluator
+from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesShapeMatchingEvaluator, PlanarCurvesQualitativeEvaluator
 
 
 class EpochProcessor(Protocol):
@@ -44,7 +44,8 @@ class ModelTrainer(LoggerObject):
             optimizer: torch.optim.Optimizer,
             train_dataset: torch.utils.data.Dataset,
             validation_dataset: torch.utils.data.Dataset,
-            evaluator: PlanarCurvesShapeMatchingEvaluator,
+            shape_matching_evaluator: PlanarCurvesShapeMatchingEvaluator,
+            qualitative_evaluator: PlanarCurvesQualitativeEvaluator,
             epochs: int,
             training_batch_size: int,
             validation_batch_size: int,
@@ -58,7 +59,8 @@ class ModelTrainer(LoggerObject):
         self._optimizer = optimizer
         self._train_dataset = train_dataset
         self._validation_dataset = validation_dataset
-        self._evaluator = evaluator
+        self._shape_matching_evaluator = shape_matching_evaluator
+        self._qualitative_evaluator = qualitative_evaluator
         self._epochs = epochs
         self._training_batch_size = training_batch_size
         self._validation_batch_size = validation_batch_size
@@ -73,8 +75,7 @@ class ModelTrainer(LoggerObject):
         self._validation_indices = list(range(self._validation_dataset_size))
         self._train_batches_per_epoch = utils.calculate_batches_per_epoch(dataset_size=self._train_dataset_size, batch_size=self._training_batch_size)
         self._validation_batches_per_epoch = utils.calculate_batches_per_epoch(dataset_size=self._validation_dataset_size, batch_size=self._validation_batch_size)
-        # self._device = device
-        # self._model.to(device)
+        self._device = device
 
     def train(self):
         self._pre_train()
@@ -101,22 +102,21 @@ class ModelTrainer(LoggerObject):
         self._results_dir_path.mkdir(parents=True, exist_ok=True)
 
     def _train(self):
-        self._model.cuda()
         best_evaluation_score = 0.0
         train_sampler = SubsetRandomSampler(self._train_indices)
         validation_sampler = SubsetRandomSampler(self._validation_indices)
         train_data_loader = DataLoader(self._train_dataset, batch_size=self._training_batch_size, sampler=train_sampler, pin_memory=True, drop_last=True, num_workers=self._num_workers)
         validation_data_loader = DataLoader(self._validation_dataset, batch_size=self._validation_batch_size, sampler=validation_sampler, pin_memory=True, drop_last=True, num_workers=self._num_workers)
         for epoch_index in range(self._epochs):
+            self._model = self._model.to(self._device)
             train_epoch_results = self._process_epoch(epoch_index=epoch_index, data_loader=train_data_loader, epoch_name='Train', epoch_processor=self._train_epoch)
             validation_epoch_results = self._process_epoch(epoch_index=epoch_index, data_loader=validation_data_loader, epoch_name='Validation', epoch_processor=self._validation_epoch)
 
             # if epoch_index % self._checkpoint_rate == 0:
-            #     self._model.eval()
             #     self._model.cpu()
-            #     self._evaluator.start()
-            #     self._evaluator.join()
-            #     evaluation_score = self._evaluator.get_evaluation_score()
+            #     self._shape_matching_evaluator.start()
+            #     self._shape_matching_evaluator.join()
+            #     evaluation_score = self._shape_matching_evaluator.get_evaluation_score()
             #     if evaluation_score > best_evaluation_score:
             #         best_evaluation_score = evaluation_score
             #         torch.save(self._model.state_dict(), self._model_file_path)
@@ -129,12 +129,14 @@ class ModelTrainer(LoggerObject):
             #
             # latest_model_file_path = self._create_model_file_path(epoch_index=epoch_index)
             # torch.save(self._model.state_dict(), latest_model_file_path)
-            #
+            images = self._qualitative_evaluator.evaluate_curves()
+
             # wandb.log({
             #     'train_loss': train_epoch_results['loss'],
             #     'validation_loss': validation_epoch_results['loss'],
             #     # 'best_evaluation_score': best_evaluation_score,
             #     # 'evaluation_score': evaluation_score,
+            #     'images': [wandb.Image(image) for image in images],
             #     'epoch': epoch_index
             # })
 

@@ -16,11 +16,22 @@ import pandas
 import torch
 import torch.nn
 
+# matplotlib
+import matplotlib
+import matplotlib.axes
+import matplotlib.figure
+
+# PIL
+import PIL
+from PIL import Image
+
 # deep_signature
 from deep_signature.manifolds.planar_curves.implementation import PlanarCurve
 from deep_signature.core.parallel_processing import TaskParallelProcessor, ParallelProcessingTask
 from deep_signature.manifolds.planar_curves.generation import ShapeMatchingBenchmarkCurvesGeneratorTask
 from deep_signature.metrics import hausdorff
+from deep_signature.manifolds.planar_curves.groups import Group
+from deep_signature.manifolds.planar_curves.implementation import PlanarCurvesManager
 
 
 # =================================================
@@ -33,7 +44,7 @@ class PlanarCurvesSignatureComparator(ABC):
     def compare_signatures(self, curve1: PlanarCurve, curve2: PlanarCurve) -> float:
         curve1_signature = self._calculate_signature(curve=curve1)
         curve2_signature = self._calculate_signature(curve=curve2)
-        return hausdorff.hausdorff_distance(subset1=curve1_signature, subset2=curve2_signature, distance_function=hausdorff.euclidean)
+        return hausdorff.avg_hausdorff_distance(subset1=curve1_signature, subset2=curve2_signature, distance_function=hausdorff.euclidean)
 
     @abstractmethod
     def _calculate_signature(self, curve: PlanarCurve) -> numpy.ndarray:
@@ -190,3 +201,80 @@ class PlanarCurvesShapeMatchingEvaluator(TaskParallelProcessor):
 
     def _post_join(self):
         pass
+
+
+# # =================================================
+# # PlanarCurvesEvaluationPlotter Class
+# # =================================================
+# class PlanarCurvesEvaluationPlotter(ABC):
+#     def __init__(self):
+#         super().__init__()
+#
+#     @abstractmethod
+#     def plot_evaluation(self) -> List[Image]:
+#         pass
+#
+#
+# # =================================================
+# # PlanarCurvesEvaluationPlotter Class
+# # =================================================
+# class PlanarCurvesSignatureEvaluationPlotter(PlanarCurvesEvaluationPlotter):
+#     def __init__(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device):
+#         self._model = model
+#         self._supporting_points_count = supporting_points_count
+#         self._device = device
+#         super().__init__()
+#
+#     def plot_evaluation(self) -> Image:
+
+
+# =================================================
+# PlanarCurvesQualitativeEvaluator Class
+# =================================================
+class PlanarCurvesQualitativeEvaluator(ABC):
+    def __init__(self, curves_count: int):
+        self._curves_count = curves_count
+
+    @abstractmethod
+    def evaluate_curves(self) -> List[Image]:
+        pass
+
+
+# =================================================
+# PlanarCurvesQualitativeEvaluator Class
+# =================================================
+class PlanarCurvesSignatureQualitativeEvaluator(PlanarCurvesQualitativeEvaluator):
+    def __init__(
+            self,
+            curves_count: int,
+            model: torch.nn.Module,
+            supporting_points_count: int,
+            planar_curves_manager: PlanarCurvesManager,
+            group: Group):
+        super().__init__(curves_count=curves_count)
+        self._model = model
+        self._supporting_points_count = supporting_points_count
+        self._planar_curves_manager = planar_curves_manager
+        self._group = group
+        self._curves = []
+        for i in range(self._curves_count):
+            curve = self._planar_curves_manager.get_random_planar_curve()
+            self._curves.append(curve)
+
+    def evaluate_curves(self) -> List[Image]:
+        device = torch.device('cpu')
+        images = []
+        for curve in self._curves:
+            fig, axes = matplotlib.pyplot.subplots(nrows=4, ncols=1, figsize=(20, 40))
+            axes[0].set_title(label='Curve', fontsize=30)
+            axes[1].set_title(label='K', fontsize=30)
+            axes[2].set_title(label='dK/ds', fontsize=30)
+            axes[3].set_title(label='K vs. dK/ds', fontsize=30)
+            curve.plot_scattered_curve(ax=axes[0])
+            curve.plot_scattered_signature(model=self._model, supporting_points_count=self._supporting_points_count, device=device, ax=axes[1:])
+
+            # fig.canvas.draw()
+            # image = PIL.Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
+            # images.append(image)
+        matplotlib.pyplot.show()
+        return images

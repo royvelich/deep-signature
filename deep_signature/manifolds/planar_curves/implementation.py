@@ -517,6 +517,30 @@ class PlanarCurve(SeedableObject):
         y = self._points[:, 1]
         deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=y, ax=ax, line_width=line_width, alpha=alpha, cmap=cmap, zorder=zorder)
 
+    def plot_scattered_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], point_size: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):
+        signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
+        x = numpy.array(list(range(signature.shape[0])))
+        kappa = signature[:, 0]
+        kappa_s = signature[:, 1]
+        c = numpy.linspace(0.0, 1.0, signature.shape[0])
+        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa, ax=ax[0], alpha=alpha, zorder=zorder)
+        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa_s, ax=ax[1], alpha=alpha, zorder=zorder)
+        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=kappa, y=kappa_s, c=c, ax=ax[2], point_size=point_size, alpha=alpha, cmap=cmap, zorder=zorder)
+
+    # def plot_curve_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, point_size: float = 2, alpha: float = 1):
+    #     fig, axes = matplotlib.pyplot.subplots(nrows=4, ncols=1, figsize=(40, 10))
+    #     invariant = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
+    #     self.plot_scattered_curve(ax=axes[0], point_size=point_size, cmap='red')
+    #     self.plot_scattered_curve(ax=axes[0], point_size=point_size, cmap='red')
+    #     self.plot_scattered_curve(ax=axes[0], point_size=point_size, cmap='red')
+
+        # discrete_distribution = discrete_distributions.MultimodalGaussianDiscreteDistribution(bins_count=planar_curve.points_count, multimodality=10)
+        # # discrete_distribution = discrete_distributions.UniformDiscreteDistribution(bins_count=planar_curve.points_count)
+        # discrete_distribution.plot_dist(ax=axes[0])
+        # sampled_planar_curve = planar_curve.sample_curve(sampling_ratio=sampling_ratio, discrete_distribution=discrete_distribution)
+        # sampled_planar_curve.plot_scattered_curve(ax=axes[1], cmap='hsv')
+        # matplotlib.pyplot.show()
+
 
 # =================================================
 # PlanarCurvesManager Class

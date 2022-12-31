@@ -35,6 +35,15 @@ def _get_max_min_distance(subset1: numpy.ndarray, subset2: numpy.ndarray, max_di
 	return max_distance
 
 
+def _get_avg_min_distance(subset1: numpy.ndarray, subset2: numpy.ndarray, distance_function: Callable[[numpy.ndarray, numpy.ndarray], float]) -> float:
+	min_distances = numpy.array([])
+	for i in range(subset1.shape[0]):
+		min_distance = _get_min_distance(point=subset1[i, :], subset=subset2, max_distance=0.0, distance_function=distance_function)
+		min_distances = numpy.append(min_distances, min_distance)
+
+	return min_distances.mean()
+
+
 # @numba.jit(nopython=True, fastmath=True)
 def manhattan(subset1: numpy.ndarray, subset2: numpy.ndarray) -> float:
 	n = subset1.shape[0]
@@ -96,3 +105,9 @@ def hausdorff_distance(subset1: numpy.ndarray, subset2: numpy.ndarray, distance_
 	max_min_distance1 = _get_max_min_distance(subset1=subset1, subset2=subset2, max_distance=None, distance_function=distance_function)
 	max_min_distance2 = _get_max_min_distance(subset1=subset2, subset2=subset1, max_distance=max_min_distance1, distance_function=distance_function)
 	return max_min_distance2
+
+
+def avg_hausdorff_distance(subset1: numpy.ndarray, subset2: numpy.ndarray, distance_function: Callable[[numpy.ndarray, numpy.ndarray], float]) -> float:
+	avg_min_distance1 = _get_avg_min_distance(subset1=subset1, subset2=subset2, distance_function=distance_function)
+	avg_min_distance2 = _get_avg_min_distance(subset1=subset2, subset2=subset1, distance_function=distance_function)
+	return numpy.array([avg_min_distance1, avg_min_distance2]).mean()

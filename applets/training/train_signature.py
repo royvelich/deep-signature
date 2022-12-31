@@ -20,13 +20,14 @@ from deep_signature.training.activations import Sine
 from deep_signature.training.losses import DifferentialInvariantsLoss
 from deep_signature.training.trainers import ModelTrainer
 from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesApproximatedSignatureComparator
-from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesShapeMatchingEvaluator
+from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesShapeMatchingEvaluator, PlanarCurvesSignatureQualitativeEvaluator
 from deep_signature.core.parallel_processing import GetItemPolicy
 
 
 class TrainSignatureArgumentParser(AppArgumentParser):
     training_curves_file_path: Path
     validation_curves_file_path: Path
+    test_curves_file_path: Path
     group_name: str
     supporting_points_count: int
     negative_examples_count: int
@@ -88,6 +89,9 @@ def main():
 
     validation_planar_curves_manager = PlanarCurvesManager(curves_file_path=wandb_config.validation_curves_file_path)
     validation_group = Group.from_group_name(name=wandb_config.group_name, min_det=wandb_config.validation_min_det, max_det=wandb_config.validation_max_det, min_cond=wandb_config.validation_min_cond, max_cond=wandb_config.validation_max_cond)
+
+    test_planar_curves_manager = PlanarCurvesManager(curves_file_path=wandb_config.test_curves_file_path)
+    test_group = Group.from_group_name(name=wandb_config.group_name, min_det=wandb_config.validation_min_det, max_det=wandb_config.validation_max_det, min_cond=wandb_config.validation_min_cond, max_cond=wandb_config.validation_max_cond)
 
     validation_dataset = CurveNeighborhoodTupletsDataset(
         planar_curves_manager=validation_planar_curves_manager,
@@ -158,7 +162,7 @@ def main():
         supporting_points_count=wandb_config.supporting_points_count,
         device=torch.device('cpu'))
 
-    evaluator = PlanarCurvesShapeMatchingEvaluator(
+    shape_matching_evaluator = PlanarCurvesShapeMatchingEvaluator(
         log_dir_path=results_dir_path,
         num_workers=wandb_config.evaluation_num_workers,
         curves_count_per_collection=wandb_config.evaluation_curves_count_per_collection,
@@ -169,6 +173,13 @@ def main():
         group_names=[wandb_config.group_name],
         planar_curves_signature_comparator=comparator)
 
+    qualitative_evaluator = PlanarCurvesSignatureQualitativeEvaluator(
+        curves_count=5,
+        model=model,
+        supporting_points_count=wandb_config.supporting_points_count,
+        planar_curves_manager=test_planar_curves_manager,
+        group=test_group)
+
     model_trainer = ModelTrainer(
         results_dir_path=results_dir_path,
         model=model,
@@ -176,7 +187,8 @@ def main():
         optimizer=optimizer,
         train_dataset=training_dataset,
         validation_dataset=validation_dataset,
-        evaluator=evaluator,
+        shape_matching_evaluator=shape_matching_evaluator,
+        qualitative_evaluator=qualitative_evaluator,
         epochs=wandb_config.epochs,
         training_batch_size=wandb_config.training_batch_size,
         validation_batch_size=wandb_config.validation_batch_size,
@@ -189,4 +201,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # wandb.agent('gip-technion/deep-signatures/1qqd5w9w', function=main, count=1)
+    # wandb.agent('gip-technion/deep-signatures/7w43lskj', function=main, count=1)

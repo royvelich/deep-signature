@@ -32,6 +32,9 @@ class MyClass:
 
 if __name__ == '__main__':
 
+    bla = numpy.array([[1,1],[2,2],[3,3],[4,4],[5,5]])
+
+
     bla = torch.tensor([1,2,3])
 
     a = [1,2,3,4,5]
