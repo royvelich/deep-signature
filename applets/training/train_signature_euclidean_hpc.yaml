@@ -3,14 +3,6 @@ method: random
 parameters:
     seed:
       value: 42
-    results_base_dir_path:
-      value: '/data/training'
-    training_curves_file_path:
-      value: '/data/curves/train/2022-12-31-15-12-51/curves.npy'
-    validation_curves_file_path:
-      value: '/data/curves/validation/2022-12-31-13-06-53/curves.npy'
-    test_curves_file_path:
-      value: '/data/curves/test/2022-12-31-13-36-14/curves.npy'
     group_name:
       value: 'euclidean'
     supporting_points_count:
@@ -45,14 +37,6 @@ parameters:
       value: 100000
     validation_batch_size:
       value: 20000
-    training_num_workers:
-      value: 10
-    validation_num_workers:
-      value: 10
-    evaluation_num_workers:
-      value: 60
-    evaluation_benchmark_dir_path:
-      value: "/data/curves/benchmark/2022-12-29-22-02-03"
     evaluation_curves_count_per_collection:
       value: 10
     evaluation_curve_collections_file_names:

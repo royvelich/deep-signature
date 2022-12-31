@@ -2,7 +2,7 @@
 from pathlib import Path
 
 # applets
-from applets.core.utils import AppArgumentParser, init_app_tap
+from applets.core.utils import AppArgumentParser, init_app
 
 # deep-signature
 from deep_signature.manifolds.planar_curves.generation import SilhouetteLevelCurvesGenerator
@@ -18,7 +18,7 @@ class GeneratePlanarCurvesFromSilhouettesArgumentParser(AppArgumentParser):
 
 if __name__ == '__main__':
     parser = GeneratePlanarCurvesFromSilhouettesArgumentParser().parse_args()
-    results_dir_path = init_app_tap(parser=parser)
+    results_dir_path = init_app(parser=parser)
 
     silhouette_level_curves_generator = SilhouetteLevelCurvesGenerator(
         log_dir_path=results_dir_path,

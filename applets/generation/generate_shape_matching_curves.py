@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 # applets
-from applets.core.utils import AppArgumentParser, init_app_tap
+from applets.core.utils import AppArgumentParser, init_app
 
 # deep-signature
 from deep_signature.manifolds.planar_curves import groups
@@ -27,7 +27,7 @@ class GenerateShapeMatchingBenchmarkCurvesArgumentParser(AppArgumentParser):
 
 if __name__ == '__main__':
     parser = GenerateShapeMatchingBenchmarkCurvesArgumentParser().parse_args()
-    results_dir_path = init_app_tap(parser=parser)
+    results_dir_path = init_app(parser=parser)
 
     group_list = []
     for group_name in parser.groups:

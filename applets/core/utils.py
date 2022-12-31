@@ -38,19 +38,13 @@ def save_codebase(dir_path: Path):
     shutil.copytree(src=codebase_source_dir_path, dst=codebase_destination_dir_path, symlinks=True, ignore=shutil.ignore_patterns('.git', '.idea', '__pycache__'))
 
 
-def _init_app(config: Union[wandb.Config, AppArgumentParser]) -> Path:
-    SeedableObject.set_seed(seed=config.seed)
+def init_app(parser: AppArgumentParser) -> Path:
+    SeedableObject.set_seed(seed=parser.seed)
     datetime_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    results_base_dir_path = Path(config.results_base_dir_path) / Path(datetime_string)
+    results_base_dir_path = Path(parser.results_base_dir_path) / Path(datetime_string)
 
     save_codebase(
         dir_path=results_base_dir_path)
-
-    return results_base_dir_path
-
-
-def init_app_tap(parser: AppArgumentParser) -> Path:
-    results_base_dir_path = _init_app(config=parser)
 
     save_tap(
         dir_path=results_base_dir_path,
@@ -59,6 +53,16 @@ def init_app_tap(parser: AppArgumentParser) -> Path:
     return results_base_dir_path
 
 
-def init_app_wandb(wandb_config: wandb.Config) -> Path:
-    results_base_dir_path = _init_app(config=wandb_config)
-    return results_base_dir_path
+# def init_app_tap(parser: AppArgumentParser) -> Path:
+#     results_base_dir_path = _init_app(config=parser)
+#
+#     save_tap(
+#         dir_path=results_base_dir_path,
+#         typed_argument_parser=parser)
+#
+#     return results_base_dir_path
+#
+#
+# def init_app_wandb(wandb_config: wandb.Config) -> Path:
+#     results_base_dir_path = _init_app(config=wandb_config)
+#     return results_base_dir_path

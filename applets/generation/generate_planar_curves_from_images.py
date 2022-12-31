@@ -3,7 +3,7 @@ from typing import List, Optional
 from pathlib import Path
 
 # deep-signature
-from applets.core.utils import AppArgumentParser, init_app_tap
+from applets.core.utils import AppArgumentParser, init_app
 from deep_signature.manifolds.planar_curves.generation import ImageLevelCurvesGenerator
 
 
@@ -25,7 +25,7 @@ class GeneratePlanarCurvesFromImagesArgumentParser(AppArgumentParser):
 
 if __name__ == '__main__':
     parser = GeneratePlanarCurvesFromImagesArgumentParser().parse_args()
-    results_dir_path = init_app_tap(parser=parser)
+    results_dir_path = init_app(parser=parser)
 
     image_level_curves_generator = ImageLevelCurvesGenerator(
         log_dir_path=results_dir_path,
