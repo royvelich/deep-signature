@@ -1,5 +1,5 @@
 # python peripheral
-from typing import Tuple
+from typing import Tuple, Optional, Union
 
 # numpy
 import numpy
@@ -9,6 +9,12 @@ import matplotlib
 import matplotlib.pyplot
 import matplotlib.collections
 import matplotlib.axes
+
+
+def plot_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes.Axes, line_width: [float] = 2, line_style: str = '-', alpha: float = 1.0, color: str = 'red', zorder: int = 1):
+    ax.set_xlim(left=numpy.min(x), right=numpy.max(x))
+    ax.set_ylim(bottom=numpy.min(y), top=numpy.max(y))
+    ax.plot(x, y, linewidth=line_width, linestyle=line_style, alpha=alpha, color=color, zorder=zorder)
 
 
 # https://nbviewer.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
