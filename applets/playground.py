@@ -42,7 +42,10 @@ if __name__ == '__main__':
 
     ax[0].plot(bla[:, 0], bla[:, 1], marker='.', linestyle='-', linewidth=4, c='r')
 
+
+
     plt.show()
+    plt.close(fig)
     j = 6
 
     # bla = torch.tensor([1,2,3])

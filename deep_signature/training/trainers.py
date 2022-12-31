@@ -7,6 +7,7 @@ from pathlib import Path
 from timeit import default_timer as timer
 from typing import Protocol, Dict, List, Union
 
+import pandas
 # wandb
 import wandb
 
@@ -102,13 +103,15 @@ class ModelTrainer(LoggerObject):
         self._results_dir_path.mkdir(parents=True, exist_ok=True)
 
     def _train(self):
+        accumulated_shape_matching_df = pandas.DataFrame()
+        best_shape_matching_df = pandas.DataFrame()
         best_evaluation_score = 0.0
         train_sampler = SubsetRandomSampler(self._train_indices)
         validation_sampler = SubsetRandomSampler(self._validation_indices)
         train_data_loader = DataLoader(self._train_dataset, batch_size=self._training_batch_size, sampler=train_sampler, pin_memory=True, drop_last=True, num_workers=self._num_workers)
         validation_data_loader = DataLoader(self._validation_dataset, batch_size=self._validation_batch_size, sampler=validation_sampler, pin_memory=True, drop_last=True, num_workers=self._num_workers)
         for epoch_index in range(self._epochs):
-            self._model = self._model.to(self._device)
+            self._model.cuda()
             train_epoch_results = self._process_epoch(epoch_index=epoch_index, data_loader=train_data_loader, epoch_name='Train', epoch_processor=self._train_epoch)
             validation_epoch_results = self._process_epoch(epoch_index=epoch_index, data_loader=validation_data_loader, epoch_name='Validation', epoch_processor=self._validation_epoch)
             latest_model_file_path = self._create_model_file_path(epoch_index=epoch_index)
@@ -122,25 +125,29 @@ class ModelTrainer(LoggerObject):
             }
 
             if epoch_index % self._checkpoint_rate == 0:
-                self._model.cpu()
+                # self._model.cpu()
                 self._shape_matching_evaluator.start()
                 self._shape_matching_evaluator.join()
                 evaluation_score = self._shape_matching_evaluator.get_evaluation_score()
+                shape_matching_df = self._shape_matching_evaluator.shape_matching_df.copy()
+                shape_matching_df['epoch'] = epoch_index
+                accumulated_shape_matching_df = pandas.concat([accumulated_shape_matching_df, shape_matching_df])
+
                 if evaluation_score > best_evaluation_score:
+                    best_shape_matching_df = shape_matching_df
                     best_evaluation_score = evaluation_score
                     torch.save(self._model.state_dict(), self._model_file_path)
 
-                shape_matching_df = self._shape_matching_evaluator.shape_matching_df.copy()
-                shape_matching_df['epoch'] = epoch_index
                 evaluation_log_dict = {
                     'best_evaluation_score': best_evaluation_score,
                     'evaluation_score': evaluation_score,
-                    'shape_matching_df': wandb.Table(dataframe=shape_matching_df)
+                    'accumulated_shape_matching_df': wandb.Table(dataframe=accumulated_shape_matching_df),
+                    'best_shape_matching_df': wandb.Table(dataframe=best_shape_matching_df),
                 }
 
                 log_dict = log_dict | evaluation_log_dict
 
-            wandb.log(log_dict)
+            # wandb.log(log_dict)
 
     def _post_train(self):
         pass

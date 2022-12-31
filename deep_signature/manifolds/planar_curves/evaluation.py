@@ -201,7 +201,7 @@ class PlanarCurvesShapeMatchingEvaluator(TaskParallelProcessor):
             completed_task = cast(typ=PlanarCurvesShapeMatchingEvaluatorTask, val=completed_task)
             df_list.append(completed_task.df)
         self._df = pandas.concat(df_list).reset_index()
-        self._max_scores_df = self._df.loc[self._df.groupby(['curves_file_name', 'sampling_ratio', 'multimodality', 'group', 'query_curve_id'])['score'].idxmax()]
+        self._max_scores_df = self._df.loc[self._df.groupby(['curves_file_name', 'sampling_ratio', 'multimodality', 'group', 'query_curve_id'])['score'].idxmin()]
         self._max_scores_df['match'] = (self._max_scores_df['query_curve_id'] == self._max_scores_df['database_curve_id']).astype(int)
         self._shape_matching_df = self._max_scores_df.groupby(['curves_file_name', 'sampling_ratio', 'multimodality', 'group'])['match'].mean().reset_index()
 
@@ -288,5 +288,6 @@ class PlanarCurvesSignatureQualitativeEvaluator(PlanarCurvesQualitativeEvaluator
             fig.canvas.draw()
             image = PIL.Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
             images.append(image)
+            matplotlib.pyplot.close(fig)
         # matplotlib.pyplot.show()
         return images

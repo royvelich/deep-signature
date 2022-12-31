@@ -152,6 +152,7 @@ def main():
         create_batch_norm_fn=create_batch_norm_fn,
         dropout_p=None)
 
+    model = torch.nn.DataParallel(model)
     model.share_memory()
 
     loss_fn = DifferentialInvariantsLoss()
@@ -201,4 +202,4 @@ def main():
 
 if __name__ == '__main__':
     # main()
-    wandb.agent('gip-technion/deep-signatures/fuoo4sjo', function=main, count=1)
+    wandb.agent('gip-technion/deep-signatures/z1nloanv', function=main, count=1)
