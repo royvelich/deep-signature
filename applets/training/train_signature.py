@@ -78,11 +78,11 @@ os.environ["WANDB_CONFIG_DIR"] = "C:/sweeps/config_dir"
 
 
 def main():
-    # wandb.init()
-    # wandb_config = wandb.config
-    # results_dir_path = init_app_wandb(wandb_config=wandb_config)
-    wandb_config = TrainSignatureArgumentParser().parse_args()
-    results_dir_path = init_app_tap(parser=wandb_config)
+    wandb.init()
+    wandb_config = wandb.config
+    results_dir_path = init_app_wandb(wandb_config=wandb_config)
+    # wandb_config = TrainSignatureArgumentParser().parse_args()
+    # results_dir_path = init_app_tap(parser=wandb_config)
 
     training_planar_curves_manager = PlanarCurvesManager(curves_file_path=wandb_config.training_curves_file_path)
     training_group = Group.from_group_name(name=wandb_config.group_name, min_det=wandb_config.training_min_det, max_det=wandb_config.training_max_det, min_cond=wandb_config.training_min_cond, max_cond=wandb_config.training_max_cond)
@@ -200,5 +200,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
-    # wandb.agent('gip-technion/deep-signatures/7w43lskj', function=main, count=1)
+    # main()
+    wandb.agent('gip-technion/deep-signatures/fuoo4sjo', function=main, count=1)

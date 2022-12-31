@@ -41,28 +41,28 @@ parameters:
       value: 2000
     validation_items_queue_maxsize:
       value: 2000
+    training_batch_size:
+      value: 1000
+    validation_batch_size:
+      value: 1000
     training_num_workers:
       value: 3
     validation_num_workers:
       value: 3
     evaluation_num_workers:
-      value: 2
+      value: 4
     evaluation_benchmark_dir_path:
       value: "C:/deep-signature-data-new/curves/benchmark/2022-12-29-22-02-03"
     evaluation_curves_count_per_collection:
       value: 2
     evaluation_curve_collections_file_names:
-      value: ["cats", "cacti"]
+      value: ["wings", "whales", "trees"]
     evaluation_sampling_ratios:
-      value: [0.6, 0.7, 0.8]
+      value: [0.7, 0.8, 0.9]
     evaluation_multimodality:
       value: 5
     epochs:
       value: 100
-    training_batch_size:
-      value: 1000
-    validation_batch_size:
-      value: 1000
     learning_rate:
       values: [0.1, 0.01, 0.001]
     checkpoint_rate:

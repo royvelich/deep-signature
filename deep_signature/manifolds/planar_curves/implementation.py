@@ -523,8 +523,9 @@ class PlanarCurve(SeedableObject):
         kappa = signature[:, 0]
         kappa_s = signature[:, 1]
         c = numpy.linspace(0.0, 1.0, signature.shape[0])
-        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa, ax=ax[0], alpha=alpha, zorder=zorder)
-        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa_s, ax=ax[1], alpha=alpha, zorder=zorder)
+        line_style = ''
+        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa, ax=ax[0], line_style=line_style, alpha=alpha, zorder=zorder)
+        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, alpha=alpha, zorder=zorder)
         deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=kappa, y=kappa_s, c=c, ax=ax[2], point_size=point_size, alpha=alpha, cmap=cmap, zorder=zorder)
 
     # def plot_curve_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, point_size: float = 2, alpha: float = 1):

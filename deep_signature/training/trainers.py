@@ -111,34 +111,36 @@ class ModelTrainer(LoggerObject):
             self._model = self._model.to(self._device)
             train_epoch_results = self._process_epoch(epoch_index=epoch_index, data_loader=train_data_loader, epoch_name='Train', epoch_processor=self._train_epoch)
             validation_epoch_results = self._process_epoch(epoch_index=epoch_index, data_loader=validation_data_loader, epoch_name='Validation', epoch_processor=self._validation_epoch)
-
-            # if epoch_index % self._checkpoint_rate == 0:
-            #     self._model.cpu()
-            #     self._shape_matching_evaluator.start()
-            #     self._shape_matching_evaluator.join()
-            #     evaluation_score = self._shape_matching_evaluator.get_evaluation_score()
-            #     if evaluation_score > best_evaluation_score:
-            #         best_evaluation_score = evaluation_score
-            #         torch.save(self._model.state_dict(), self._model_file_path)
-            #
-            #     wandb.log({
-            #         'best_evaluation_score': best_evaluation_score,
-            #         'evaluation_score': evaluation_score,
-            #         'epoch': epoch_index
-            #     })
-            #
-            # latest_model_file_path = self._create_model_file_path(epoch_index=epoch_index)
-            # torch.save(self._model.state_dict(), latest_model_file_path)
+            latest_model_file_path = self._create_model_file_path(epoch_index=epoch_index)
+            torch.save(self._model.state_dict(), latest_model_file_path)
             images = self._qualitative_evaluator.evaluate_curves()
+            log_dict = {
+                'train_loss': train_epoch_results['loss'],
+                'validation_loss': validation_epoch_results['loss'],
+                'images': [wandb.Image(image) for image in images],
+                'epoch': epoch_index
+            }
 
-            # wandb.log({
-            #     'train_loss': train_epoch_results['loss'],
-            #     'validation_loss': validation_epoch_results['loss'],
-            #     # 'best_evaluation_score': best_evaluation_score,
-            #     # 'evaluation_score': evaluation_score,
-            #     'images': [wandb.Image(image) for image in images],
-            #     'epoch': epoch_index
-            # })
+            if epoch_index % self._checkpoint_rate == 0:
+                self._model.cpu()
+                self._shape_matching_evaluator.start()
+                self._shape_matching_evaluator.join()
+                evaluation_score = self._shape_matching_evaluator.get_evaluation_score()
+                if evaluation_score > best_evaluation_score:
+                    best_evaluation_score = evaluation_score
+                    torch.save(self._model.state_dict(), self._model_file_path)
+
+                shape_matching_df = self._shape_matching_evaluator.shape_matching_df.copy()
+                shape_matching_df['epoch'] = epoch_index
+                evaluation_log_dict = {
+                    'best_evaluation_score': best_evaluation_score,
+                    'evaluation_score': evaluation_score,
+                    'shape_matching_df': wandb.Table(dataframe=shape_matching_df)
+                }
+
+                log_dict = log_dict | evaluation_log_dict
+
+            wandb.log(log_dict)
 
     def _post_train(self):
         pass

@@ -104,7 +104,7 @@ class PlanarCurvesShapeMatchingEvaluatorTask(ParallelProcessingTask):
         query_curve = PlanarCurve(points=query_curves[self._query_curve_id])
         database_curves = numpy.load(file=str(database_curves_file_path), allow_pickle=True)
         database_curve = PlanarCurve(points=database_curves[self._database_curve_id])
-        signature_comparison = self._planar_curves_signature_comparator.compare_signatures(curve1=query_curve, curve2=database_curve)
+        score = self._planar_curves_signature_comparator.compare_signatures(curve1=query_curve, curve2=database_curve)
         data = {
             'curves_file_name': [self._curves_file_name],
             'sampling_ratio': [self._sampling_ratio],
@@ -112,7 +112,7 @@ class PlanarCurvesShapeMatchingEvaluatorTask(ParallelProcessingTask):
             'group': [self._group_name],
             'query_curve_id': [self._query_curve_id],
             'database_curve_id': [self._database_curve_id],
-            'signature_comparison': [signature_comparison]
+            'score': [score]
         }
         self._df = pandas.DataFrame(data=data)
 
@@ -147,14 +147,20 @@ class PlanarCurvesShapeMatchingEvaluator(TaskParallelProcessor):
         self._group_names = group_names
         self._planar_curves_signature_comparator = planar_curves_signature_comparator
         self._df = pandas.DataFrame()
+        self._max_scores_df = pandas.DataFrame()
+        self._shape_matching_df = pandas.DataFrame()
         super().__init__(log_dir_path=log_dir_path, num_workers=num_workers)
 
     @property
     def df(self) -> pandas.DataFrame:
         return self._df
 
+    @property
+    def shape_matching_df(self) -> pandas.DataFrame:
+        return self._shape_matching_df
+
     def get_evaluation_score(self) -> float:
-        return self._df['signature_comparison'].mean()
+        return self._shape_matching_df['match'].mean()
     #
     # def _get_states_to_remove(self) -> List[str]:
     #     return ['_planar_curves_signature_comparator']
@@ -194,7 +200,10 @@ class PlanarCurvesShapeMatchingEvaluator(TaskParallelProcessor):
         for completed_task in self._completed_tasks:
             completed_task = cast(typ=PlanarCurvesShapeMatchingEvaluatorTask, val=completed_task)
             df_list.append(completed_task.df)
-        self._df = pandas.concat(df_list)
+        self._df = pandas.concat(df_list).reset_index()
+        self._max_scores_df = self._df.loc[self._df.groupby(['curves_file_name', 'sampling_ratio', 'multimodality', 'group', 'query_curve_id'])['score'].idxmax()]
+        self._max_scores_df['match'] = (self._max_scores_df['query_curve_id'] == self._max_scores_df['database_curve_id']).astype(int)
+        self._shape_matching_df = self._max_scores_df.groupby(['curves_file_name', 'sampling_ratio', 'multimodality', 'group'])['match'].mean().reset_index()
 
     def _pre_join(self):
         pass
@@ -265,16 +274,19 @@ class PlanarCurvesSignatureQualitativeEvaluator(PlanarCurvesQualitativeEvaluator
         device = torch.device('cpu')
         images = []
         for curve in self._curves:
-            fig, axes = matplotlib.pyplot.subplots(nrows=4, ncols=1, figsize=(20, 40))
+            fig, axes = matplotlib.pyplot.subplots(nrows=4, ncols=1, figsize=(10, 20))
             axes[0].set_title(label='Curve', fontsize=30)
             axes[1].set_title(label='K', fontsize=30)
             axes[2].set_title(label='dK/ds', fontsize=30)
             axes[3].set_title(label='K vs. dK/ds', fontsize=30)
+            for ax in axes:
+                ax.tick_params(axis='both', which='major', labelsize=20)
+                ax.tick_params(axis='both', which='minor', labelsize=20)
             curve.plot_scattered_curve(ax=axes[0])
             curve.plot_scattered_signature(model=self._model, supporting_points_count=self._supporting_points_count, device=device, ax=axes[1:])
 
-            # fig.canvas.draw()
-            # image = PIL.Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
-            # images.append(image)
-        matplotlib.pyplot.show()
+            fig.canvas.draw()
+            image = PIL.Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
+            images.append(image)
+        # matplotlib.pyplot.show()
         return images
