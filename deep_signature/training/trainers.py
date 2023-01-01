@@ -52,7 +52,8 @@ class ModelTrainer(LoggerObject):
             validation_batch_size: int,
             num_workers: int,
             checkpoint_rate: int,
-            device: torch.device):
+            device: torch.device,
+            log_wandb: bool):
         super().__init__(log_dir_path=results_dir_path)
         self._results_dir_path = results_dir_path
         self._model = model
@@ -77,6 +78,7 @@ class ModelTrainer(LoggerObject):
         self._train_batches_per_epoch = utils.calculate_batches_per_epoch(dataset_size=self._train_dataset_size, batch_size=self._training_batch_size)
         self._validation_batches_per_epoch = utils.calculate_batches_per_epoch(dataset_size=self._validation_dataset_size, batch_size=self._validation_batch_size)
         self._device = device
+        self._log_wandb = log_wandb
 
     def train(self):
         self._pre_train()
@@ -147,7 +149,8 @@ class ModelTrainer(LoggerObject):
 
                 log_dict = log_dict | evaluation_log_dict
 
-            # wandb.log(log_dict)
+            if self._log_wandb is True:
+                wandb.log(log_dict)
 
     def _post_train(self):
         pass

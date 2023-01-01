@@ -3,14 +3,6 @@ method: random
 parameters:
     seed:
       value: 42
-    results_base_dir_path:
-      value: 'C:/deep-signature-data-new/training'
-    training_curves_file_path:
-      value: 'C:/deep-signature-data-new/curves/train/2022-12-20-02-02-52/curves.npy'
-    validation_curves_file_path:
-      value: 'C:/deep-signature-data-new/curves/validation/2022-12-20-09-02-36/curves.npy'
-    test_curves_file_path:
-      value: 'C:/deep-signature-data-new/curves/test/2022-12-30-23-10-33/curves.npy'
     group_name:
       value: 'euclidean'
     supporting_points_count:
@@ -30,41 +22,33 @@ parameters:
     max_negative_example_offset:
       value: 100
     training_dataset_size:
-      value: 1000
+      value: 100000
     validation_dataset_size:
-      value: 1000
+      value: 20000
     training_items_buffer_size:
-      value: 1000
+      value: 100000
     validation_items_buffer_size:
-      value: 1000
+      value: 20000
     training_items_queue_maxsize:
-      value: 2000
+      value: 200000
     validation_items_queue_maxsize:
-      value: 2000
+      value: 200000
     training_batch_size:
-      value: 1000
+      value: 100000
     validation_batch_size:
-      value: 1000
-    training_num_workers:
-      value: 3
-    validation_num_workers:
-      value: 3
-    evaluation_num_workers:
-      value: 4
-    evaluation_benchmark_dir_path:
-      value: "C:/deep-signature-data-new/curves/benchmark/2022-12-29-22-02-03"
+      value: 20000
     evaluation_curves_count_per_collection:
-      value: 2
+      value: 10
     evaluation_curve_collections_file_names:
-      value: ["wings", "whales", "trees"]
+      value: ["wings", "whales", "trees", "spiders", "signs", "shields", "shapes"]
     evaluation_sampling_ratios:
       value: [0.7, 0.8, 0.9]
     evaluation_multimodality:
       value: 5
     epochs:
-      value: 100
+      value: 200
     learning_rate:
-      values: [0.1, 0.01, 0.001]
+      values: [0.01, 0.001, 0.0001]
     checkpoint_rate:
       value: 10
     history_size:

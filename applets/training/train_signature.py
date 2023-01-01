@@ -82,6 +82,7 @@ class TrainSignatureArgumentParser(AppArgumentParser):
     training_num_workers: int
     validation_num_workers: int
     evaluation_num_workers: int
+    count: Optional[int] = None
     sweep_id: Optional[str] = None
     group_name: Optional[str] = None
     supporting_points_count: Optional[int] = None
@@ -248,13 +249,16 @@ def main():
         validation_batch_size=config.validation_batch_size,
         num_workers=0,
         checkpoint_rate=config.checkpoint_rate,
-        device=torch.device('cuda'))
+        device=torch.device('cuda'),
+        log_wandb=True if parser.sweep_id is not None else False)
 
     model_trainer.train()
+    training_dataset.stop()
+    training_dataset.join()
 
 
 if __name__ == '__main__':
     if parser.sweep_id is not None:
-        wandb.agent(f'gip-technion/deep-signatures/{parser.sweep_id}', function=main, count=1)
+        wandb.agent(parser.sweep_id, function=main, count=parser.count)
     else:
         main()

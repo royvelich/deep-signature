@@ -159,6 +159,7 @@ class TaskParallelProcessor(ParallelProcessorBase):
 
         self._logger.info(msg='Draining Queue')
         sentinels_count = 0
+        self._completed_tasks = []
         while True:
             completed_task = self._completed_tasks_queue.get()
             if completed_task is None:
