@@ -98,24 +98,23 @@ class PlanarCurvesShapeMatchingEvaluatorTask(ParallelProcessingTask):
         pass
 
     def _process(self, *argv):
-        print('HELLLOOOOOOOOOOOOOOOOOOOOOOO')
-        # query_curves_file_path = self._benchmark_dir_path / ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_file_path(curves_file_name=self._curves_file_name, sampling_ratio=self._sampling_ratio, multimodality=self._multimodality, group_name=self._group_name)
-        # database_curves_file_path = self._benchmark_dir_path / ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_file_path(curves_file_name=self._curves_file_name, sampling_ratio=1.0, multimodality=self._multimodality, group_name=self._group_name)
-        # query_curves = numpy.load(file=str(query_curves_file_path), allow_pickle=True)
-        # query_curve = PlanarCurve(points=query_curves[self._query_curve_id])
-        # database_curves = numpy.load(file=str(database_curves_file_path), allow_pickle=True)
-        # database_curve = PlanarCurve(points=database_curves[self._database_curve_id])
-        # score = self._planar_curves_signature_comparator.compare_signatures(curve1=query_curve, curve2=database_curve)
-        # data = {
-        #     'curves_file_name': [self._curves_file_name],
-        #     'sampling_ratio': [self._sampling_ratio],
-        #     'multimodality': [self._multimodality],
-        #     'group': [self._group_name],
-        #     'query_curve_id': [self._query_curve_id],
-        #     'database_curve_id': [self._database_curve_id],
-        #     'score': [score]
-        # }
-        # self._df = pandas.DataFrame(data=data)
+        query_curves_file_path = self._benchmark_dir_path / ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_file_path(curves_file_name=self._curves_file_name, sampling_ratio=self._sampling_ratio, multimodality=self._multimodality, group_name=self._group_name)
+        database_curves_file_path = self._benchmark_dir_path / ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_file_path(curves_file_name=self._curves_file_name, sampling_ratio=1.0, multimodality=self._multimodality, group_name=self._group_name)
+        query_curves = numpy.load(file=str(query_curves_file_path), allow_pickle=True)
+        query_curve = PlanarCurve(points=query_curves[self._query_curve_id])
+        database_curves = numpy.load(file=str(database_curves_file_path), allow_pickle=True)
+        database_curve = PlanarCurve(points=database_curves[self._database_curve_id])
+        score = self._planar_curves_signature_comparator.compare_signatures(curve1=query_curve, curve2=database_curve)
+        data = {
+            'curves_file_name': [self._curves_file_name],
+            'sampling_ratio': [self._sampling_ratio],
+            'multimodality': [self._multimodality],
+            'group': [self._group_name],
+            'query_curve_id': [self._query_curve_id],
+            'database_curve_id': [self._database_curve_id],
+            'score': [score]
+        }
+        self._df = pandas.DataFrame(data=data)
 
     def _post_process(self):
         pass

@@ -4,13 +4,13 @@ parameters:
     seed:
       value: 42
     group_name:
-      value: 'euclidean'
+      value: 'equiaffine'
     supporting_points_count:
       values: [3, 5, 7, 9]
     negative_examples_count:
       values: [2, 4]
     min_sampling_ratio:
-      value: 0.3
+      value: 0.2
     max_sampling_ratio:
       value: 0.9
     min_multimodality:
@@ -20,27 +20,27 @@ parameters:
     min_negative_example_offset:
       value: 20
     max_negative_example_offset:
-      value: 100
+      value: 60
     training_dataset_size:
-      value: 100000
+      value: 150000
     validation_dataset_size:
       value: 20000
     training_items_buffer_size:
-      value: 100000
+      value: 150000
     validation_items_buffer_size:
+      value: 20000
+    training_batch_size:
+      value: 150000
+    validation_batch_size:
       value: 20000
     training_items_queue_maxsize:
       value: 200000
     validation_items_queue_maxsize:
       value: 200000
-    training_batch_size:
-      value: 100000
-    validation_batch_size:
-      value: 20000
     evaluation_curves_count_per_collection:
       value: 10
     evaluation_curve_collections_file_names:
-      value: ["wings", "whales", "trees", "spiders", "signs", "shields", "shapes"]
+      value: ["wings", "whales", "trees", "signs", "shields", "shapes"]
     evaluation_sampling_ratios:
       value: [0.7, 0.8, 0.9]
     evaluation_multimodality:
@@ -50,7 +50,7 @@ parameters:
     learning_rate:
       values: [0.01, 0.001, 0.0001]
     checkpoint_rate:
-      value: 10
+      value: 20
     history_size:
       value: 800
     activation_fn:
