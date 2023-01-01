@@ -23,13 +23,13 @@ python ./applets/training/train_signature.py \
 --max_negative_example_offset 50 \
 --training_dataset_size 1000 \
 --validation_dataset_size 1000 \
---training_num_workers 10 \
---validation_num_workers 6 \
+--training_num_workers 5 \
+--validation_num_workers 5 \
 --validation_items_queue_maxsize 2000 \
 --training_items_queue_maxsize 2000 \
 --training_items_buffer_size 1000 \
 --validation_items_buffer_size 1000 \
---evaluation_num_workers 10 \
+--evaluation_num_workers 35 \
 --evaluation_benchmark_dir_path "/home/royve/data/curves/benchmark/2023-01-01-13-36-51" \
 --evaluation_curves_count_per_collection 10 \
 --evaluation_curve_collections_file_names "basketball" \
