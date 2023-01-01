@@ -206,7 +206,7 @@ def main():
         create_batch_norm_fn=create_batch_norm_fn,
         dropout_p=None)
 
-    # model = torch.nn.DataParallel(model)
+    model = torch.nn.DataParallel(model)
     model.share_memory()
 
     loss_fn = DifferentialInvariantsLoss()
