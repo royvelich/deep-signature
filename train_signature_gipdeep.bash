@@ -23,8 +23,8 @@ python ./applets/training/train_signature.py \
 --max_negative_example_offset 50 \
 --training_dataset_size 1000 \
 --validation_dataset_size 1000 \
---training_num_workers 5 \
---validation_num_workers 5 \
+--training_num_workers 2 \
+--validation_num_workers 2 \
 --validation_items_queue_maxsize 2000 \
 --training_items_queue_maxsize 2000 \
 --training_items_buffer_size 1000 \
