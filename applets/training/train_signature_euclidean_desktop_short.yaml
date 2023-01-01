@@ -1,4 +1,4 @@
-program: train_signature_euclidean_desktop
+program: train_signature
 method: random
 parameters:
     seed:
@@ -6,51 +6,51 @@ parameters:
     group_name:
       value: 'euclidean'
     supporting_points_count:
-      values: [3, 5, 7, 9]
+      values: [7]
     negative_examples_count:
-      values: [2, 4]
+      values: [2]
     min_sampling_ratio:
       value: 0.3
     max_sampling_ratio:
-      value: 0.9
+      value: 0.4
     min_multimodality:
       value: 5
     max_multimodality:
-      value: 15
+      value: 10
     min_negative_example_offset:
-      value: 20
+      value: 40
     max_negative_example_offset:
-      value: 100
+      value: 60
     training_dataset_size:
-      value: 100000
+      value: 150000
     validation_dataset_size:
       value: 20000
     training_items_buffer_size:
-      value: 100000
+      value: 150000
     validation_items_buffer_size:
       value: 20000
     training_items_queue_maxsize:
-      value: 200000
+      value: 300000
     validation_items_queue_maxsize:
-      value: 200000
+      value: 300000
     training_batch_size:
-      value: 100000
+      value: 150000
     validation_batch_size:
       value: 20000
     evaluation_curves_count_per_collection:
-      value: 10
+      value: 6
     evaluation_curve_collections_file_names:
-      value: ["wings", "whales", "trees", "spiders", "signs", "shields", "shapes"]
+      value: ["wings", "whales", "trees"]
     evaluation_sampling_ratios:
       value: [0.7, 0.8, 0.9]
     evaluation_multimodality:
       value: 5
     epochs:
-      value: 200
+      value: 1000
     learning_rate:
-      values: [0.01, 0.001, 0.0001]
+      values: [0.01]
     checkpoint_rate:
-      value: 10
+      value: 100
     history_size:
       value: 800
     activation_fn:
@@ -58,9 +58,9 @@ parameters:
     batch_norm_fn:
       value: "BatchNorm1d"
     in_features_size:
-      values: [64, 128, 256]
+      values: [64]
     hidden_layer_repetitions:
-      values: [1, 2, 3]
+      values: [2]
     training_min_det:
       value: 1
     training_max_det:
