@@ -282,12 +282,14 @@ class PlanarCurve(SeedableObject):
     def approximate_curve_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device) -> numpy.ndarray:
         local_signature = numpy.zeros([self.points_count, 2])
         curve_neighborhoods = self.extract_curve_neighborhoods(supporting_points_count=supporting_points_count)
-        module = model.module.to(device=device)
+        # module = model.module.to(device=device)
+        model = model.to(device=device)
         for i, curve_neighborhood in enumerate(curve_neighborhoods):
             curve_neighborhood.normalize_curve(force_ccw=False, force_endpoint=False)
             batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(curve_neighborhood.points), dim=0), dim=0).to(device)
             with torch.no_grad():
-                x = module(batch_data)
+                # x = module(batch_data)
+                x = model(batch_data)
                 local_signature[i, :] = torch.squeeze(torch.squeeze(x, dim=0), dim=0).cpu().detach().numpy()
 
         return local_signature
