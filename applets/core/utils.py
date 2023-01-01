@@ -43,8 +43,8 @@ def init_app(parser: AppArgumentParser) -> Path:
     datetime_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     results_base_dir_path = Path(parser.results_base_dir_path) / Path(datetime_string)
 
-    # save_codebase(
-    #     dir_path=results_base_dir_path)
+    save_codebase(
+        dir_path=results_base_dir_path)
 
     save_tap(
         dir_path=results_base_dir_path,
