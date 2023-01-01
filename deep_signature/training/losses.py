@@ -5,7 +5,7 @@ import itertools
 import torch
 
 # lightly
-from lightly.loss import NegativeCosineSimilarity
+# from lightly.loss import NegativeCosineSimilarity
 
 
 class CurvatureLoss(torch.nn.Module):

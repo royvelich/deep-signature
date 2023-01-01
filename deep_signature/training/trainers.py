@@ -1,11 +1,8 @@
 # python peripherals
-import os
 import numpy
-import itertools
-from datetime import datetime
 from pathlib import Path
 from timeit import default_timer as timer
-from typing import Protocol, Dict, List, Union
+from typing import Protocol, Dict, Union
 
 import pandas
 # wandb
@@ -14,11 +11,7 @@ import wandb
 # torch
 import torch
 from torch.utils.data import DataLoader
-from torch.utils.data import Dataset
-from torch.utils.data.sampler import SequentialSampler
 from torch.utils.data.sampler import SubsetRandomSampler
-from torch.utils.data.distributed import DistributedSampler
-from lightly.loss import NegativeCosineSimilarity
 
 # deep-signature
 from deep_signature.core.base import LoggerObject
@@ -131,6 +124,7 @@ class ModelTrainer(LoggerObject):
                 self._shape_matching_evaluator.start()
                 self._shape_matching_evaluator.join()
                 evaluation_score = self._shape_matching_evaluator.get_evaluation_score()
+                print(f'evaluation_score: {evaluation_score}')
                 shape_matching_df = self._shape_matching_evaluator.shape_matching_df.copy()
                 shape_matching_df['epoch'] = epoch_index
                 accumulated_shape_matching_df = pandas.concat([accumulated_shape_matching_df, shape_matching_df])

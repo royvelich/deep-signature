@@ -11,7 +11,7 @@ dependencies:
   - torchvision
   - cudatoolkit=11.3
 #  - ipython
-  - numpy
+  - numpy=1.22
   - scipy
   - scikit-learn
   - scikit-image
