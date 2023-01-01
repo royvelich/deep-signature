@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 from typing import Optional, Callable, List
+import multiprocessing
 
 # torch
 import torch
@@ -258,6 +259,7 @@ def main():
 
 
 if __name__ == '__main__':
+    multiprocessing.set_start_method('spawn')
     if parser.sweep_id is not None:
         wandb.agent(parser.sweep_id, function=main, count=parser.count)
     else:
