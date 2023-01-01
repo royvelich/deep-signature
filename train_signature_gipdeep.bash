@@ -29,7 +29,7 @@ python ./applets/training/train_signature.py \
 --training_items_queue_maxsize 450000 \
 --training_items_buffer_size 150000 \
 --validation_items_buffer_size 20000 \
---evaluation_num_workers 28 \
+--evaluation_num_workers 10 \
 --evaluation_benchmark_dir_path "/home/royve/data/curves/benchmark/2023-01-01-13-36-51" \
 --evaluation_curves_count_per_collection 10 \
 --evaluation_curve_collections_file_names "basketball" \
