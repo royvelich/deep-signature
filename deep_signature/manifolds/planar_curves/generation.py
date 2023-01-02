@@ -15,6 +15,7 @@ from tap import Tap
 
 # deep_signature
 from deep_signature.core import discrete_distributions
+from deep_signature.manifolds.planar_curves.groups import EuclideanGroup, SimilarityGroup, EquiaffineGroup, AffineGroup
 
 # skimage
 import skimage.io
@@ -376,13 +377,30 @@ class SilhouetteLevelCurvesGenerator(LevelCurvesGenerator):
 # ShapeMatchingBenchmarkCurvesGeneratorTask Class
 # =================================================
 class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
-    def __init__(self, curves_file_path: str, benchmark_base_dir_path: str, sampling_ratio: float, multimodality: int, group: Group, fig_size: Tuple[int, int], point_size: int):
+    def __init__(
+            self,
+            curves_file_path: str,
+            benchmark_base_dir_path: str,
+            sampling_ratio: float,
+            multimodality: int,
+            group_name: str,
+            min_cond: float,
+            max_cond: float,
+            min_det: float,
+            max_det: float,
+            fig_size: Tuple[int, int],
+            point_size: int):
         super().__init__()
         self._curves_file_path = curves_file_path
         self._benchmark_base_dir_path = benchmark_base_dir_path
         self._sampling_ratio = sampling_ratio
         self._multimodality = multimodality
-        self._group = group
+        self._group_name = group_name
+        self._min_cond = min_cond
+        self._max_cond = max_cond
+        self._min_det = min_det
+        self._max_det = max_det
+        self._group = self._create_group()
         self._sampled_planar_curves = []
         self._fig_size = fig_size
         self._point_size = point_size
@@ -394,6 +412,16 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
     @property
     def _curves_file_name(self) -> str:
         return Path(self._curves_file_path).stem
+
+    def _create_group(self) -> Group:
+        if self._group_name == 'euclidean':
+            return EuclideanGroup(seed=None)
+        if self._group_name == 'equiaffine':
+            return EquiaffineGroup(min_cond=self._min_cond, max_cond=self._max_cond, seed=None)
+        if self._group_name == 'similarity':
+            return SimilarityGroup(min_det=self._min_det, max_det=self._max_det, seed=None)
+        if self._group_name == 'affine':
+            return AffineGroup(min_cond=self._min_cond, max_cond=self._max_cond, min_det=self._min_det, max_det=self._max_det, seed=None)
 
     def _pre_process(self):
         pass
@@ -453,14 +481,22 @@ class ShapeMatchingBenchmarkCurvesGenerator(TaskParallelProcessor):
             benchmark_base_dir_path: Path,
             sampling_ratios: List[float],
             multimodalities: List[int],
-            groups: List[Group],
+            group_name: List[str],
+            min_cond: float,
+            max_cond: float,
+            min_det: float,
+            max_det: float,
             fig_size: Tuple[int, int],
             point_size: float):
         self._curves_base_dir_path = os.path.normpath(curves_base_dir_path)
         self._benchmark_base_dir_path = os.path.normpath(benchmark_base_dir_path)
         self._sampling_ratios = sampling_ratios
         self._multimodalities = multimodalities
-        self._groups = groups
+        self._group_names = group_name
+        self._min_cond = min_cond
+        self._max_cond = max_cond
+        self._min_det = min_det
+        self._max_det = max_det
         self._fig_size = fig_size
         self._point_size = point_size
         self._curves_file_paths = self._get_curve_file_paths()
@@ -473,7 +509,11 @@ class ShapeMatchingBenchmarkCurvesGenerator(TaskParallelProcessor):
             [self._benchmark_base_dir_path],
             self._sampling_ratios,
             self._multimodalities,
-            self._groups,
+            self._group_names,
+            [self._min_cond],
+            [self._max_cond],
+            [self._min_det],
+            [self._max_det],
             [self._fig_size],
             [self._point_size]]))
 
@@ -483,9 +523,13 @@ class ShapeMatchingBenchmarkCurvesGenerator(TaskParallelProcessor):
                 benchmark_base_dir_path=combination[1],
                 sampling_ratio=combination[2],
                 multimodality=combination[3],
-                group=combination[4],
-                fig_size=combination[5],
-                point_size=combination[6]))
+                group_name=combination[4],
+                min_cond=combination[5],
+                max_cond=combination[6],
+                min_det=combination[7],
+                max_det=combination[8],
+                fig_size=combination[9],
+                point_size=combination[10]))
 
         return tasks
 

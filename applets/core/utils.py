@@ -1,5 +1,5 @@
 # python peripherals
-from typing import TypeVar, Type, Union
+from typing import TypeVar, Type, Union, Optional
 from pathlib import Path
 import shutil
 from datetime import datetime
@@ -18,7 +18,7 @@ from deep_signature.core.base import SeedableObject
 
 
 class AppArgumentParser(Tap):
-    seed: int
+    seed: Optional[int] = None
     results_base_dir_path: Path
 
 

@@ -2,7 +2,8 @@
 import random
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
+from enum import Enum, auto
 
 # numpy
 import numpy
@@ -12,6 +13,10 @@ from deep_signature.core import utils
 
 # torch
 import torch
+
+
+class SeedType(Enum):
+    Global = auto()
 
 
 class SeedableObject:
@@ -25,8 +30,8 @@ class SeedableObject:
         random.seed(seed)
         SeedableObject._rng = numpy.random.default_rng(seed=seed)
 
-    def __init__(self, seed: Optional[int] = None, **kw: object):
-        if seed is None:
+    def __init__(self, seed: Union[Optional[int], SeedType] = SeedType.Global, **kw: object):
+        if seed == SeedType.Global:
             self._rng = SeedableObject._rng
         else:
             self._rng = numpy.random.default_rng(seed=seed)

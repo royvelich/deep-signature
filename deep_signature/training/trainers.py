@@ -214,8 +214,8 @@ class ModelTrainer(LoggerObject):
             'loss': torch.tensor(epoch_loss)
         }
 
-    def _create_model_file_path(self, epoch_index: Union[None, int]) -> Path:
-        if epoch_index is None:
+    def _create_model_file_path(self, epoch_index: Union[None, int] = None) -> Path:
+        if epoch_index is not None:
             model_file_name = f'model_{epoch_index}.pt'
         else:
             model_file_name = f'model.pt'
