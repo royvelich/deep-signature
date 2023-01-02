@@ -1,0 +1,24 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="train_signature_sweep" type="PythonConfigurationType" factoryName="Python">
+    <module name="deep-signature" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
+    </envs>
+    <option name="SDK_HOME" value="" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/applets/training" />
+    <option name="IS_MODULE_SDK" value="true" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/applets/training/train_signature.py" />
+    <option name="PARAMETERS" value="--seed 42 --results_base_dir_path &quot;$PROJECT_DIR$/../../deep-signature-data-new/training&quot; --training_curves_file_path &quot;$PROJECT_DIR$/../../deep-signature-data-new/curves/train/2022-12-31-15-12-51/curves.npy&quot; --validation_curves_file_path &quot;$PROJECT_DIR$/../../deep-signature-data-new/curves/validation/2022-12-31-13-06-53/curves.npy&quot; --test_curves_file_path &quot;$PROJECT_DIR$/../../deep-signature-data-new/curves/test/2022-12-31-13-36-14/curves.npy&quot; --evaluation_benchmark_dir_path &quot;$PROJECT_DIR$/../../deep-signature-data-new/curves/benchmark/2023-01-02-00-24-28&quot; --wandb_dir &quot;$PROJECT_DIR$/../../sweeps/output_dir&quot; --wandb_cache_dir &quot;$PROJECT_DIR$/../../sweeps/cache_dir&quot; --wandb_config_dir &quot;$PROJECT_DIR$/../../sweeps/config_dir&quot; --training_num_workers 8 --validation_num_workers 5 --evaluation_num_workers 11 --sweep_id gip-technion/deep-signatures-equiaffine/ehutffx9" />
+    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="EMULATE_TERMINAL" value="true" />
+    <option name="MODULE_MODE" value="false" />
+    <option name="REDIRECT_INPUT" value="false" />
+    <option name="INPUT_FILE" value="" />
+    <method v="2" />
+  </configuration>
+</component>
