@@ -518,7 +518,7 @@ class PlanarCurve(SeedableObject):
     def plot_lined_curve(self, ax: matplotlib.axes.Axes, line_width: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):
         x = self._points[:, 0]
         y = self._points[:, 1]
-        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=y, ax=ax, line_style='-', alpha=alpha, zorder=zorder)
+        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=y, ax=ax, line_style='-', marker='', alpha=alpha, zorder=zorder)
         # deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=y, ax=ax, line_width=line_width, alpha=alpha, cmap=cmap, zorder=zorder)
 
     def plot_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], line_style='', point_size: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):

@@ -105,7 +105,7 @@ class ModelTrainer(LoggerObject):
         validation_sampler = SubsetRandomSampler(self._validation_indices)
         train_data_loader = DataLoader(self._train_dataset, batch_size=self._training_batch_size, sampler=train_sampler, pin_memory=True, drop_last=True, num_workers=self._num_workers)
         validation_data_loader = DataLoader(self._validation_dataset, batch_size=self._validation_batch_size, sampler=validation_sampler, pin_memory=True, drop_last=True, num_workers=self._num_workers)
-        for epoch_index in range(self._epochs):
+        for epoch_index in range(1, self._epochs + 1):
             self._model.cuda()
             train_epoch_results = self._process_epoch(epoch_index=epoch_index, data_loader=train_data_loader, epoch_name='Train', epoch_processor=self._train_epoch)
             validation_epoch_results = self._process_epoch(epoch_index=epoch_index, data_loader=validation_data_loader, epoch_name='Validation', epoch_processor=self._validation_epoch)

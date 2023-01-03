@@ -13,7 +13,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/applets/generation/generate_shape_matching_curves.py" />
-    <option name="PARAMETERS" value="--seed 42 --curves_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/curves/silhouettes/2023-01-01-16-04-54 --results_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/curves/benchmark --sampling_ratios 1 0.9 0.8 0.7 0.6 0.5 --multimodalities 5 10 15 --group_names euclidean equiaffine affine --min_det 1.5 --max_det 3 --min_cond 1.5 --max_cond 3 --fig_size 10 10 --point_size 0.5 --num_workers 18" />
+    <option name="PARAMETERS" value="--seed 42 --curves_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/curves/silhouettes/2023-01-03-04-33-20 --results_base_dir_path $PROJECT_DIR$/../../deep-signature-data-new/curves/benchmark --sampling_ratios 1 0.9 0.8 0.7 0.6 0.5 --multimodalities 5 10 15 --group_names euclidean equiaffine affine --min_det 2 --max_det 2 --min_cond 2 --max_cond 2 --fig_size 10 10 --point_size 0.5 --num_workers 18" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="true" />
     <option name="MODULE_MODE" value="false" />

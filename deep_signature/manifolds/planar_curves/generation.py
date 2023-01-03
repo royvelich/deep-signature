@@ -310,7 +310,8 @@ class SilhouetteLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
     def _post_process(self):
         curves_file_path = os.path.normpath(os.path.join(self._curves_base_dir_path, f'{self.image_name}.npy'))
         Path(self._curves_base_dir_path).mkdir(parents=True, exist_ok=True)
-        numpy.save(file=curves_file_path, arr=self._curves, allow_pickle=True)
+        if len(self._curves) >= 30:
+            numpy.save(file=curves_file_path, arr=self._curves, allow_pickle=True)
 
     def _preprocess_image(self, image: numpy.ndarray) -> numpy.ndarray:
         image = cv2.copyMakeBorder(src=image, top=100, bottom=100, left=100, right=100, borderType=cv2.BORDER_CONSTANT, value=[255, 255, 255])
