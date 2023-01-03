@@ -283,7 +283,7 @@ class PlanarCurvesSignatureQualitativeEvaluator(PlanarCurvesQualitativeEvaluator
                 ax.tick_params(axis='both', which='major', labelsize=20)
                 ax.tick_params(axis='both', which='minor', labelsize=20)
             curve.plot_scattered_curve(ax=axes[0])
-            curve.plot_scattered_signature(model=self._model, supporting_points_count=self._supporting_points_count, device=device, ax=axes[1:])
+            curve.plot_signature(model=self._model, supporting_points_count=self._supporting_points_count, device=device, ax=axes[1:])
 
             fig.canvas.draw()
             image = PIL.Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())

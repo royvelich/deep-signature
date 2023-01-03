@@ -518,15 +518,15 @@ class PlanarCurve(SeedableObject):
     def plot_lined_curve(self, ax: matplotlib.axes.Axes, line_width: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):
         x = self._points[:, 0]
         y = self._points[:, 1]
-        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=y, ax=ax, line_width=line_width, alpha=alpha, cmap=cmap, zorder=zorder)
+        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=y, ax=ax, line_style='-', alpha=alpha, zorder=zorder)
+        # deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=y, ax=ax, line_width=line_width, alpha=alpha, cmap=cmap, zorder=zorder)
 
-    def plot_scattered_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], point_size: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):
+    def plot_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], line_style='', point_size: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):
         signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
         x = numpy.array(list(range(signature.shape[0])))
         kappa = signature[:, 0]
         kappa_s = signature[:, 1]
         c = numpy.linspace(0.0, 1.0, signature.shape[0])
-        line_style = ''
         deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa, ax=ax[0], line_style=line_style, alpha=alpha, zorder=zorder)
         deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, alpha=alpha, zorder=zorder)
         deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=kappa, y=kappa_s, c=c, ax=ax[2], point_size=point_size, alpha=alpha, cmap=cmap, zorder=zorder)

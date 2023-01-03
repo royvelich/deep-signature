@@ -123,12 +123,6 @@ import torch
 #
 #         return linear_modules
 
-
-
-
-
-
-
 class DeepSignaturesNet(torch.nn.Module):
     def __init__(self, sample_points: int, in_features_size: int, out_features_size: int, hidden_layer_repetitions: int, create_activation_fn: Callable[[int], torch.nn.Module], create_batch_norm_fn: Callable[[int], torch.nn.Module], dropout_p: float = None):
         super().__init__()

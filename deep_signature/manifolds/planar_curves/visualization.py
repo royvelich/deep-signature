@@ -14,11 +14,12 @@ import matplotlib.axes
 def plot_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes.Axes, line_width: float = 2, markersize: float = 2, line_style: str = '-',  marker: str = '.', alpha: float = 1.0, color: str = 'red', zorder: int = 1):
     ax.set_xlim(left=numpy.min(x), right=numpy.max(x))
     ax.set_ylim(bottom=numpy.min(y), top=numpy.max(y))
+    # ax.axis('equal')
     ax.plot(x, y, linestyle=line_style, linewidth=line_width, marker=marker, markersize=markersize, alpha=alpha, color=color, zorder=zorder)
 
 
 # https://nbviewer.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
-def plot_multicolor_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes.Axes, line_width: float = 2, alpha: float = 1.0, cmap: str = 'red', zorder: int = 1):
+def plot_multicolor_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes.Axes, line_width: float = 2, alpha: float = 1.0, cmap: str = 'hsv', zorder: int = 1):
     indices = list(range(x.shape[0]))
     z = numpy.linspace(0.0, 1.0, len(indices))
 
