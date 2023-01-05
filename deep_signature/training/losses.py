@@ -1,5 +1,6 @@
 # python peripherals
 import itertools
+from typing import Type, Callable
 
 # torch
 import torch
@@ -8,21 +9,47 @@ import torch
 # from lightly.loss import NegativeCosineSimilarity
 
 
-class CurvatureLoss(torch.nn.Module):
+class InvarianceLoss(torch.nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, output):
-        a = output[:, 0, :].unsqueeze(dim=1)
-        p = output[:, 1, :].unsqueeze(dim=1)
-        n = output[:, 2:, :]
-        a_p = (a - p).abs()
-        a_n = (a - n).abs()
+    def forward(self, anchor: torch.tensor, positive: torch.tensor, negative: torch.tensor):
+        anchor = anchor.unsqueeze(dim=1)
+        positive = positive.unsqueeze(dim=1)
+        a_p = torch.norm(input=anchor - positive, p=2, dim=2)
+        a_n = torch.norm(input=anchor - negative, p=2, dim=2)
         r = a_p - a_n
         exp_r = r.exp()
         s = exp_r.sum(dim=1) + 1
         s_log = s.log()
         return s_log.mean(dim=0)
+
+
+class OrthogonalityLoss(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, output: torch.tensor):
+        corr_loss = torch.zeros(output.shape[1])
+        for i in range(output.shape[1]):
+            corr_loss[i] = torch.norm(torch.corrcoef(output[:, i, :].transpose(0, 1)) - torch.eye(2).cuda())
+
+        return torch.mean(corr_loss)
+
+
+class DifferentialInvariantsLoss(torch.nn.Module):
+    def __init__(self, invariance_loss_fn: Callable[[], torch.nn.Module]):
+        super().__init__()
+        self._invariance_loss_fn = invariance_loss_fn()
+        self._orthogonality_loss_fn = OrthogonalityLoss()
+
+    def forward(self, output: torch.tensor):
+        anchor = output[:, 0, :]
+        positive = output[:, 1, :]
+        negative = output[:, 2:, :].squeeze(dim=1)
+        invariance_loss = self._invariance_loss_fn(anchor, positive, negative)
+        orthogonality_loss = self._orthogonality_loss_fn(output=output)
+        return invariance_loss + orthogonality_loss
 
 
 class ArcLengthLoss(torch.nn.Module):
@@ -237,72 +264,37 @@ class ArcLengthLoss(torch.nn.Module):
         # return loss_eval
 
 
-class DifferentialInvariantsLoss(torch.nn.Module):
-    def __init__(self):
-        super(DifferentialInvariantsLoss, self).__init__()
-        self._k_loss_fn = CurvatureLoss()
-        self._ks_loss_fn = CurvatureLoss()
-
-    def forward(self, output):
-        v_k = output[:, :, 0].unsqueeze(dim=2)
-        v_ks = output[:, :, 1].unsqueeze(dim=2)
-        # anchors_k = v_k[:, 0, :].squeeze()
-        # anchors_ks = v_ks[:, 0, :].squeeze()
-
-        k_loss = self._k_loss_fn(output=v_k)
-        ks_loss = self._ks_loss_fn(output=v_ks)
-        # cov_loss = torch.abs(torch.mean((anchors_k - anchors_k.mean())*(anchors_ks - anchors_ks.mean())))
-        # corr_loss1 = torch.abs(torch.corrcoef(output[:, 0, :].transpose(0, 1))[0, 1])
-        # corr_loss2 = torch.abs(torch.corrcoef(output[:, 1, :].transpose(0, 1))[0, 1])
-
-        corr_loss = torch.zeros(output.shape[1])
-        for i in range(output.shape[1]):
-            corr_loss[i] = torch.norm(torch.corrcoef(output[:, i, :].transpose(0, 1)) - torch.eye(2).cuda())
-
-        # return k_loss + ks_loss + 0.1*(corr_loss1 + corr_loss2)
-
-        loss1 = 0.5*(k_loss + ks_loss)
-        loss2 = torch.mean(corr_loss)
-
-        # print(f'loss1: {loss1}')
-        # print(f'loss2: {loss2}')
-
-        return loss1 + loss2
-        # return loss1
-        # return k_loss + ks_loss
-
-
-class DifferentialInvariantsLossBYOL(torch.nn.Module):
-    def __init__(self):
-        super(DifferentialInvariantsLossBYOL, self).__init__()
-        self._k_loss_fn = CurvatureLoss()
-        self._ks_loss_fn = CurvatureLoss()
-        self._negative_cosine_similarity_loss_fn = NegativeCosineSimilarity()
-
-    def forward(self, output):
-        # v_k = output[:, :, 0].unsqueeze(dim=2)
-        # v_ks = output[:, :, 1].unsqueeze(dim=2)
-        # anchors_k = v_k[:, 0, :].squeeze()
-        # anchors_ks = v_ks[:, 0, :].squeeze()
-
-        # k_loss = self._k_loss_fn(output=v_k)
-        # ks_loss = self._ks_loss_fn(output=v_ks)
-        # cov_loss = torch.abs(torch.mean((anchors_k - anchors_k.mean())*(anchors_ks - anchors_ks.mean())))
-        # corr_loss1 = torch.abs(torch.corrcoef(output[:, 0, :].transpose(0, 1))[0, 1])
-        # corr_loss2 = torch.abs(torch.corrcoef(output[:, 1, :].transpose(0, 1))[0, 1])
-
-        p0 = output['p0']
-        p1 = output['p1']
-        z0 = output['z0']
-        z1 = output['z1']
-
-        sim_loss = 0.5 * (self._negative_cosine_similarity_loss_fn(p0, z1) + self._negative_cosine_similarity_loss_fn(p1, z0))
-
-        corr_loss1 = torch.norm(torch.corrcoef(p0.transpose(0, 1)) - torch.eye(2).cuda())
-        corr_loss2 = torch.norm(torch.corrcoef(p1.transpose(0, 1)) - torch.eye(2).cuda())
-
-        # corr_loss[i] = torch.norm(torch.corrcoef(output[:, i, :].transpose(0, 1)) - torch.eye(2).cuda())
-
-        # return k_loss + ks_loss + 0.1*(corr_loss1 + corr_loss2)
-        return sim_loss + 0.5*(corr_loss1 + corr_loss2)
-        # return k_loss + ks_loss
+# class DifferentialInvariantsLossBYOL(torch.nn.Module):
+#     def __init__(self):
+#         super(DifferentialInvariantsLossBYOL, self).__init__()
+#         self._k_loss_fn = CurvatureLoss()
+#         self._ks_loss_fn = CurvatureLoss()
+#         self._negative_cosine_similarity_loss_fn = NegativeCosineSimilarity()
+#
+#     def forward(self, output):
+#         # v_k = output[:, :, 0].unsqueeze(dim=2)
+#         # v_ks = output[:, :, 1].unsqueeze(dim=2)
+#         # anchors_k = v_k[:, 0, :].squeeze()
+#         # anchors_ks = v_ks[:, 0, :].squeeze()
+#
+#         # k_loss = self._k_loss_fn(output=v_k)
+#         # ks_loss = self._ks_loss_fn(output=v_ks)
+#         # cov_loss = torch.abs(torch.mean((anchors_k - anchors_k.mean())*(anchors_ks - anchors_ks.mean())))
+#         # corr_loss1 = torch.abs(torch.corrcoef(output[:, 0, :].transpose(0, 1))[0, 1])
+#         # corr_loss2 = torch.abs(torch.corrcoef(output[:, 1, :].transpose(0, 1))[0, 1])
+#
+#         p0 = output['p0']
+#         p1 = output['p1']
+#         z0 = output['z0']
+#         z1 = output['z1']
+#
+#         sim_loss = 0.5 * (self._negative_cosine_similarity_loss_fn(p0, z1) + self._negative_cosine_similarity_loss_fn(p1, z0))
+#
+#         corr_loss1 = torch.norm(torch.corrcoef(p0.transpose(0, 1)) - torch.eye(2).cuda())
+#         corr_loss2 = torch.norm(torch.corrcoef(p1.transpose(0, 1)) - torch.eye(2).cuda())
+#
+#         # corr_loss[i] = torch.norm(torch.corrcoef(output[:, i, :].transpose(0, 1)) - torch.eye(2).cuda())
+#
+#         # return k_loss + ks_loss + 0.1*(corr_loss1 + corr_loss2)
+#         return sim_loss + 0.5*(corr_loss1 + corr_loss2)
+#         # return k_loss + ks_loss

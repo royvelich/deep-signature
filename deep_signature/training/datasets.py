@@ -49,7 +49,8 @@ class CurveNeighborhoodTupletsDataset(InfiniteOnlineParallelProcessor, TupletsDa
             num_workers: int,
             items_queue_maxsize: int,
             items_buffer_size: int,
-            get_item_policy: GetItemPolicy):
+            get_item_policy: GetItemPolicy,
+            add_flip_as_negative_example: bool):
         super().__init__(
             planar_curves_manager=planar_curves_manager,
             group=group,
@@ -67,6 +68,7 @@ class CurveNeighborhoodTupletsDataset(InfiniteOnlineParallelProcessor, TupletsDa
         self._max_multimodality = max_multimodality
         self._min_negative_example_offset = min_negative_example_offset
         self._max_negative_example_offset = max_negative_example_offset
+        self._add_flip_as_negative_example = add_flip_as_negative_example
 
     def _generate_item(self, item_id: Optional[int]) -> object:
         tuplet = []
@@ -77,8 +79,9 @@ class CurveNeighborhoodTupletsDataset(InfiniteOnlineParallelProcessor, TupletsDa
             curve_neighborhood_points = self._extract_curve_neighborhood_points(planar_curve=sampled_planar_curve, center_point_index=center_point_index)
             tuplet.append(curve_neighborhood_points)
 
-        flipped_anchor_example = self._flip_curve_neighborhood_points(points=tuplet[0])
-        tuplet.append(flipped_anchor_example)
+        if self._add_flip_as_negative_example:
+            flipped_anchor_example = self._flip_curve_neighborhood_points(points=tuplet[0])
+            tuplet.append(flipped_anchor_example)
 
         for i in range(self._negative_examples_count):
             sampled_planar_curve = self._sample_planar_curve(planar_curve=planar_curve)

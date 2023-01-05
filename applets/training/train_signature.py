@@ -22,53 +22,7 @@ from deep_signature.training.trainers import ModelTrainer
 from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesApproximatedSignatureComparator
 from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesShapeMatchingEvaluator, PlanarCurvesSignatureQualitativeEvaluator
 from deep_signature.core.parallel_processing import GetItemPolicy
-
-
-# class TrainSignatureArgumentParser(AppArgumentParser):
-#     training_curves_file_path: Path
-#     validation_curves_file_path: Path
-#     test_curves_file_path: Path
-#     group_name: str
-#     supporting_points_count: int
-#     negative_examples_count: int
-#     min_sampling_ratio: float
-#     max_sampling_ratio: float
-#     min_multimodality: int
-#     max_multimodality: int
-#     min_negative_example_offset: int
-#     max_negative_example_offset: int
-#     training_dataset_size: int
-#     validation_dataset_size: int
-#     validation_items_queue_maxsize: int
-#     training_items_queue_maxsize: int
-#     training_items_buffer_size: int
-#     validation_items_buffer_size: int
-#     training_num_workers: int
-#     validation_num_workers: int
-#     evaluation_num_workers: int
-#     evaluation_benchmark_dir_path: Path
-#     evaluation_curves_count_per_collection: int
-#     evaluation_curve_collections_file_names: List[str]
-#     evaluation_sampling_ratios: List[float]
-#     evaluation_multimodality: int
-#     epochs: int
-#     training_batch_size: int
-#     validation_batch_size: int
-#     learning_rate: float
-#     checkpoint_rate: int
-#     history_size: int = 800
-#     activation_fn: str
-#     batch_norm_fn: str
-#     in_features_size: int
-#     hidden_layer_repetitions: int
-#     training_min_det: Optional[float] = None
-#     training_max_det: Optional[float] = None
-#     training_min_cond: Optional[float] = None
-#     training_max_cond: Optional[float] = None
-#     validation_min_det: Optional[float] = None
-#     validation_max_det: Optional[float] = None
-#     validation_min_cond: Optional[float] = None
-#     validation_max_cond: Optional[float] = None
+from deep_signature.training.losses import InvarianceLoss
 
 
 class TrainSignatureArgumentParser(AppArgumentParser):
@@ -121,6 +75,9 @@ class TrainSignatureArgumentParser(AppArgumentParser):
     validation_max_det: Optional[float] = None
     validation_min_cond: Optional[float] = None
     validation_max_cond: Optional[float] = None
+    add_flip_as_negative_example: Optional[bool] = None
+    invariance_loss_fn: Optional[str] = None
+    margin: Optional[float] = None
 
 
 parser = TrainSignatureArgumentParser().parse_args()
@@ -163,7 +120,8 @@ def main():
         num_workers=parser.validation_num_workers,
         items_queue_maxsize=config.validation_items_queue_maxsize,
         items_buffer_size=config.validation_items_buffer_size,
-        get_item_policy=GetItemPolicy.Keep)
+        get_item_policy=GetItemPolicy.Keep,
+        add_flip_as_negative_example=config.add_flip_as_negative_example)
 
     validation_dataset.start()
     validation_dataset.stop()
@@ -185,7 +143,8 @@ def main():
         num_workers=parser.training_num_workers,
         items_queue_maxsize=config.training_items_queue_maxsize,
         items_buffer_size=config.training_items_buffer_size,
-        get_item_policy=GetItemPolicy.TryReplace)
+        get_item_policy=GetItemPolicy.TryReplace,
+        add_flip_as_negative_example=config.add_flip_as_negative_example)
 
     training_dataset.start()
 
@@ -209,7 +168,12 @@ def main():
     model = torch.nn.DataParallel(model)
     model.share_memory()
 
-    loss_fn = DifferentialInvariantsLoss()
+    invariance_loss_fns = {
+        'TripletMarginLoss': lambda: torch.nn.TripletMarginLoss(margin=config.margin),
+        'InvarianceLoss': lambda: InvarianceLoss(),
+    }
+
+    loss_fn = DifferentialInvariantsLoss(invariance_loss_fn=invariance_loss_fns[config.invariance_loss_fn])
     optimizer = torch.optim.LBFGS(model.parameters(), lr=config.learning_rate, line_search_fn='strong_wolfe', history_size=config.history_size)
 
     comparator = PlanarCurvesApproximatedSignatureComparator(
