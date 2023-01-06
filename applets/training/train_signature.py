@@ -193,11 +193,13 @@ def main():
         planar_curves_signature_comparator=comparator)
 
     qualitative_evaluator = PlanarCurvesSignatureQualitativeEvaluator(
-        curves_count=5,
+        curves_count=4,
         model=model,
         supporting_points_count=config.supporting_points_count,
         planar_curves_manager=test_planar_curves_manager,
-        group=test_group)
+        group=test_group,
+        multimodality=config.evaluation_multimodality,
+        sampling_ratios=config.evaluation_sampling_ratios)
 
     model_trainer = ModelTrainer(
         results_dir_path=results_dir_path,

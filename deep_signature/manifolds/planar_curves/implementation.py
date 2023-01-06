@@ -10,9 +10,11 @@ import numpy
 
 # scipy
 import scipy.signal
+from scipy.signal import savgol_filter
 
 # sklearn
 import sklearn.preprocessing
+from sklearn.preprocessing import normalize
 
 # pytorch
 import torch
@@ -285,7 +287,7 @@ class PlanarCurve(SeedableObject):
         module = model.module.to(device=device)
         # model = model.to(device=device)
         for i, curve_neighborhood in enumerate(curve_neighborhoods):
-            curve_neighborhood.normalize_curve(force_ccw=False, force_endpoint=False)
+            curve_neighborhood = curve_neighborhood.normalize_curve(force_ccw=False, force_endpoint=False)
             batch_data = torch.unsqueeze(torch.unsqueeze(torch.from_numpy(curve_neighborhood.points), dim=0), dim=0).to(device)
             with torch.no_grad():
                 x = module(batch_data)
@@ -298,26 +300,31 @@ class PlanarCurve(SeedableObject):
     # curve smoothing
     # -------------------------------------------------
 
-    def smooth_curve(self, iterations: int, window_length: int, poly_order: int):
+    def smooth_curve(self, iterations: int, window_length: int, poly_order: int) -> PlanarCurve:
         smoothed_points = numpy.copy(self._points)
         for _ in range(iterations):
             x = smoothed_points[:, 0]
             y = smoothed_points[:, 1]
-            smoothed_points[:, 0] = scipy.signal.savgol_filter(x=x, window_length=window_length, polyorder=poly_order, mode='wrap')
-            smoothed_points[:, 1] = scipy.signal.savgol_filter(x=y, window_length=window_length, polyorder=poly_order, mode='wrap')
+            smoothed_points[:, 0] = savgol_filter(x=x, window_length=window_length, polyorder=poly_order, mode='wrap')
+            smoothed_points[:, 1] = savgol_filter(x=y, window_length=window_length, polyorder=poly_order, mode='wrap')
+
+        return PlanarCurve(points=smoothed_points, closed=self._closed)
 
     # -------------------------------------------------
     # curve evolution
     # -------------------------------------------------
 
-    def evolve_curve(self, evolution_iterations: int, evolution_dt: float, smoothing_window_length: int, smoothing_poly_order: int, smoothing_iterations: int):
+    def evolve_curve(self, evolution_iterations: int, evolution_dt: float, smoothing_window_length: int, smoothing_poly_order: int, smoothing_iterations: int) -> PlanarCurve:
+        curve = self
         for _ in range(evolution_iterations):
-            k = self.calculate_euclidean_k()
-            normal = self.calculate_normals()
-            normal = sklearn.preprocessing.normalize(X=normal, axis=1, norm='l2')
+            k = curve.calculate_euclidean_k()
+            normal = curve.calculate_normals()
+            normal = normalize(X=normal, axis=1, norm='l2')
             delta = normal * k[:, numpy.newaxis]
-            self._points = self._points + evolution_dt * delta
-            self.smooth_curve(iterations=smoothing_iterations, window_length=smoothing_window_length, poly_order=smoothing_poly_order)
+            curve = PlanarCurve(points=curve.points + evolution_dt * delta, closed=curve.closed)
+            curve = curve.smooth_curve(iterations=smoothing_iterations, window_length=smoothing_window_length, poly_order=smoothing_poly_order)
+
+        return curve
 
     # -------------------------------------------------
     # curve sampling
@@ -332,70 +339,22 @@ class PlanarCurve(SeedableObject):
         sampled_planar_curve._discrete_distribution = discrete_distribution
         return sampled_planar_curve
 
-    def extract_curve_neighborhood_wrt_reference(self, center_point_index: int, supporting_points_count: int) -> PlanarCurve:
-        reference_curve_indices = self._reference_indices.copy()
-        reference_curve_indices = numpy.append(arr=reference_curve_indices, values=[center_point_index])
-        reference_curve_indices = numpy.unique(ar=reference_curve_indices)
-        return self._extract_curve_neighborhood(center_point_index=center_point_index, supporting_points_count=supporting_points_count, curve_indices=reference_curve_indices, add_reference_curve=False)
-        # center_point_meta_index = numpy.where(reference_curve_indices == center_point_index)[0]
-        # curve_neighborhood_meta_indices = numpy.arange(start=center_point_meta_index - supporting_points_count, stop=center_point_meta_index + supporting_points_count + 1)
-        # curve_neighborhood_meta_indices = numpy.mod(curve_neighborhood_meta_indices, reference_curve_indices.shape[0])
-        # curve_neighborhood_indices = reference_curve_indices[curve_neighborhood_meta_indices]
-        # curve_neighborhood_points = self._reference_curve.points[curve_neighborhood_indices]
-        # return PlanarCurve(points=curve_neighborhood_points, closed=False)
-
     def extract_curve_neighborhood(self, center_point_index: int, supporting_points_count: int) -> PlanarCurve:
-        return self._extract_curve_neighborhood(center_point_index=center_point_index, supporting_points_count=supporting_points_count, curve_indices=self.indices, add_reference_curve=True)
-
-    def extract_curve_neighborhoods(self, supporting_points_count: int) -> List[PlanarCurve]:
-        curve_neighborhoods = []
-        for index in self.indices:
-            curve_neighborhoods.append(self.extract_curve_neighborhood(center_point_index=index, supporting_points_count=supporting_points_count))
-
-        return curve_neighborhoods
-
-    def _extract_curve_neighborhood(self, center_point_index: int, supporting_points_count: int, curve_indices: numpy.ndarray, add_reference_curve: bool) -> PlanarCurve:
+        curve_indices = numpy.append(arr=self._reference_indices, values=[center_point_index])
+        curve_indices = numpy.unique(ar=curve_indices)
         center_point_meta_index = numpy.where(curve_indices == center_point_index)[0]
         curve_neighborhood_meta_indices = numpy.arange(start=center_point_meta_index - supporting_points_count, stop=center_point_meta_index + supporting_points_count + 1)
         curve_neighborhood_meta_indices = numpy.mod(curve_neighborhood_meta_indices, curve_indices.shape[0])
         curve_neighborhood_indices = curve_indices[curve_neighborhood_meta_indices]
         curve_neighborhood_points = self._reference_curve.points[curve_neighborhood_indices]
+        return PlanarCurve(points=curve_neighborhood_points, closed=False)
 
-        if add_reference_curve is True:
-            reference_curve = self
-            reference_indices = curve_neighborhood_indices
-        else:
-            reference_curve = None
-            reference_indices = None
+    def extract_curve_neighborhoods(self, supporting_points_count: int) -> List[PlanarCurve]:
+        curve_neighborhoods = []
+        for index in self._reference_indices:
+            curve_neighborhoods.append(self.extract_curve_neighborhood(center_point_index=index, supporting_points_count=supporting_points_count))
 
-        return PlanarCurve(points=curve_neighborhood_points, closed=False, reference_curve=reference_curve, reference_indices=reference_indices)
-
-    # def extract_curve_section(self, start_point_index: int, end_point_index: int, supporting_points_count: int) -> PlanarCurve:
-    #     if rng is None:
-    #         rng = numpy.random.default_rng()
-    #
-    #     curve_points_count = curve.shape[0]
-    #
-    #     if start_point_index > end_point_index:
-    #         start_point_index = -(curve_points_count - start_point_index)
-    #         # end_point_index = -end_point_index
-    #
-    #     indices_pool = numpy.mod(numpy.array(list(range(start_point_index + 1, end_point_index))), curve.shape[0])
-    #     bins = int(numpy.abs(end_point_index - start_point_index) + 1) - 2
-    #     supporting_points_count = supporting_points_count - 2 if supporting_points_count is not None else bins
-    #
-    #     # uniform = False
-    #     if uniform is False:
-    #         dist = discrete_distribution.random_discrete_dist(bins=bins, multimodality=multimodality, max_density=1, count=1)[0]
-    #         meta_indices = discrete_distribution.sample_discrete_dist(dist=dist, sampling_points_count=supporting_points_count)
-    #     else:
-    #         meta_indices = list(range(end_point_index - start_point_index - 1))
-    #         meta_indices = numpy.sort(rng.choice(a=meta_indices, size=supporting_points_count, replace=False))
-    #
-    #     indices = indices_pool[meta_indices]
-    #     indices = numpy.concatenate(([numpy.mod(start_point_index, curve.shape[0])], indices, [numpy.mod(end_point_index, curve.shape[0])]))
-    #
-    #     return indices
+        return curve_neighborhoods
 
     def get_random_point_index(self) -> int:
         return self._rng.integers(low=0, high=self._points.shape[0])
@@ -404,35 +363,58 @@ class PlanarCurve(SeedableObject):
     # curve transformation
     # -------------------------------------------------
 
-    def center_curve(self):
+    def center_curve(self) -> PlanarCurve:
         center_of_mass = numpy.mean(self._points, axis=0)
         return self.translate_curve(offset=-center_of_mass)
 
-    def translate_curve(self, offset: numpy.ndarray):
-        self._points = self._points + offset
+    def translate_curve(self, offset: numpy.ndarray) -> PlanarCurve:
+        return PlanarCurve(points=self._points + offset, closed=self._closed)
+        # self._points = self._points + offset
 
-    def rotate_curve(self, radians: float):
+    def rotate_curve(self, radians: float) -> PlanarCurve:
         transform = transformations.generate_rotation_transform_2d(radians)
-        self._points = self._points.dot(transform)
+        return self.transform_curve(transform=transform)
+        # self._points = self._points.dot(transform)
 
-    def reflect_curve_horizontally(self):
+    def reflect_curve_horizontally(self) -> PlanarCurve:
         transform = transformations.generate_horizontal_reflection_transform_2d()
-        self._points = self._points.dot(transform)
+        return self.transform_curve(transform=transform)
+        # self._points = self._points.dot(transform)
 
-    def reflect_curve_vertically(self):
+    def reflect_curve_vertically(self) -> PlanarCurve:
         transform = transformations.generate_vertical_reflection_transform_2d()
-        self._points = self._points.dot(transform)
+        return self.transform_curve(transform=transform)
+        # self._points = self._points.dot(transform)
 
-    def transform_curve(self, transform: numpy.ndarray):
-        self._points = self._points.dot(transform)
+    def transform_curve(self, transform: numpy.ndarray) -> PlanarCurve:
+        return PlanarCurve(points=self._points.dot(transform), closed=self._closed)
+        # self._points = self._points.dot(transform)
 
-    def orient_cw(self):
+    # -------------------------------------------------
+    # curve orientation
+    # -------------------------------------------------
+
+    def orient_cw(self) -> PlanarCurve:
         if self.is_ccw():
-            self._points = numpy.flip(m=self._points, axis=0)
+            return self._flip_orientation()
+        else:
+            return self.clone()
 
-    def orient_ccw(self):
+    def orient_ccw(self) -> PlanarCurve:
         if self.is_cw():
-            self._points = numpy.flip(m=self._points, axis=0)
+            return self._flip_orientation()
+        else:
+            return self.clone()
+
+    def _flip_orientation(self) -> PlanarCurve:
+        return PlanarCurve(points=numpy.flip(m=self._points, axis=0), closed=self._closed)
+
+    # -------------------------------------------------
+    # curve closing
+    # -------------------------------------------------
+
+    def clone(self) -> PlanarCurve:
+        return PlanarCurve(points=self._points, closed=self._closed)
 
     # -------------------------------------------------
     # curve queries
@@ -471,24 +453,25 @@ class PlanarCurve(SeedableObject):
     # curve normalization
     # -------------------------------------------------
 
-    def normalize_curve(self, force_ccw: bool, force_endpoint: bool):
+    def normalize_curve(self, force_ccw: bool, force_endpoint: bool) -> PlanarCurve:
+        curve = PlanarCurve(points=self._points, closed=self._closed)
         if force_ccw is True:
-            self.orient_ccw()
+            curve = curve.orient_ccw()
 
-        self.translate_curve(offset=-self._points[0])
+        curve = curve.translate_curve(offset=-curve.points[0])
 
-        radians = self._calculate_secant_angle()
-        self.rotate_curve(radians=-radians)
+        radians = curve._calculate_secant_angle()
+        curve = curve.rotate_curve(radians=-radians)
 
         if force_endpoint is True:
-            end_point = self._points[-1]
+            end_point = curve.points[-1]
             if end_point[0] < 0:
-                transform = transformations.generate_vertical_reflection_transform_2d()
-                self._points = numpy.matmul(self._points, transform)
+                return curve.reflect_curve_vertically()
 
             if end_point[1] < 0:
-                transform = transformations.generate_horizontal_reflection_transform_2d()
-                self._points = numpy.matmul(self._points, transform)
+                return curve.reflect_curve_horizontally()
+
+        return curve
 
     def _calculate_secant_angle(self) -> float:
         index1 = self._get_first_index()
@@ -521,14 +504,14 @@ class PlanarCurve(SeedableObject):
         deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=y, ax=ax, line_style='-', marker='', alpha=alpha, zorder=zorder)
         # deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=y, ax=ax, line_width=line_width, alpha=alpha, cmap=cmap, zorder=zorder)
 
-    def plot_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], line_style='', point_size: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):
+    def plot_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):
         signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
         x = numpy.array(list(range(signature.shape[0])))
         kappa = signature[:, 0]
         kappa_s = signature[:, 1]
         c = numpy.linspace(0.0, 1.0, signature.shape[0])
-        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa, ax=ax[0], line_style=line_style, alpha=alpha, zorder=zorder)
-        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, alpha=alpha, zorder=zorder)
+        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa, ax=ax[0], line_style=line_style, marker=marker, alpha=alpha, zorder=zorder)
+        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, marker=marker, alpha=alpha, zorder=zorder)
         # deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=kappa, y=kappa_s, c=c, ax=ax[2], point_size=point_size, alpha=alpha, cmap=cmap, zorder=zorder)
         deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=kappa, y=kappa_s, ax=ax[2], alpha=alpha, zorder=zorder, equal_axis=True)
 
@@ -570,8 +553,10 @@ class PlanarCurvesManager(SeedableObject):
 
     def _load_curves(self) -> List[PlanarCurve]:
         curves_points = numpy.load(file=os.path.normpath(path=self._curves_file_path), allow_pickle=True)
-        planar_curves = [PlanarCurve(points=points, closed=True) for points in curves_points]
-        for planar_curve in planar_curves:
-            planar_curve.center_curve()
-        return planar_curves
+        curves = [PlanarCurve(points=points, closed=True) for points in curves_points]
+        centered_curves = []
+        for centered_curve in curves:
+            centered_curve = centered_curve.center_curve()
+            centered_curves.append(centered_curve)
+        return centered_curves
 

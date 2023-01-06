@@ -32,6 +32,7 @@ from deep_signature.manifolds.planar_curves.generation import ShapeMatchingBench
 from deep_signature.metrics import hausdorff
 from deep_signature.manifolds.planar_curves.groups import Group
 from deep_signature.manifolds.planar_curves.implementation import PlanarCurvesManager
+from deep_signature.core import discrete_distributions
 
 
 # =================================================
@@ -259,35 +260,49 @@ class PlanarCurvesSignatureQualitativeEvaluator(PlanarCurvesQualitativeEvaluator
             model: torch.nn.Module,
             supporting_points_count: int,
             planar_curves_manager: PlanarCurvesManager,
-            group: Group):
+            group: Group,
+            sampling_ratios: List[float],
+            multimodality: int):
         super().__init__(curves_count=curves_count)
         self._model = model
         self._supporting_points_count = supporting_points_count
         self._planar_curves_manager = planar_curves_manager
         self._group = group
         self._curves = []
+        self._sampling_ratios = sampling_ratios
+        self._multimodality = multimodality
         for i in range(self._curves_count):
             curve = self._planar_curves_manager.get_random_planar_curve()
             self._curves.append(curve)
 
-    def evaluate_curves(self) -> List[Image]:
+    def _evaluate_curve(self, curve: PlanarCurve, sampling_ratio: float) -> Image:
         device = torch.device('cpu')
+        fig, axes = matplotlib.pyplot.subplots(nrows=4, ncols=1, figsize=(10, 20))
+        axes[0].set_title(label='Curve', fontsize=30)
+        axes[1].set_title(label='K', fontsize=30)
+        axes[2].set_title(label='dK/ds', fontsize=30)
+        axes[3].set_title(label='K vs. dK/ds', fontsize=30)
+        for ax in axes:
+            ax.tick_params(axis='both', which='major', labelsize=20)
+            ax.tick_params(axis='both', which='minor', labelsize=20)
+
+        discrete_distribution = discrete_distributions.MultimodalGaussianDiscreteDistribution(bins_count=curve.points_count, multimodality=self._multimodality)
+        curve = curve.sample_curve(sampling_ratio=sampling_ratio, discrete_distribution=discrete_distribution)
+        curve.plot_scattered_curve(ax=axes[0])
+        curve.plot_signature(model=self._model, supporting_points_count=self._supporting_points_count, line_style='-', marker='', device=device, ax=axes[1:])
+        fig.canvas.draw()
+        image = PIL.Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
+        matplotlib.pyplot.close(fig)
+        return image
+
+    def evaluate_curves(self) -> List[Image]:
         images = []
         for curve in self._curves:
-            fig, axes = matplotlib.pyplot.subplots(nrows=4, ncols=1, figsize=(10, 20))
-            axes[0].set_title(label='Curve', fontsize=30)
-            axes[1].set_title(label='K', fontsize=30)
-            axes[2].set_title(label='dK/ds', fontsize=30)
-            axes[3].set_title(label='K vs. dK/ds', fontsize=30)
-            for ax in axes:
-                ax.tick_params(axis='both', which='major', labelsize=20)
-                ax.tick_params(axis='both', which='minor', labelsize=20)
-            curve.plot_scattered_curve(ax=axes[0])
-            curve.plot_signature(model=self._model, supporting_points_count=self._supporting_points_count, device=device, ax=axes[1:])
-
-            fig.canvas.draw()
-            image = PIL.Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
+            image = self._evaluate_curve(curve=curve, sampling_ratio=1.0)
             images.append(image)
-            matplotlib.pyplot.close(fig)
-        # matplotlib.pyplot.show()
+
+            for sampling_ratio in self._sampling_ratios:
+                image = self._evaluate_curve(curve=curve, sampling_ratio=sampling_ratio)
+                images.append(image)
+
         return images

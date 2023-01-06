@@ -111,9 +111,9 @@ class LevelCurvesGeneratorTask(ParallelProcessingTask):
         pass
 
     def _preprocess_contour(self, contour: numpy.ndarray) -> numpy.ndarray:
-        planar_curve = PlanarCurve(points=contour)
-        planar_curve.center_curve()
-        return planar_curve.points
+        curve = PlanarCurve(points=contour)
+        curve = curve.center_curve()
+        return curve.points
 
     def _load_image(self) -> numpy.ndarray:
         image = skimage.io.imread(self._image_file_path)
@@ -191,9 +191,9 @@ class ImageLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
 
     def _preprocess_contour(self, contour: numpy.ndarray) -> numpy.ndarray:
         contour = super()._preprocess_contour(contour=contour)
-        planar_curve = PlanarCurve(points=contour)
-        planar_curve.smooth_curve(iterations=self._smoothing_iterations, window_length=self._smoothing_window_length, poly_order=self._smoothing_poly_order)
-        return planar_curve.points
+        curve = PlanarCurve(points=contour)
+        curve = curve.smooth_curve(iterations=self._smoothing_iterations, window_length=self._smoothing_window_length, poly_order=self._smoothing_poly_order)
+        return curve.points
 
     def _get_valid_contours(self, contours: List[numpy.ndarray]) -> List[numpy.ndarray]:
         valid_contours = []
@@ -434,7 +434,7 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
             discrete_distribution = discrete_distributions.MultimodalGaussianDiscreteDistribution(bins_count=planar_curve.points_count, multimodality=self._multimodality)
             sampled_planar_curve = planar_curve.sample_curve(sampling_ratio=self._sampling_ratio, discrete_distribution=discrete_distribution)
             transform = self._group.generate_random_group_action()
-            sampled_planar_curve.transform_curve(transform=transform)
+            sampled_planar_curve = sampled_planar_curve.transform_curve(transform=transform)
             self._sampled_planar_curves.append(sampled_planar_curve)
 
     def _post_process(self):

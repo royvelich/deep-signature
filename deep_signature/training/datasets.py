@@ -79,9 +79,9 @@ class CurveNeighborhoodTupletsDataset(InfiniteOnlineParallelProcessor, TupletsDa
             curve_neighborhood_points = self._extract_curve_neighborhood_points(planar_curve=sampled_planar_curve, center_point_index=center_point_index)
             tuplet.append(curve_neighborhood_points)
 
-        if self._add_flip_as_negative_example:
-            flipped_anchor_example = self._flip_curve_neighborhood_points(points=tuplet[0])
-            tuplet.append(flipped_anchor_example)
+        # if self._add_flip_as_negative_example:
+        #     flipped_anchor_example = self._flip_curve_neighborhood_points(points=tuplet[0])
+        #     tuplet.append(flipped_anchor_example)
 
         for i in range(self._negative_examples_count):
             sampled_planar_curve = self._sample_planar_curve(planar_curve=planar_curve)
@@ -102,16 +102,13 @@ class CurveNeighborhoodTupletsDataset(InfiniteOnlineParallelProcessor, TupletsDa
 
     def _extract_curve_neighborhood_points(self, planar_curve: PlanarCurve, center_point_index: int) -> numpy.ndarray:
         group_action = self._group.generate_random_group_action()
-        curve_neighborhood = planar_curve.extract_curve_neighborhood_wrt_reference(center_point_index=center_point_index, supporting_points_count=self._supporting_points_count)
-        curve_neighborhood.transform_curve(transform=group_action)
-        curve_neighborhood.normalize_curve(force_ccw=False, force_endpoint=False)
+        curve_neighborhood = planar_curve.extract_curve_neighborhood(center_point_index=center_point_index, supporting_points_count=self._supporting_points_count)
+        curve_neighborhood = curve_neighborhood.transform_curve(transform=group_action)
+        curve_neighborhood = curve_neighborhood.normalize_curve(force_ccw=False, force_endpoint=False)
         return curve_neighborhood.points
 
     def _flip_curve_neighborhood_points(self, points: numpy.ndarray) -> numpy.ndarray:
-        planar_curve = PlanarCurve(points=points, closed=False)
-        planar_curve.normalize_curve(force_ccw=False, force_endpoint=False)
-        planar_curve.reflect_curve_horizontally()
-        return planar_curve.points
-        # planar_curve = PlanarCurve(points=numpy.flip(m=points, axis=0).copy(), closed=False)
-        # planar_curve.normalize_curve(force_ccw=False, force_endpoint=False)
-        # return planar_curve.points
+        curve = PlanarCurve(points=points, closed=False)
+        curve = curve.normalize_curve(force_ccw=False, force_endpoint=False)
+        curve = curve.reflect_curve_horizontally()
+        return curve.points
