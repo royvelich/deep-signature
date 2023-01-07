@@ -433,8 +433,9 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
             planar_curve = PlanarCurve(points=curve)
             discrete_distribution = discrete_distributions.MultimodalGaussianDiscreteDistribution(bins_count=planar_curve.points_count, multimodality=self._multimodality)
             sampled_planar_curve = planar_curve.sample_curve(sampling_ratio=self._sampling_ratio, discrete_distribution=discrete_distribution)
-            transform = self._group.generate_random_group_action()
-            sampled_planar_curve = sampled_planar_curve.transform_curve(transform=transform)
+            if self._sampling_ratio < 1.0:
+                transform = self._group.generate_random_group_action()
+                sampled_planar_curve = sampled_planar_curve.transform_curve(transform=transform)
             self._sampled_planar_curves.append(sampled_planar_curve)
 
     def _post_process(self):

@@ -1,6 +1,6 @@
 # python peripherals
 from __future__ import annotations
-from typing import Union, List, Callable
+from typing import Union, List, Callable, Optional
 import os
 import itertools
 from pathlib import Path
@@ -368,7 +368,7 @@ class PlanarCurve(SeedableObject):
         return self.translate_curve(offset=-center_of_mass)
 
     def translate_curve(self, offset: numpy.ndarray) -> PlanarCurve:
-        return PlanarCurve(points=self._points + offset, closed=self._closed)
+        return PlanarCurve(points=self._points + offset, closed=self._closed, reference_curve=self._reference_curve, reference_indices=self._reference_indices)
         # self._points = self._points + offset
 
     def rotate_curve(self, radians: float) -> PlanarCurve:
@@ -387,7 +387,7 @@ class PlanarCurve(SeedableObject):
         # self._points = self._points.dot(transform)
 
     def transform_curve(self, transform: numpy.ndarray) -> PlanarCurve:
-        return PlanarCurve(points=self._points.dot(transform), closed=self._closed)
+        return PlanarCurve(points=self._points.dot(transform), closed=self._closed, reference_curve=self._reference_curve, reference_indices=self._reference_indices)
         # self._points = self._points.dot(transform)
 
     # -------------------------------------------------
@@ -491,12 +491,12 @@ class PlanarCurve(SeedableObject):
     # -------------------------------------------------
     # curve visualization
     # -------------------------------------------------
-    def plot_scattered_curve(self, ax: matplotlib.axes.Axes, point_size: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):
+    def plot_scattered_curve(self, ax: matplotlib.axes.Axes, point_size: float = 2, alpha: float = 1, cmap: Optional[str] = 'hsv', color: Optional[str] = '#FF0000', zorder: int = 1):
         x = self._points[:, 0]
         y = self._points[:, 1]
         color_indices = numpy.linspace(0.0, 1.0, self.reference_curve.points_count)
         c = color_indices[self._reference_indices]
-        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=x, y=y, c=c, ax=ax, point_size=point_size, alpha=alpha, cmap=cmap, zorder=zorder)
+        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=x, y=y, c=c, ax=ax, point_size=point_size, alpha=alpha, cmap=cmap, color=color, zorder=zorder)
 
     def plot_lined_curve(self, ax: matplotlib.axes.Axes, line_width: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):
         x = self._points[:, 0]
@@ -504,16 +504,26 @@ class PlanarCurve(SeedableObject):
         deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=y, ax=ax, line_style='-', marker='', alpha=alpha, zorder=zorder)
         # deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=y, ax=ax, line_width=line_width, alpha=alpha, cmap=cmap, zorder=zorder)
 
-    def plot_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):
+    def plot_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, cmap: str = 'hsv', color: str = '#FF0000', zorder: int = 1, force_limits: bool = True):
         signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
+        self._plot_signature(signature=signature, ax=ax, line_style=line_style, marker=marker, point_size=point_size, alpha=alpha, cmap=cmap, color=color, zorder=zorder, force_limits=force_limits)
+
+    def plot_signature_comparison(self, comparison_curve: PlanarCurve, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, zorder: int = 1):
+        self_signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
+        curve_signature = comparison_curve.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
+
+        self._plot_signature(signature=self_signature, ax=ax, line_style=line_style, marker=marker, point_size=point_size, alpha=alpha, color='#FF0000', zorder=zorder, force_limits=False)
+        self._plot_signature(signature=curve_signature, ax=ax, line_style=line_style, marker=marker, point_size=point_size, alpha=alpha, color='#00FF00', zorder=zorder, force_limits=False)
+
+    def _plot_signature(self, signature: numpy.ndarray, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, cmap: str = 'hsv', color: str = '#FF0000', zorder: int = 1, force_limits: bool = True):
         x = numpy.array(list(range(signature.shape[0])))
         kappa = signature[:, 0]
         kappa_s = signature[:, 1]
         c = numpy.linspace(0.0, 1.0, signature.shape[0])
-        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa, ax=ax[0], line_style=line_style, marker=marker, alpha=alpha, zorder=zorder)
-        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, marker=marker, alpha=alpha, zorder=zorder)
+        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa, ax=ax[0], line_style=line_style, marker=marker, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits)
+        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, marker=marker, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits)
         # deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=kappa, y=kappa_s, c=c, ax=ax[2], point_size=point_size, alpha=alpha, cmap=cmap, zorder=zorder)
-        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=kappa, y=kappa_s, ax=ax[2], alpha=alpha, zorder=zorder, equal_axis=True)
+        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=kappa, y=kappa_s, ax=ax[2], alpha=alpha, zorder=zorder, equal_axis=True, cmap=cmap, color=color)
 
     # def plot_curve_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, point_size: float = 2, alpha: float = 1):
     #     fig, axes = matplotlib.pyplot.subplots(nrows=4, ncols=1, figsize=(40, 10))
