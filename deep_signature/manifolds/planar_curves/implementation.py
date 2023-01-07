@@ -544,9 +544,9 @@ class PlanarCurve(SeedableObject):
 # PlanarCurvesManager Class
 # =================================================
 class PlanarCurvesManager(SeedableObject):
-    def __init__(self, curves_file_path: Path):
+    def __init__(self, curves_file_paths: List[Path]):
         super().__init__()
-        self._curves_file_path = curves_file_path
+        self._curves_file_paths = curves_file_paths
         self._planar_curves = self._load_curves()
 
     @property
@@ -562,11 +562,13 @@ class PlanarCurvesManager(SeedableObject):
         return self._planar_curves[index]
 
     def _load_curves(self) -> List[PlanarCurve]:
-        curves_points = numpy.load(file=os.path.normpath(path=self._curves_file_path), allow_pickle=True)
-        curves = [PlanarCurve(points=points, closed=True) for points in curves_points]
         centered_curves = []
-        for centered_curve in curves:
-            centered_curve = centered_curve.center_curve()
-            centered_curves.append(centered_curve)
+        for curves_file_path in self._curves_file_paths:
+            curves_points = numpy.load(file=os.path.normpath(path=curves_file_path), allow_pickle=True)
+            curves = [PlanarCurve(points=points, closed=True) for points in curves_points]
+            for centered_curve in curves:
+                centered_curve = centered_curve.center_curve()
+                centered_curves.append(centered_curve)
+
         return centered_curves
 

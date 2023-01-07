@@ -2,7 +2,7 @@
 import numpy
 from pathlib import Path
 from timeit import default_timer as timer
-from typing import Protocol, Dict, Union
+from typing import Protocol, Dict, Union, List
 
 import pandas
 # wandb
@@ -39,7 +39,7 @@ class ModelTrainer(LoggerObject):
             train_dataset: torch.utils.data.Dataset,
             validation_dataset: torch.utils.data.Dataset,
             shape_matching_evaluator: PlanarCurvesShapeMatchingEvaluator,
-            qualitative_evaluator: PlanarCurvesQualitativeEvaluator,
+            qualitative_evaluators: List[PlanarCurvesQualitativeEvaluator],
             epochs: int,
             training_batch_size: int,
             validation_batch_size: int,
@@ -55,7 +55,7 @@ class ModelTrainer(LoggerObject):
         self._train_dataset = train_dataset
         self._validation_dataset = validation_dataset
         self._shape_matching_evaluator = shape_matching_evaluator
-        self._qualitative_evaluator = qualitative_evaluator
+        self._qualitative_evaluators = qualitative_evaluators
         self._epochs = epochs
         self._training_batch_size = training_batch_size
         self._validation_batch_size = validation_batch_size
@@ -111,7 +111,11 @@ class ModelTrainer(LoggerObject):
             validation_epoch_results = self._process_epoch(epoch_index=epoch_index, data_loader=validation_data_loader, epoch_name='Validation', epoch_processor=self._validation_epoch)
             latest_model_file_path = self._create_model_file_path(epoch_index=epoch_index)
             torch.save(self._model.state_dict(), latest_model_file_path)
-            images = self._qualitative_evaluator.evaluate_curves()
+
+            images = []
+            for qualitative_evaluator in self._qualitative_evaluators:
+                images = images + qualitative_evaluator.evaluate_curves()
+
             log_dict = {
                 'train_loss': train_epoch_results['loss'],
                 'validation_loss': validation_epoch_results['loss'],

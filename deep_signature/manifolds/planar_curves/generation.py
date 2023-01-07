@@ -40,6 +40,7 @@ import matplotlib.figure
 from deep_signature.manifolds.planar_curves.implementation import PlanarCurve
 from deep_signature.core.parallel_processing import TaskParallelProcessor, ParallelProcessingTask
 from deep_signature.manifolds.planar_curves.groups import Group
+from deep_signature.core.base import SeedableObject
 
 
 # =================================================
@@ -66,6 +67,94 @@ from deep_signature.manifolds.planar_curves.groups import Group
 #
 #     def _zip_iterable(self):
 #         return [self._min_radius, self._max_radius, self._sampling_density] * self._curves_count
+
+
+# =================================================
+# CirclesGeneratorTask Class
+# =================================================
+class CirclesGeneratorTask(ParallelProcessingTask, SeedableObject):
+    def __init__(self, min_radius: float, max_radius: float, min_sampling_density: float, max_sampling_density: float):
+        super().__init__()
+        self._min_radius = min_radius
+        self._max_radius = max_radius
+        self._min_sampling_density = min_sampling_density
+        self._max_sampling_density = max_sampling_density
+        self._curves = []
+
+    @property
+    def curves(self) -> List[numpy.ndarray]:
+        return self._curves
+
+    def _pre_process(self):
+        pass
+
+    def _process(self):
+        radius = float(self._rng.uniform(low=self._min_radius, high=self._max_radius, size=1))
+        sampling_density = float(self._rng.uniform(low=self._min_sampling_density, high=self._max_sampling_density, size=1))
+        circumference = 2 * radius * numpy.pi
+        points_count = int(numpy.round(sampling_density * circumference))
+        radians_delta = 2 * numpy.pi / points_count
+        pointer = numpy.array([radius, 0])
+        circle = numpy.empty((points_count, 2))
+        pointer_curve = PlanarCurve(points=pointer, closed=False)
+        for i in range(points_count):
+            circle[i] = pointer_curve.rotate_curve(radians=i * radians_delta).points
+
+        self._curves.append(circle)
+
+    def _post_process(self):
+        pass
+
+
+class CirclesGenerator(TaskParallelProcessor):
+    def __init__(
+            self,
+            log_dir_path: Path,
+            num_workers: int,
+            curves_base_dir_path: Path,
+            circles_count: int,
+            min_radius: float,
+            max_radius: float,
+            min_sampling_density: float,
+            max_sampling_density: float):
+        self._curves_base_dir_path = os.path.normpath(curves_base_dir_path)
+        self._circles_count = circles_count
+        self._min_radius = min_radius
+        self._max_radius = max_radius
+        self._min_sampling_density = min_sampling_density
+        self._max_sampling_density = max_sampling_density
+        super().__init__(log_dir_path=log_dir_path, num_workers=num_workers, max_tasks=None)
+        self._logger.info(msg=f'curves_base_dir_path: {self._curves_base_dir_path}')
+
+    def _pre_join(self):
+        pass
+
+    def _post_join(self):
+        curves = []
+        for task in self._completed_tasks:
+            curves.extend(task.curves)
+
+        curves_file_path = os.path.normpath(os.path.join(self._curves_base_dir_path, 'curves.npy'))
+        Path(self._curves_base_dir_path).mkdir(parents=True, exist_ok=True)
+        numpy.save(file=curves_file_path, arr=curves, allow_pickle=True)
+
+    def _generate_tasks(self) -> List[ParallelProcessingTask]:
+        tasks = []
+        combinations = list(itertools.product(*[
+            list(range(self._circles_count)),
+            [self._min_radius],
+            [self._max_radius],
+            [self._min_sampling_density],
+            [self._max_sampling_density]]))
+
+        for combination in combinations:
+            tasks.append(CirclesGeneratorTask(
+                min_radius=combination[1],
+                max_radius=combination[2],
+                min_sampling_density=combination[3],
+                max_sampling_density=combination[4]))
+
+        return tasks
 
 
 # =================================================

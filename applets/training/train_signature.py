@@ -29,6 +29,8 @@ class TrainSignatureArgumentParser(AppArgumentParser):
     training_curves_file_path: Path
     validation_curves_file_path: Path
     test_curves_file_path: Path
+    training_circles_file_path: Path
+    test_circles_file_path: Path
     evaluation_benchmark_dir_path: Path
     wandb_dir: Path
     wandb_cache_dir: Path
@@ -95,14 +97,17 @@ def main():
 
     results_dir_path = init_app(parser=parser)
 
-    training_planar_curves_manager = PlanarCurvesManager(curves_file_path=parser.training_curves_file_path)
+    training_planar_curves_manager = PlanarCurvesManager(curves_file_paths=[parser.training_curves_file_path, parser.training_circles_file_path])
     training_group = Group.from_group_name(name=config.group_name, min_det=config.training_min_det, max_det=config.training_max_det, min_cond=config.training_min_cond, max_cond=config.training_max_cond)
 
-    validation_planar_curves_manager = PlanarCurvesManager(curves_file_path=parser.validation_curves_file_path)
+    validation_planar_curves_manager = PlanarCurvesManager(curves_file_paths=[parser.validation_curves_file_path])
     validation_group = Group.from_group_name(name=config.group_name, min_det=config.validation_min_det, max_det=config.validation_max_det, min_cond=config.validation_min_cond, max_cond=config.validation_max_cond)
 
-    test_planar_curves_manager = PlanarCurvesManager(curves_file_path=parser.test_curves_file_path)
-    test_group = Group.from_group_name(name=config.group_name, min_det=config.validation_min_det, max_det=config.validation_max_det, min_cond=config.validation_min_cond, max_cond=config.validation_max_cond)
+    test_planar_curves_manager = PlanarCurvesManager(curves_file_paths=[parser.test_curves_file_path])
+    test_group_curves = Group.from_group_name(name=config.group_name, min_det=config.validation_min_det, max_det=config.validation_max_det, min_cond=config.validation_min_cond, max_cond=config.validation_max_cond)
+
+    test_circles_curves_manager = PlanarCurvesManager(curves_file_paths=[parser.test_circles_file_path])
+    test_group_circles = Group.from_group_name(name=config.group_name, min_det=config.validation_min_det, max_det=config.validation_max_det, min_cond=config.validation_min_cond, max_cond=config.validation_max_cond)
 
     validation_dataset = CurveNeighborhoodTupletsDataset(
         planar_curves_manager=validation_planar_curves_manager,
@@ -192,12 +197,21 @@ def main():
         group_names=[config.group_name],
         planar_curves_signature_comparator=comparator)
 
-    qualitative_evaluator = PlanarCurvesSignatureQualitativeEvaluator(
+    qualitative_evaluator_curves = PlanarCurvesSignatureQualitativeEvaluator(
         curves_count=4,
         model=model,
         supporting_points_count=config.supporting_points_count,
         planar_curves_manager=test_planar_curves_manager,
-        group=test_group,
+        group=test_group_curves,
+        multimodality=config.evaluation_multimodality,
+        sampling_ratios=config.evaluation_sampling_ratios)
+
+    qualitative_evaluator_circles = PlanarCurvesSignatureQualitativeEvaluator(
+        curves_count=4,
+        model=model,
+        supporting_points_count=config.supporting_points_count,
+        planar_curves_manager=test_circles_curves_manager,
+        group=test_group_circles,
         multimodality=config.evaluation_multimodality,
         sampling_ratios=config.evaluation_sampling_ratios)
 
@@ -209,7 +223,7 @@ def main():
         train_dataset=training_dataset,
         validation_dataset=validation_dataset,
         shape_matching_evaluator=shape_matching_evaluator,
-        qualitative_evaluator=qualitative_evaluator,
+        qualitative_evaluators=[qualitative_evaluator_circles, qualitative_evaluator_curves],
         epochs=config.epochs,
         training_batch_size=config.training_batch_size,
         validation_batch_size=config.validation_batch_size,
