@@ -24,9 +24,13 @@ class Group(ABC, SeedableObject):
     def name(self) -> str:
         return self._name
 
-    def generate_random_group_action(self) -> numpy.ndarray:
-        radians_u = self._rng.uniform(low=0, high=2*numpy.pi, size=1)
-        radians_v = self._rng.uniform(low=0, high=2*numpy.pi, size=1)
+    def generate_random_group_action(self, radians_u: Optional[float] = None, radians_v: Optional[float] = None) -> numpy.ndarray:
+        if radians_u is None:
+            radians_u = self._rng.uniform(low=0, high=2*numpy.pi, size=1)
+
+        if radians_v is None:
+            radians_v = self._rng.uniform(low=0, high=2*numpy.pi, size=1)
+
         det = float(self._rng.uniform(low=self._min_det, high=self._max_det, size=1))
         cond = float(self._rng.uniform(low=self._min_cond, high=self._max_cond, size=1))
         return deep_signature.core.transformations.generate_affine_transform_2d(det=det, cond=cond, radians_u=radians_u, radians_v=radians_v)

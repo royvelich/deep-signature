@@ -498,10 +498,10 @@ class PlanarCurve(SeedableObject):
         c = color_indices[self._reference_indices]
         deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=x, y=y, c=c, ax=ax, point_size=point_size, alpha=alpha, cmap=cmap, color=color, zorder=zorder)
 
-    def plot_lined_curve(self, ax: matplotlib.axes.Axes, line_width: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1):
+    def plot_lined_curve(self, ax: matplotlib.axes.Axes, line_width: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1, equal_axis: bool = False, force_limits: bool = True):
         x = self._points[:, 0]
         y = self._points[:, 1]
-        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=y, ax=ax, line_style='-', marker='', alpha=alpha, zorder=zorder)
+        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=y, ax=ax, line_style='-', marker='', alpha=alpha, zorder=zorder, equal_axis=equal_axis, force_limits=force_limits)
         # deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=y, ax=ax, line_width=line_width, alpha=alpha, cmap=cmap, zorder=zorder)
 
     def plot_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, cmap: str = 'hsv', color: str = '#FF0000', zorder: int = 1, force_limits: bool = True):

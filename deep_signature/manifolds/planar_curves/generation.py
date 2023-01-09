@@ -535,8 +535,8 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
         numpy.save(file=curves_file_path, arr=curves, allow_pickle=True)
         for curve_index, sampled_planar_curve in enumerate(self._sampled_planar_curves):
             fig, ax = matplotlib.pyplot.subplots(nrows=1, ncols=1, figsize=self._fig_size)
-            sampled_planar_curve.reference_curve.plot_scattered_curve(ax=ax, cmap='red', point_size=self._point_size)
-            sampled_planar_curve.plot_scattered_curve(ax=ax, cmap='green')
+            sampled_planar_curve.reference_curve.plot_scattered_curve(ax=ax, cmap=None, color='red', point_size=self._point_size)
+            sampled_planar_curve.plot_scattered_curve(ax=ax, cmap=None, color='green')
             matplotlib.pyplot.axis('off')
             ax.axis('equal')
             plot_file_dir_path = os.path.normpath(os.path.join('plots', relative_file_path.parent))

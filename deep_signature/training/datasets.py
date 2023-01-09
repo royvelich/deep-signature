@@ -83,13 +83,20 @@ class CurveNeighborhoodTupletsDataset(InfiniteOnlineParallelProcessor, TupletsDa
         #     flipped_anchor_example = self._flip_curve_neighborhood_points(points=tuplet[0])
         #     tuplet.append(flipped_anchor_example)
 
+        # for i in range(self._negative_examples_count):
+        #     sampled_planar_curve = self._sample_planar_curve(planar_curve=planar_curve)
+        #     negative_example_offset = self._rng.integers(low=self._min_negative_example_offset, high=self._max_negative_example_offset)
+        #     if bool(random.getrandbits(1)) is True:
+        #         negative_example_offset = -negative_example_offset
+        #     negative_example_center_point_index = numpy.mod(center_point_index + negative_example_offset, planar_curve.points_count)
+        #     curve_neighborhood_points = self._extract_curve_neighborhood_points(planar_curve=sampled_planar_curve, center_point_index=negative_example_center_point_index)
+        #     tuplet.append(curve_neighborhood_points)
+
         for i in range(self._negative_examples_count):
+            planar_curve = self._planar_curves_manager.get_random_planar_curve()
+            center_point_index = planar_curve.get_random_point_index()
             sampled_planar_curve = self._sample_planar_curve(planar_curve=planar_curve)
-            negative_example_offset = self._rng.integers(low=self._min_negative_example_offset, high=self._max_negative_example_offset)
-            if bool(random.getrandbits(1)) is True:
-                negative_example_offset = -negative_example_offset
-            negative_example_center_point_index = numpy.mod(center_point_index + negative_example_offset, planar_curve.points_count)
-            curve_neighborhood_points = self._extract_curve_neighborhood_points(planar_curve=sampled_planar_curve, center_point_index=negative_example_center_point_index)
+            curve_neighborhood_points = self._extract_curve_neighborhood_points(planar_curve=sampled_planar_curve, center_point_index=center_point_index)
             tuplet.append(curve_neighborhood_points)
 
         return numpy.array(tuplet)

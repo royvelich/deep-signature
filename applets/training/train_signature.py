@@ -97,7 +97,7 @@ def main():
 
     results_dir_path = init_app(parser=parser)
 
-    training_planar_curves_manager = PlanarCurvesManager(curves_file_paths=[parser.training_curves_file_path, parser.training_circles_file_path])
+    training_planar_curves_manager = PlanarCurvesManager(curves_file_paths=[parser.training_curves_file_path])
     training_group = Group.from_group_name(name=config.group_name, min_det=config.training_min_det, max_det=config.training_max_det, min_cond=config.training_min_cond, max_cond=config.training_max_cond)
 
     validation_planar_curves_manager = PlanarCurvesManager(curves_file_paths=[parser.validation_curves_file_path])
@@ -198,7 +198,7 @@ def main():
         planar_curves_signature_comparator=comparator)
 
     qualitative_evaluator_curves = PlanarCurvesSignatureQualitativeEvaluator(
-        curves_count=4,
+        curves_count=3,
         model=model,
         supporting_points_count=config.supporting_points_count,
         planar_curves_manager=test_planar_curves_manager,
@@ -207,7 +207,7 @@ def main():
         sampling_ratios=config.evaluation_sampling_ratios)
 
     qualitative_evaluator_circles = PlanarCurvesSignatureQualitativeEvaluator(
-        curves_count=4,
+        curves_count=2,
         model=model,
         supporting_points_count=config.supporting_points_count,
         planar_curves_manager=test_circles_curves_manager,
