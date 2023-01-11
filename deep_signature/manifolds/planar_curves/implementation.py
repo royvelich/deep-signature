@@ -36,6 +36,9 @@ import deep_signature.manifolds.planar_curves.visualization
 from deep_signature.core.base import SeedableObject
 from deep_signature.core import transformations
 
+# numba
+import numba
+
 
 # =================================================
 # PlanarCurve Class
@@ -164,6 +167,13 @@ class PlanarCurve(SeedableObject):
     def calculate_euclidean_dk_ds(self) -> numpy.ndarray:
         return self._calculate_dk_ds(calculate_k=self.calculate_euclidean_k, calculate_s=self.calculate_euclidean_s)
 
+    def approximate_euclidean_signature(self) -> numpy.ndarray:
+        signature = numpy.zeros(shape=[self.points_count, 2])
+        signature[:, 0] = self.calculate_euclidean_k()
+        signature[:, 1] = self.calculate_euclidean_dk_ds()
+        # signature[:self.points_count] = signature[-1]
+        return signature
+
     # -------------------------------------------------
     # equiaffine curvature and arclength approximation
     # https://link.springer.com/article/10.1023/A:1007992709392
@@ -272,9 +282,10 @@ class PlanarCurve(SeedableObject):
 
     def _calculate_dk_ds(self, calculate_k: Callable[[], numpy.ndarray], calculate_s: Callable[[], numpy.ndarray]) -> numpy.ndarray:
         k = calculate_k()
-        s = calculate_s()
+        # s = calculate_s()
         dk = PlanarCurve._calculate_gradient(array=k, closed=self._closed, normalize=False)
-        ds = PlanarCurve._calculate_gradient(array=s, closed=self._closed, normalize=False)
+        ds = PlanarCurve._calculate_gradient(array=self.points, closed=self._closed, normalize=False)
+        ds = numpy.linalg.norm(x=ds, ord=2, axis=1)
         ks = dk / ds
         return ks
 
@@ -514,6 +525,10 @@ class PlanarCurve(SeedableObject):
 
         self._plot_signature(signature=self_signature, ax=ax, line_style=line_style, marker=marker, point_size=point_size, alpha=alpha, color='#FF0000', zorder=zorder, force_limits=False)
         self._plot_signature(signature=curve_signature, ax=ax, line_style=line_style, marker=marker, point_size=point_size, alpha=alpha, color='#00FF00', zorder=zorder, force_limits=False)
+
+    def plot_euclidean_signature(self, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, cmap: str = 'hsv', color: str = '#FF0000', zorder: int = 1, force_limits: bool = True):
+        signature = self.approximate_euclidean_signature()
+        self._plot_signature(signature=signature, ax=ax, line_style=line_style, marker=marker, point_size=point_size, alpha=alpha, cmap=cmap, color=color, zorder=zorder, force_limits=force_limits)
 
     def _plot_signature(self, signature: numpy.ndarray, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, cmap: str = 'hsv', color: str = '#FF0000', zorder: int = 1, force_limits: bool = True):
         x = numpy.array(list(range(signature.shape[0])))

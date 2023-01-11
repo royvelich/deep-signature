@@ -14,8 +14,6 @@ class InvarianceLoss(torch.nn.Module):
         super().__init__()
 
     def forward(self, anchor: torch.tensor, positive: torch.tensor, negative: torch.tensor):
-        anchor = anchor.unsqueeze(dim=1)
-        positive = positive.unsqueeze(dim=1)
         a_p = torch.norm(input=anchor - positive, p=2, dim=2)
         a_n = torch.norm(input=anchor - negative, p=2, dim=2)
         r = a_p - a_n
@@ -44,9 +42,9 @@ class DifferentialInvariantsLoss(torch.nn.Module):
         self._orthogonality_loss_fn = OrthogonalityLoss()
 
     def forward(self, output: torch.tensor):
-        anchor = output[:, 0, :]
-        positive = output[:, 1, :]
-        negative = output[:, 2:, :].squeeze(dim=1)
+        anchor = output[:, 0, :].unsqueeze(dim=1)
+        positive = output[:, 1, :].unsqueeze(dim=1)
+        negative = output[:, 2:, :]
         invariance_loss = self._invariance_loss_fn(anchor, positive, negative)
         orthogonality_loss = self._orthogonality_loss_fn(output=output)
         return invariance_loss + orthogonality_loss
