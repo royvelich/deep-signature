@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     shape_matching_evaluator = PlanarCurvesShapeMatchingEvaluator(
         log_dir_path=Path("/data/output"),
-        num_workers=59,
+        num_workers=50,
         curves_count_per_collection=30,
         curve_collections_file_names=collections,
         benchmark_dir_path=Path('/data/curves/benchmark/2023-01-07-10-12-19'),
