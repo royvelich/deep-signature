@@ -11,10 +11,14 @@ import matplotlib.collections
 import matplotlib.axes
 
 
-def plot_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes.Axes, line_width: float = 2, markersize: float = 2, line_style: str = '-',  marker: str = '.', alpha: float = 1.0, color: str = 'red', zorder: int = 1, equal_axis: bool = False, force_limits: bool = True):
+def plot_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes.Axes, closed: bool = True, line_width: float = 2, markersize: float = 2, line_style: str = '-',  marker: str = '.', alpha: float = 1.0, color: str = 'red', zorder: int = 1, equal_axis: bool = False, force_limits: bool = True):
     if force_limits is True:
         ax.set_xlim(left=numpy.min(x), right=numpy.max(x))
         ax.set_ylim(bottom=numpy.min(y), top=numpy.max(y))
+
+    if closed is True:
+        x = numpy.append(arr=x, values=[x[0]])
+        y = numpy.append(arr=y, values=[y[0]])
 
     if equal_axis is True:
         ax.axis('equal')
@@ -22,12 +26,17 @@ def plot_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes.Axes, line
 
 
 # https://nbviewer.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
-def plot_multicolor_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes.Axes, line_width: float = 2, alpha: float = 1.0, cmap: str = 'hsv', color: str = '#FFFFFF', zorder: int = 1, equal_axis: bool = False):
+def plot_multicolor_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes.Axes, closed: bool = True, line_width: float = 2, alpha: float = 1.0, cmap: str = 'hsv', color: Optional[str] = None, zorder: int = 1, equal_axis: bool = False):
     indices = list(range(x.shape[0]))
     z = numpy.linspace(0.0, 1.0, len(indices))
 
     ax.set_xlim(left=numpy.min(x), right=numpy.max(x))
     ax.set_ylim(bottom=numpy.min(y), top=numpy.max(y))
+
+    if closed is True:
+        x = numpy.append(arr=x, values=[x[0]])
+        y = numpy.append(arr=y, values=[y[0]])
+
     if equal_axis is True:
         ax.axis('equal')
 

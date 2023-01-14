@@ -502,57 +502,256 @@ class PlanarCurve(SeedableObject):
     # -------------------------------------------------
     # curve visualization
     # -------------------------------------------------
-    def plot_scattered_curve(self, ax: matplotlib.axes.Axes, point_size: float = 2, alpha: float = 1, cmap: Optional[str] = 'hsv', color: Optional[str] = '#FF0000', zorder: int = 1):
+    def plot_scattered_curve(
+            self,
+            ax: matplotlib.axes.Axes,
+            point_size: float = 2,
+            alpha: float = 1,
+            label_size: int = 30,
+            frame_line_width: int = 4,
+            tick_width: int = 5,
+            tick_length: int = 15,
+            cmap: Optional[str] = 'hsv',
+            color: Optional[str] = '#FF0000',
+            zorder: int = 1):
         x = self._points[:, 0]
         y = self._points[:, 1]
         color_indices = numpy.linspace(0.0, 1.0, self.reference_curve.points_count)
         c = color_indices[self._reference_indices]
         deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=x, y=y, c=c, ax=ax, point_size=point_size, alpha=alpha, cmap=cmap, color=color, zorder=zorder)
+        self._configure_axis(ax=[ax], label_size=label_size, frame_line_width=frame_line_width, tick_width=tick_width, tick_length=tick_length)
 
-    def plot_lined_curve(self, ax: matplotlib.axes.Axes, line_width: float = 2, alpha: float = 1, cmap: str = 'red', zorder: int = 1, equal_axis: bool = False, force_limits: bool = True):
+    def plot_lined_curve(
+            self,
+            ax: matplotlib.axes.Axes,
+            line_width: float = 2,
+            alpha: float = 1,
+            frame_line_width: int = 4,
+            tick_width: int = 5,
+            tick_length: int = 15,
+            zorder: int = 1,
+            label_size: int = 30,
+            equal_axis: bool = False,
+            force_limits: bool = True):
         x = self._points[:, 0]
         y = self._points[:, 1]
-        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=y, ax=ax, line_style='-', marker='', alpha=alpha, zorder=zorder, equal_axis=equal_axis, force_limits=force_limits)
-        # deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=y, ax=ax, line_width=line_width, alpha=alpha, cmap=cmap, zorder=zorder)
+        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=y, ax=ax, line_style='-', marker='', alpha=alpha, zorder=zorder, equal_axis=equal_axis, line_width=line_width, force_limits=force_limits)
+        self._configure_axis(ax=[ax], label_size=label_size, frame_line_width=frame_line_width, tick_width=tick_width, tick_length=tick_length)
 
-    def plot_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, cmap: str = 'hsv', color: str = '#FF0000', zorder: int = 1, force_limits: bool = True):
-        signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
-        self._plot_signature(signature=signature, ax=ax, line_style=line_style, marker=marker, point_size=point_size, alpha=alpha, cmap=cmap, color=color, zorder=zorder, force_limits=force_limits)
+    def plot_signature(
+            self,
+            model: torch.nn.Module,
+            supporting_points_count: int,
+            device: torch.device,
+            ax: List[matplotlib.axes.Axes],
+            multicolor: bool = True,
+            line_style: str = '',
+            marker: str = '.',
+            point_size: float = 2,
+            line_width: float = 2,
+            label_size: int = 30,
+            frame_line_width: int = 4,
+            tick_width: int = 5,
+            tick_length: int = 15,
+            axis_title_size: int = 30,
+            alpha: float = 1,
+            cmap: str = 'hsv',
+            color: str = '#FF0000',
+            zorder: int = 1,
+            force_limits: bool = True,
+            axiomatic: bool = False):
 
-    def plot_signature_comparison(self, comparison_curve: PlanarCurve, model: torch.nn.Module, supporting_points_count: int, device: torch.device, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, zorder: int = 1):
-        self_signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
-        curve_signature = comparison_curve.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
+        if axiomatic is False:
+            signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
+        else:
+            signature = self.approximate_euclidean_signature()
 
-        self._plot_signature(signature=self_signature, ax=ax, line_style=line_style, marker=marker, point_size=point_size, alpha=alpha, color='#FF0000', zorder=zorder, force_limits=False)
-        self._plot_signature(signature=curve_signature, ax=ax, line_style=line_style, marker=marker, point_size=point_size, alpha=alpha, color='#00FF00', zorder=zorder, force_limits=False)
+        self._plot_signature(
+            signature=signature,
+            ax=ax,
+            multicolor=multicolor,
+            line_style=line_style,
+            marker=marker,
+            point_size=point_size,
+            line_width=line_width,
+            label_size=label_size,
+            frame_line_width=frame_line_width,
+            tick_width=tick_width,
+            tick_length=tick_length,
+            axis_title_size=axis_title_size,
+            alpha=alpha,
+            cmap=cmap,
+            color=color,
+            zorder=zorder,
+            force_limits=force_limits)
 
-    def plot_euclidean_signature(self, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, cmap: str = 'hsv', color: str = '#FF0000', zorder: int = 1, force_limits: bool = True):
+    def plot_signature_comparison(
+            self,
+            comparison_curve: PlanarCurve,
+            model: torch.nn.Module,
+            supporting_points_count: int,
+            device: torch.device,
+            ax: List[matplotlib.axes.Axes],
+            multicolor: bool = True,
+            line_style: str = '',
+            marker: str = '.',
+            point_size: float = 2,
+            line_width: float = 2,
+            axis_title_size: int = 30,
+            label_size: int = 30,
+            frame_line_width: int = 4,
+            tick_width: int = 5,
+            tick_length: int = 15,
+            alpha: float = 1,
+            cmap: str = 'hsv',
+            zorder: int = 1,
+            axiomatic: bool = False,
+            compare_only_signature_curve: bool = False):
+
+        if axiomatic is False:
+            self_signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
+            curve_signature = comparison_curve.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
+        else:
+            self_signature = self.approximate_euclidean_signature()
+            curve_signature = comparison_curve.approximate_euclidean_signature()
+
+        self._plot_signature(
+            signature=self_signature,
+            ax=ax,
+            multicolor=multicolor,
+            line_style=line_style,
+            marker=marker,
+            point_size=point_size,
+            line_width=line_width,
+            axis_title_size=axis_title_size,
+            label_size=label_size,
+            frame_line_width=frame_line_width,
+            tick_width=tick_width,
+            tick_length=tick_length,
+            alpha=alpha,
+            color='#FF0000',
+            cmap=cmap,
+            zorder=zorder,
+            force_limits=False)
+
+        self._plot_signature(
+            signature=curve_signature,
+            ax=ax,
+            multicolor=multicolor,
+            line_style=line_style,
+            marker=marker,
+            point_size=point_size,
+            line_width=line_width,
+            axis_title_size=axis_title_size,
+            label_size=label_size,
+            frame_line_width=frame_line_width,
+            tick_width=tick_width,
+            tick_length=tick_length,
+            alpha=alpha,
+            color='#00FF00',
+            cmap=cmap,
+            zorder=zorder,
+            force_limits=False,
+            plot_only_signature_curve=compare_only_signature_curve)
+
+    def plot_euclidean_signature(
+            self,
+            ax: List[matplotlib.axes.Axes],
+            multicolor: bool = True,
+            line_style: str = '',
+            marker: str = '.',
+            point_size: float = 2,
+            line_width: float = 2,
+            axis_title_size: int = 30,
+            label_size: int = 20,
+            frame_line_width: int = 4,
+            tick_width: int = 5,
+            tick_length: int = 15,
+            alpha: float = 1,
+            cmap: str = 'hsv',
+            color: str = '#FF0000',
+            zorder: int = 1,
+            force_limits: bool = True):
         signature = self.approximate_euclidean_signature()
-        self._plot_signature(signature=signature, ax=ax, line_style=line_style, marker=marker, point_size=point_size, alpha=alpha, cmap=cmap, color=color, zorder=zorder, force_limits=force_limits)
+        self._plot_signature(
+            signature=signature,
+            multicolor=multicolor,
+            ax=ax,
+            line_style=line_style,
+            marker=marker,
+            point_size=point_size,
+            axis_title_size=axis_title_size,
+            label_size=label_size,
+            line_width=line_width,
+            frame_line_width=frame_line_width,
+            tick_width=tick_width,
+            tick_length=tick_length,
+            alpha=alpha,
+            cmap=cmap,
+            color=color,
+            zorder=zorder,
+            force_limits=force_limits)
 
-    def _plot_signature(self, signature: numpy.ndarray, ax: List[matplotlib.axes.Axes], line_style='', marker='.', point_size: float = 2, alpha: float = 1, cmap: str = 'hsv', color: str = '#FF0000', zorder: int = 1, force_limits: bool = True):
+    def _plot_signature(
+            self,
+            signature: numpy.ndarray,
+            ax: List[matplotlib.axes.Axes],
+            multicolor: bool,
+            line_style: str,
+            marker: str,
+            point_size: float,
+            line_width: float,
+            axis_title_size: int,
+            label_size: int,
+            frame_line_width: int,
+            tick_width: int,
+            tick_length: int,
+            alpha: float,
+            cmap: str,
+            color: str,
+            zorder: int,
+            force_limits: bool,
+            plot_only_signature_curve: bool = False):
         x = numpy.array(list(range(signature.shape[0])))
         kappa = signature[:, 0]
         kappa_s = signature[:, 1]
-        c = numpy.linspace(0.0, 1.0, signature.shape[0])
-        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa, ax=ax[0], line_style=line_style, marker=marker, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits)
-        deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, marker=marker, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits)
-        # deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=kappa, y=kappa_s, c=c, ax=ax[2], point_size=point_size, alpha=alpha, cmap=cmap, zorder=zorder)
-        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=kappa, y=kappa_s, ax=ax[2], alpha=alpha, zorder=zorder, equal_axis=True, cmap=cmap, color=color)
 
-    # def plot_curve_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device, point_size: float = 2, alpha: float = 1):
-    #     fig, axes = matplotlib.pyplot.subplots(nrows=4, ncols=1, figsize=(40, 10))
-    #     invariant = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
-    #     self.plot_scattered_curve(ax=axes[0], point_size=point_size, cmap='red')
-    #     self.plot_scattered_curve(ax=axes[0], point_size=point_size, cmap='red')
-    #     self.plot_scattered_curve(ax=axes[0], point_size=point_size, cmap='red')
+        if multicolor is True:
+            if not plot_only_signature_curve:
+                deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa, ax=ax[0], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, closed=False)
+                deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa_s, ax=ax[1], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, closed=False)
+            deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=kappa, y=kappa_s, ax=ax[2], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, equal_axis=True)
+        else:
+            if not plot_only_signature_curve:
+                deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa, ax=ax[0], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, closed=False)
+                deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, closed=False)
+            deep_signature.manifolds.planar_curves.visualization.plot_line(x=kappa, y=kappa_s, ax=ax[2], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, equal_axis=True)
 
-        # discrete_distribution = discrete_distributions.MultimodalGaussianDiscreteDistribution(bins_count=planar_curve.points_count, multimodality=10)
-        # # discrete_distribution = discrete_distributions.UniformDiscreteDistribution(bins_count=planar_curve.points_count)
-        # discrete_distribution.plot_dist(ax=axes[0])
-        # sampled_planar_curve = planar_curve.sample_curve(sampling_ratio=sampling_ratio, discrete_distribution=discrete_distribution)
-        # sampled_planar_curve.plot_scattered_curve(ax=axes[1], cmap='hsv')
-        # matplotlib.pyplot.show()
+        x_label_str = r'\textit{sample index}'
+        kappa_label_str = r'$\kappa$'
+        kappa_s_label_str = r'$\kappa_s$'
+        ax[0].set_xlabel(x_label_str, fontsize=axis_title_size)
+        ax[0].set_ylabel(kappa_label_str, fontsize=axis_title_size)
+        ax[1].set_xlabel(x_label_str, fontsize=axis_title_size)
+        ax[1].set_ylabel(kappa_s_label_str, fontsize=axis_title_size)
+        ax[2].set_xlabel(kappa_label_str, fontsize=axis_title_size)
+        ax[2].set_ylabel(kappa_s_label_str, fontsize=axis_title_size)
+        self._configure_axis(ax=ax, label_size=label_size, frame_line_width=frame_line_width, tick_width=tick_width, tick_length=tick_length)
+
+    def _configure_axis(
+            self,
+            ax: List[matplotlib.axes.Axes],
+            label_size: int,
+            frame_line_width: int,
+            tick_width: int,
+            tick_length: int):
+        for axis in ax:
+            axis.tick_params(axis='both', which='major', labelsize=label_size)
+            axis.tick_params(axis='both', which='minor', labelsize=label_size)
+            for edge in ['top', 'bottom', 'left', 'right']:
+                axis.spines[edge].set_linewidth(frame_line_width)
+                axis.xaxis.set_tick_params(width=tick_width, length=tick_length)
+                axis.yaxis.set_tick_params(width=tick_width, length=tick_length)
 
 
 # =================================================
