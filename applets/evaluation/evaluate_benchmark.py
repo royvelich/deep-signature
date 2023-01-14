@@ -11,21 +11,21 @@ import numpy
 import torch
 
 # matplotlib
-import matplotlib
-import matplotlib.pyplot
-import matplotlib.axes
-matplotlib.pyplot.rcParams['text.usetex'] = True
+# import matplotlib
+# import matplotlib.pyplot
+# import matplotlib.axes
+# matplotlib.pyplot.rcParams['text.usetex'] = True
 
 # deep-signature
 from deep_signature.core.base import SeedableObject
-from deep_signature.manifolds.planar_curves.implementation import PlanarCurvesManager, PlanarCurve
-from deep_signature.manifolds.planar_curves.groups import EuclideanGroup, SimilarityGroup, EquiaffineGroup, AffineGroup
-from deep_signature.core import discrete_distributions
-from deep_signature.training import datasets
+# from deep_signature.manifolds.planar_curves.implementation import PlanarCurvesManager, PlanarCurve
+# from deep_signature.manifolds.planar_curves.groups import EuclideanGroup, SimilarityGroup, EquiaffineGroup, AffineGroup
+# from deep_signature.core import discrete_distributions
+# from deep_signature.training import datasets
 from deep_signature.training.networks import DeepSignaturesNet
 from deep_signature.training.activations import Sine
 from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesApproximatedSignatureComparator, PlanarCurvesShapeMatchingEvaluator
-from deep_signature.manifolds.planar_curves.groups import EquiaffineGroup
+# from deep_signature.manifolds.planar_curves.groups import EquiaffineGroup
 
 SeedableObject.set_seed(seed=42)
 
@@ -38,15 +38,6 @@ group_name = 'affine'
 if __name__ == '__main__':
     create_activation_fn: Callable[[int], torch.nn.Module] = lambda out_features_size: Sine()
     create_batch_norm_fn: Callable[[int], torch.nn.Module] = lambda out_features_size: torch.nn.BatchNorm1d(num_features=out_features_size)
-    # model_file_path = "C:/deep-signature-data-new/training/2023-01-03-13-40-21/models/model_375.pt"
-    # model_file_path = "C:/deep-signature-data-new/training/2023-01-05-15-42-57/models/model_300.pt"
-    # model_file_path = "C:/deep-signature-data-new/training/2023-01-06-19-05-56/models/model_725.pt"
-    # model_file_path = "C:/deep-signature-data-new/training/2023-01-08-10-32-10/models/model_175.pt"
-
-    # best equiaffine
-    # model_file_path = "C:/deep-signature-data-new/training/2023-01-08-15-06-32/models/model_950.pt"
-
-    # model_file_path = "C:/deep-signature-data-new/training/2023-01-10-05-20-03/models/model_950.pt"
     model_file_path = "/data/training/2023-01-12-08-13-54/models/model_2325.pt"
 
     device = torch.device('cpu')
@@ -65,7 +56,7 @@ if __name__ == '__main__':
 
     shape_matching_evaluator = PlanarCurvesShapeMatchingEvaluator(
         log_dir_path=Path("/data/output"),
-        num_workers=19,
+        num_workers=59,
         curves_count_per_collection=30,
         curve_collections_file_names=collections,
         benchmark_dir_path=Path('/data/curves/benchmark/2023-01-07-10-12-19'),
