@@ -604,6 +604,8 @@ class PlanarCurve(SeedableObject):
             tick_length: int = 15,
             alpha: float = 1,
             cmap: str = 'hsv',
+            color1: str = '#FF0000',
+            color2: str = '#0000FF',
             zorder: int = 1,
             axiomatic: bool = False,
             compare_only_signature_curve: bool = False):
@@ -629,7 +631,7 @@ class PlanarCurve(SeedableObject):
             tick_width=tick_width,
             tick_length=tick_length,
             alpha=alpha,
-            color='#FF0000',
+            color=color1,
             cmap=cmap,
             zorder=zorder,
             force_limits=False)
@@ -648,7 +650,7 @@ class PlanarCurve(SeedableObject):
             tick_width=tick_width,
             tick_length=tick_length,
             alpha=alpha,
-            color='#00FF00',
+            color=color2,
             cmap=cmap,
             zorder=zorder,
             force_limits=False,
@@ -727,7 +729,7 @@ class PlanarCurve(SeedableObject):
                 deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, closed=False)
             deep_signature.manifolds.planar_curves.visualization.plot_line(x=kappa, y=kappa_s, ax=ax[2], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, equal_axis=True)
 
-        x_label_str = r'\textit{sample index}'
+        x_label_str = r'\textit{point index}'
         kappa_label_str = r'$\kappa$'
         kappa_s_label_str = r'$\kappa_s$'
         ax[0].set_xlabel(x_label_str, fontsize=axis_title_size)
