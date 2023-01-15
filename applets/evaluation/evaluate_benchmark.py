@@ -24,7 +24,7 @@ from deep_signature.core.base import SeedableObject
 # from deep_signature.training import datasets
 from deep_signature.training.networks import DeepSignaturesNet
 from deep_signature.training.activations import Sine
-from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesApproximatedSignatureComparator, PlanarCurvesShapeMatchingEvaluator
+from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesApproximatedSignatureComparator, PlanarCurvesShapeMatchingEvaluator, PlanarCurvesAxiomaticEuclideanSignatureComparator
 # from deep_signature.manifolds.planar_curves.groups import EquiaffineGroup
 
 SeedableObject.set_seed(seed=42)
@@ -48,10 +48,12 @@ if __name__ == '__main__':
     model.eval()
     model.cpu()
 
-    comparator = PlanarCurvesApproximatedSignatureComparator(
-        model=model,
-        supporting_points_count=supporting_points_count,
-        device=device)
+    # comparator = PlanarCurvesApproximatedSignatureComparator(
+    #     model=model,
+    #     supporting_points_count=supporting_points_count,
+    #     device=device)
+
+    comparator = PlanarCurvesAxiomaticEuclideanSignatureComparator()
 
     collections = ['basketball', 'bats', 'birds', 'branches', 'bunnies', 'butterflies', 'cacti', 'cats', 'chickens', 'clouds', 'deers', 'dogs', 'fishes', 'flames', 'flies', 'fruits', 'glasses', 'hearts', 'horses', 'insects', 'jogging', 'leaves', 'monkeys', 'mustaches', 'pieces', 'profiles', 'rats', 'shapes', 'shields', 'signs', 'spiders', 'trees', 'whales', 'wings']
 
@@ -70,4 +72,4 @@ if __name__ == '__main__':
     shape_matching_evaluator.join()
 
     print(shape_matching_evaluator.shape_matching_df)
-    shape_matching_evaluator.shape_matching_df.to_csv(f"{root_folder}/output/output.csv")
+    shape_matching_evaluator.shape_matching_df.to_csv(f"{root_folder}/output/euclidean_signature_output.csv")

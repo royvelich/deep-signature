@@ -77,10 +77,19 @@ def plot_multicolor_line(
     ax.add_collection(line_collection)
 
 
-def plot_multicolor_scatter(x: numpy.ndarray, y: numpy.ndarray, c: numpy.ndarray, ax: matplotlib.axes.Axes, point_size: float = 2, alpha: float = 1.0, cmap: Optional[str] = 'red', color: Optional[str] = '#FF0000', zorder: int = 1):
-    norm = matplotlib.pyplot.Normalize(0.0, 1.0)
-
-    # if cmap in matplotlib.pyplot.colormaps():
+def plot_multicolor_scatter(
+        x: numpy.ndarray,
+        y: numpy.ndarray,
+        c: numpy.ndarray,
+        ax: matplotlib.axes.Axes,
+        point_size: float = 2,
+        alpha: float = 1.0,
+        cmap: Optional[str] = 'red',
+        color: Optional[str] = '#FF0000',
+        zorder: int = 1,
+        norm: matplotlib.pyplot.Normalize = matplotlib.pyplot.Normalize(0.0, 1.0),
+        xlim: Optional[numpy.ndarray] = None,
+        ylim: Optional[numpy.ndarray] = None):
     if cmap is not None:
         ax.scatter(
             x=x,
@@ -101,3 +110,13 @@ def plot_multicolor_scatter(x: numpy.ndarray, y: numpy.ndarray, c: numpy.ndarray
             zorder=zorder)
 
     ax.axis('equal')
+
+    # if xlim is not None:
+    #     ax.set_xlim(left=xlim[0], right=xlim[1])
+    #
+    # if ylim is not None:
+    #     ax.set_ylim(bottom=ylim[0], top=ylim[1])
+    #
+    # ax.set_aspect(aspect='equal')
+
+

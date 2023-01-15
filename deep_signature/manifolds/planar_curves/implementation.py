@@ -518,7 +518,13 @@ class PlanarCurve(SeedableObject):
         y = self._points[:, 1]
         color_indices = numpy.linspace(0.0, 1.0, self.reference_curve.points_count)
         c = color_indices[self._reference_indices]
-        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=x, y=y, c=c, ax=ax, point_size=point_size, alpha=alpha, cmap=cmap, color=color, zorder=zorder)
+        z = self.reference_indices / self.reference_curve.points_count
+        norm = matplotlib.pyplot.Normalize(z.min(), z.max())
+        # max_x = numpy.maximum(numpy.abs(self.reference_curve.points[:, 0]).max(), numpy.abs(self.points[:, 0]).max())
+        # max_y = numpy.maximum(numpy.abs(self.reference_curve.points[:, 1]).max(), numpy.abs(self.points[:, 1]).max())
+        # xlim = numpy.array([-max_x, max_x])
+        # ylim = numpy.array([-max_y, max_y])
+        deep_signature.manifolds.planar_curves.visualization.plot_multicolor_scatter(x=x, y=y, c=c, ax=ax, point_size=point_size, alpha=alpha, cmap=cmap, color=color, zorder=zorder, norm=norm)
         self._configure_axis(ax=[ax], label_size=label_size, frame_line_width=frame_line_width, tick_width=tick_width, tick_length=tick_length)
 
     def plot_lined_curve(

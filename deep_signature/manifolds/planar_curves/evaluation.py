@@ -67,6 +67,17 @@ class PlanarCurvesApproximatedSignatureComparator(PlanarCurvesSignatureComparato
 
 
 # =================================================
+# PlanarCurvesAxiomaticEuclideanSignatureComparator Class
+# =================================================
+class PlanarCurvesAxiomaticEuclideanSignatureComparator(PlanarCurvesSignatureComparator):
+    def __init__(self):
+        super().__init__()
+
+    def _calculate_signature(self, curve: PlanarCurve) -> numpy.ndarray:
+        return curve.approximate_euclidean_signature()
+
+
+# =================================================
 # ShapeMatchingBenchmarkCurvesGeneratorTask Class
 # =================================================
 class PlanarCurvesShapeMatchingEvaluatorTask(ParallelProcessingTask):
