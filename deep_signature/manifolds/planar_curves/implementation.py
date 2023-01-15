@@ -583,7 +583,9 @@ class PlanarCurve(SeedableObject):
             cmap=cmap,
             color=color,
             zorder=zorder,
-            force_limits=force_limits)
+            force_limits=force_limits,
+            reference_x=self.reference_indices,
+            z_range=self.reference_curve.points_count)
 
     def plot_signature_comparison(
             self,
@@ -713,6 +715,8 @@ class PlanarCurve(SeedableObject):
             color: str,
             zorder: int,
             force_limits: bool,
+            reference_x: Optional[numpy.ndarray] = None,
+            z_range: Optional[int] = None,
             plot_only_signature_curve: bool = False):
         x = numpy.array(list(range(signature.shape[0])))
         kappa = signature[:, 0]
@@ -720,9 +724,9 @@ class PlanarCurve(SeedableObject):
 
         if multicolor is True:
             if not plot_only_signature_curve:
-                deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa, ax=ax[0], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, closed=False)
-                deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa_s, ax=ax[1], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, closed=False)
-            deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=kappa, y=kappa_s, ax=ax[2], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, equal_axis=True)
+                deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa, ax=ax[0], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, closed=False, reference_x=reference_x, z_range=z_range)
+                deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa_s, ax=ax[1], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, closed=False, reference_x=reference_x, z_range=z_range)
+            deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=kappa, y=kappa_s, ax=ax[2], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, equal_axis=True, reference_x=reference_x, z_range=z_range)
         else:
             if not plot_only_signature_curve:
                 deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa, ax=ax[0], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, closed=False)

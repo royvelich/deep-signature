@@ -26,9 +26,27 @@ def plot_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes.Axes, clos
 
 
 # https://nbviewer.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
-def plot_multicolor_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes.Axes, closed: bool = True, line_width: float = 2, alpha: float = 1.0, cmap: str = 'hsv', color: Optional[str] = None, zorder: int = 1, equal_axis: bool = False):
-    indices = list(range(x.shape[0]))
-    z = numpy.linspace(0.0, 1.0, len(indices))
+def plot_multicolor_line(
+        x: numpy.ndarray,
+        y: numpy.ndarray,
+        ax: matplotlib.axes.Axes,
+        closed: bool = True,
+        line_width: float = 2,
+        alpha: float = 1.0,
+        cmap: str = 'hsv',
+        z_range: Optional[int] = None,
+        reference_x: Optional[numpy.ndarray] = None,
+        color: Optional[str] = None,
+        zorder: int = 1,
+        equal_axis: bool = False):
+    # indices = list(range(x.shape[0]))
+    # z = numpy.linspace(0.0, 1.0, len(indices))
+    # z = numpy.linspace(0.0, 1.0, 1300)
+    if z_range is None:
+        z_range = x.shape[0]
+        z = x / z_range
+    else:
+        z = reference_x / z_range
 
     ax.set_xlim(left=numpy.min(x), right=numpy.max(x))
     ax.set_ylim(bottom=numpy.min(y), top=numpy.max(y))
@@ -42,7 +60,10 @@ def plot_multicolor_line(x: numpy.ndarray, y: numpy.ndarray, ax: matplotlib.axes
 
     points = numpy.array([x, y]).T.reshape(-1, 1, 2)
     segments = numpy.concatenate([points[:-1], points[1:]], axis=1)
-    norm = matplotlib.pyplot.Normalize(0.0, 1.0)
+
+    # if norm is None:
+    norm = matplotlib.pyplot.Normalize(z.min(), z.max())
+
     line_collection = matplotlib.collections.LineCollection(
         segments=segments,
         array=z,
