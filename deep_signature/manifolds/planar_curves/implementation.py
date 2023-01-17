@@ -380,26 +380,22 @@ class PlanarCurve(SeedableObject):
 
     def translate_curve(self, offset: numpy.ndarray) -> PlanarCurve:
         return PlanarCurve(points=self._points + offset, closed=self._closed, reference_curve=self._reference_curve, reference_indices=self._reference_indices)
-        # self._points = self._points + offset
 
     def rotate_curve(self, radians: float) -> PlanarCurve:
         transform = transformations.generate_rotation_transform_2d(radians)
         return self.transform_curve(transform=transform)
-        # self._points = self._points.dot(transform)
 
     def reflect_curve_horizontally(self) -> PlanarCurve:
         transform = transformations.generate_horizontal_reflection_transform_2d()
         return self.transform_curve(transform=transform)
-        # self._points = self._points.dot(transform)
 
     def reflect_curve_vertically(self) -> PlanarCurve:
         transform = transformations.generate_vertical_reflection_transform_2d()
         return self.transform_curve(transform=transform)
-        # self._points = self._points.dot(transform)
 
     def transform_curve(self, transform: numpy.ndarray) -> PlanarCurve:
-        return PlanarCurve(points=self._points.dot(transform), closed=self._closed, reference_curve=self._reference_curve, reference_indices=self._reference_indices)
-        # self._points = self._points.dot(transform)
+        reference_curve = PlanarCurve(points=self.reference_curve.points.dot(transform), closed=self.reference_curve.closed)
+        return PlanarCurve(points=self._points.dot(transform), closed=self._closed, reference_curve=reference_curve, reference_indices=self.reference_indices)
 
     # -------------------------------------------------
     # curve orientation
@@ -559,7 +555,8 @@ class PlanarCurve(SeedableObject):
             frame_line_width: int = 4,
             tick_width: int = 5,
             tick_length: int = 15,
-            axis_title_size: int = 30,
+            x_axis_title_size: int = 30,
+            y_axis_title_size: int = 30,
             alpha: float = 1,
             cmap: str = 'hsv',
             color: str = '#FF0000',
@@ -584,7 +581,8 @@ class PlanarCurve(SeedableObject):
             frame_line_width=frame_line_width,
             tick_width=tick_width,
             tick_length=tick_length,
-            axis_title_size=axis_title_size,
+            x_axis_title_size=x_axis_title_size,
+            y_axis_title_size=y_axis_title_size,
             alpha=alpha,
             cmap=cmap,
             color=color,
@@ -605,7 +603,8 @@ class PlanarCurve(SeedableObject):
             marker: str = '.',
             point_size: float = 2,
             line_width: float = 2,
-            axis_title_size: int = 30,
+            x_axis_title_size: int = 30,
+            y_axis_title_size: int = 30,
             label_size: int = 30,
             frame_line_width: int = 4,
             tick_width: int = 5,
@@ -633,7 +632,8 @@ class PlanarCurve(SeedableObject):
             marker=marker,
             point_size=point_size,
             line_width=line_width,
-            axis_title_size=axis_title_size,
+            x_axis_title_size=x_axis_title_size,
+            y_axis_title_size=y_axis_title_size,
             label_size=label_size,
             frame_line_width=frame_line_width,
             tick_width=tick_width,
@@ -652,7 +652,8 @@ class PlanarCurve(SeedableObject):
             marker=marker,
             point_size=point_size,
             line_width=line_width,
-            axis_title_size=axis_title_size,
+            x_axis_title_size=x_axis_title_size,
+            y_axis_title_size=y_axis_title_size,
             label_size=label_size,
             frame_line_width=frame_line_width,
             tick_width=tick_width,
@@ -672,7 +673,8 @@ class PlanarCurve(SeedableObject):
             marker: str = '.',
             point_size: float = 2,
             line_width: float = 2,
-            axis_title_size: int = 30,
+            x_axis_title_size: int = 30,
+            y_axis_title_size: int = 30,
             label_size: int = 20,
             frame_line_width: int = 4,
             tick_width: int = 5,
@@ -690,7 +692,8 @@ class PlanarCurve(SeedableObject):
             line_style=line_style,
             marker=marker,
             point_size=point_size,
-            axis_title_size=axis_title_size,
+            x_axis_title_size=x_axis_title_size,
+            y_axis_title_size=y_axis_title_size,
             label_size=label_size,
             line_width=line_width,
             frame_line_width=frame_line_width,
@@ -711,7 +714,8 @@ class PlanarCurve(SeedableObject):
             marker: str,
             point_size: float,
             line_width: float,
-            axis_title_size: int,
+            x_axis_title_size: int,
+            y_axis_title_size: int,
             label_size: int,
             frame_line_width: int,
             tick_width: int,
@@ -739,15 +743,16 @@ class PlanarCurve(SeedableObject):
                 deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, closed=False)
             deep_signature.manifolds.planar_curves.visualization.plot_line(x=kappa, y=kappa_s, ax=ax[2], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, equal_axis=True)
 
-        x_label_str = r'\textit{point index}'
+        x_label_str = r'\textit{Point Index}'
         kappa_label_str = r'$\kappa$'
         kappa_s_label_str = r'$\kappa_s$'
-        ax[0].set_xlabel(x_label_str, fontsize=axis_title_size)
-        ax[0].set_ylabel(kappa_label_str, fontsize=axis_title_size)
-        ax[1].set_xlabel(x_label_str, fontsize=axis_title_size)
-        ax[1].set_ylabel(kappa_s_label_str, fontsize=axis_title_size)
-        ax[2].set_xlabel(kappa_label_str, fontsize=axis_title_size)
-        ax[2].set_ylabel(kappa_s_label_str, fontsize=axis_title_size)
+        x_axis_title_size_point_size = int(x_axis_title_size*0.6)
+        ax[0].set_xlabel(x_label_str, fontsize=x_axis_title_size_point_size)
+        ax[0].set_ylabel(kappa_label_str, fontsize=y_axis_title_size)
+        ax[1].set_xlabel(x_label_str, fontsize=x_axis_title_size_point_size)
+        ax[1].set_ylabel(kappa_s_label_str, fontsize=y_axis_title_size)
+        ax[2].set_xlabel(kappa_label_str, fontsize=x_axis_title_size)
+        ax[2].set_ylabel(kappa_s_label_str, fontsize=y_axis_title_size)
         self._configure_axis(ax=ax, label_size=label_size, frame_line_width=frame_line_width, tick_width=tick_width, tick_length=tick_length)
 
     def _configure_axis(
