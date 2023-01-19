@@ -562,7 +562,8 @@ class PlanarCurve(SeedableObject):
             color: str = '#FF0000',
             zorder: int = 1,
             force_limits: bool = True,
-            axiomatic: bool = False):
+            axiomatic: bool = False,
+            flip_k_ks: bool = False):
 
         if axiomatic is False:
             signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
@@ -589,7 +590,8 @@ class PlanarCurve(SeedableObject):
             zorder=zorder,
             force_limits=force_limits,
             reference_x=self.reference_indices,
-            z_range=self.reference_curve.points_count)
+            z_range=self.reference_curve.points_count,
+            flip_k_ks=flip_k_ks)
 
     def plot_signature_comparison(
             self,
@@ -615,7 +617,8 @@ class PlanarCurve(SeedableObject):
             color2: str = '#0000FF',
             zorder: int = 1,
             axiomatic: bool = False,
-            compare_only_signature_curve: bool = False):
+            compare_only_signature_curve: bool = False,
+            flip_k_ks: bool = False):
 
         if axiomatic is False:
             self_signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
@@ -642,7 +645,8 @@ class PlanarCurve(SeedableObject):
             color=color1,
             cmap=cmap,
             zorder=zorder,
-            force_limits=False)
+            force_limits=False,
+            flip_k_ks=flip_k_ks)
 
         self._plot_signature(
             signature=curve_signature,
@@ -663,7 +667,8 @@ class PlanarCurve(SeedableObject):
             cmap=cmap,
             zorder=zorder,
             force_limits=False,
-            plot_only_signature_curve=compare_only_signature_curve)
+            plot_only_signature_curve=compare_only_signature_curve,
+            flip_k_ks=flip_k_ks)
 
     def plot_euclidean_signature(
             self,
@@ -683,7 +688,8 @@ class PlanarCurve(SeedableObject):
             cmap: str = 'hsv',
             color: str = '#FF0000',
             zorder: int = 1,
-            force_limits: bool = True):
+            force_limits: bool = True,
+            flip_k_ks: bool = False):
         signature = self.approximate_euclidean_signature()
         self._plot_signature(
             signature=signature,
@@ -703,7 +709,8 @@ class PlanarCurve(SeedableObject):
             cmap=cmap,
             color=color,
             zorder=zorder,
-            force_limits=force_limits)
+            force_limits=force_limits,
+            flip_k_ks=flip_k_ks)
 
     def _plot_signature(
             self,
@@ -727,10 +734,16 @@ class PlanarCurve(SeedableObject):
             force_limits: bool,
             reference_x: Optional[numpy.ndarray] = None,
             z_range: Optional[int] = None,
-            plot_only_signature_curve: bool = False):
+            plot_only_signature_curve: bool = False,
+            flip_k_ks: bool = False):
         x = numpy.array(list(range(signature.shape[0])))
-        kappa = signature[:, 0]
-        kappa_s = signature[:, 1]
+
+        if not flip_k_ks:
+            kappa = signature[:, 0]
+            kappa_s = signature[:, 1]
+        else:
+            kappa = signature[:, 1]
+            kappa_s = signature[:, 0]
 
         if multicolor is True:
             if not plot_only_signature_curve:

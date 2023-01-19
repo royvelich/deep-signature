@@ -39,7 +39,8 @@ root_folder = 'C:/deep-signature-data-new'
 if __name__ == '__main__':
     create_activation_fn: Callable[[int], torch.nn.Module] = lambda out_features_size: Sine()
     create_batch_norm_fn: Callable[[int], torch.nn.Module] = lambda out_features_size: torch.nn.BatchNorm1d(num_features=out_features_size)
-    model_file_path = f"{root_folder}/training/2023-01-12-08-13-54/models/model_2325.pt"
+    # model_file_path = f"{root_folder}/training/2023-01-12-08-13-54/models/model_2325.pt"
+    model_file_path = f"{root_folder}/training/2023-01-18-00-26-44/models/model_1000.pt"
 
     device = torch.device('cpu')
     model = DeepSignaturesNet(sample_points=sample_points, in_features_size=128, out_features_size=2, hidden_layer_repetitions=3, create_activation_fn=create_activation_fn, create_batch_norm_fn=create_batch_norm_fn, dropout_p=None)
@@ -48,12 +49,12 @@ if __name__ == '__main__':
     model.eval()
     model.cpu()
 
-    # comparator = PlanarCurvesApproximatedSignatureComparator(
-    #     model=model,
-    #     supporting_points_count=supporting_points_count,
-    #     device=device)
+    comparator = PlanarCurvesApproximatedSignatureComparator(
+        model=model,
+        supporting_points_count=supporting_points_count,
+        device=device)
 
-    comparator = PlanarCurvesAxiomaticEuclideanSignatureComparator()
+    # comparator = PlanarCurvesAxiomaticEuclideanSignatureComparator()
 
     collections = ['basketball', 'bats', 'birds', 'branches', 'bunnies', 'butterflies', 'cacti', 'cats', 'chickens', 'clouds', 'deers', 'dogs', 'fishes', 'flames', 'flies', 'fruits', 'glasses', 'hearts', 'horses', 'insects', 'jogging', 'leaves', 'monkeys', 'mustaches', 'pieces', 'profiles', 'rats', 'shapes', 'shields', 'signs', 'spiders', 'trees', 'whales', 'wings']
 
@@ -72,4 +73,5 @@ if __name__ == '__main__':
     shape_matching_evaluator.join()
 
     print(shape_matching_evaluator.shape_matching_df)
-    shape_matching_evaluator.shape_matching_df.to_csv(f"{root_folder}/output/euclidean_signature_output.csv")
+    shape_matching_evaluator.shape_matching_df.to_csv(f"{root_folder}/output/model_2023-01-18-00-26-44_shape_matching_df.csv")
+    shape_matching_evaluator.df.to_csv(f"{root_folder}/output/model_2023-01-18-00-26-44_df.csv")

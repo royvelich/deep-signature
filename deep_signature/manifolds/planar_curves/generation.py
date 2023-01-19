@@ -399,8 +399,9 @@ class SilhouetteLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
     def _post_process(self):
         curves_file_path = os.path.normpath(os.path.join(self._curves_base_dir_path, f'{self.image_name}.npy'))
         Path(self._curves_base_dir_path).mkdir(parents=True, exist_ok=True)
-        if len(self._curves) >= 30:
-            numpy.save(file=curves_file_path, arr=self._curves, allow_pickle=True)
+        min_curves_count = 30
+        if len(self._curves) >= min_curves_count:
+            numpy.save(file=curves_file_path, arr=self._curves[:min_curves_count], allow_pickle=True)
 
     def _preprocess_image(self, image: numpy.ndarray) -> numpy.ndarray:
         image = cv2.copyMakeBorder(src=image, top=100, bottom=100, left=100, right=100, borderType=cv2.BORDER_CONSTANT, value=[255, 255, 255])
@@ -425,6 +426,7 @@ class SilhouetteLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
             if valid is True:
                 valid_contours.append(ref_contour)
 
+        valid_contours = sorted(valid_contours, key=lambda x: x.shape[0], reverse=True)
         return valid_contours
 
 
@@ -469,8 +471,8 @@ class SilhouetteLevelCurvesGenerator(LevelCurvesGenerator):
 class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
     def __init__(
             self,
-            curves_file_path: str,
-            benchmark_base_dir_path: str,
+            curves_file_path: Path,
+            benchmark_base_dir_path: Path,
             sampling_ratio: float,
             multimodality: int,
             group_name: str,
@@ -491,13 +493,14 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
         self._min_det = min_det
         self._max_det = max_det
         self._group = self._create_group()
-        self._sampled_planar_curves = []
+        self._query_curves = []
+        self._dataset_curves = []
         self._fig_size = fig_size
         self._point_size = point_size
 
     @property
     def sampled_planar_curves(self) -> List[numpy.ndarray]:
-        return self._sampled_planar_curves
+        return self._query_curves
 
     @property
     def _curves_file_name(self) -> str:
@@ -517,32 +520,40 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
         pass
 
     def _process(self):
-        curves = numpy.load(file=self._curves_file_path, allow_pickle=True)
+        curves = numpy.load(file=str(self._curves_file_path), allow_pickle=True)
         for curve in curves:
             planar_curve = PlanarCurve(points=curve)
             discrete_distribution = discrete_distributions.MultimodalGaussianDiscreteDistribution(bins_count=planar_curve.points_count, multimodality=self._multimodality)
             sampled_planar_curve = planar_curve.sample_curve(sampling_ratio=self._sampling_ratio, discrete_distribution=discrete_distribution)
-            if self._sampling_ratio < 1.0:
-                transform = self._group.generate_random_group_action()
-                sampled_planar_curve = sampled_planar_curve.transform_curve(transform=transform)
-            self._sampled_planar_curves.append(sampled_planar_curve)
+            transform = self._group.generate_random_group_action()
+            sampled_planar_curve = sampled_planar_curve.transform_curve(transform=transform)
+            self._query_curves.append(sampled_planar_curve)
+            self._dataset_curves.append(planar_curve)
 
     def _post_process(self):
-        relative_file_path = ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_file_path(curves_file_name=self._curves_file_name, group_name=self._group.name, multimodality=self._multimodality, sampling_ratio=self._sampling_ratio)
-        curves_file_path = os.path.normpath(os.path.join(self._benchmark_base_dir_path, relative_file_path))
-        Path(os.path.dirname(curves_file_path)).mkdir(parents=True, exist_ok=True)
-        curves = [sampled_planar_curve.points for sampled_planar_curve in self._sampled_planar_curves]
-        numpy.save(file=curves_file_path, arr=curves, allow_pickle=True)
-        for curve_index, sampled_planar_curve in enumerate(self._sampled_planar_curves):
-            fig, ax = matplotlib.pyplot.subplots(nrows=1, ncols=1, figsize=self._fig_size)
-            sampled_planar_curve.reference_curve.plot_scattered_curve(ax=ax, cmap=None, color='red', point_size=self._point_size)
-            sampled_planar_curve.plot_scattered_curve(ax=ax, cmap=None, color='green')
-            matplotlib.pyplot.axis('off')
-            ax.axis('equal')
-            plot_file_dir_path = os.path.normpath(os.path.join('plots', relative_file_path.parent))
-            self._save_fig(fig=fig, plot_file_dir_path=plot_file_dir_path, file_format='png', curve_index=curve_index)
-            self._save_fig(fig=fig, plot_file_dir_path=plot_file_dir_path, file_format='svg', curve_index=curve_index)
-            matplotlib.pyplot.close(fig)
+        query_relative_file_path = ShapeMatchingBenchmarkCurvesGeneratorTask.get_query_relative_file_path(curves_file_name=self._curves_file_name, group_name=self._group.name, multimodality=self._multimodality, sampling_ratio=self._sampling_ratio)
+        dataset_relative_file_path = ShapeMatchingBenchmarkCurvesGeneratorTask.get_dataset_relative_file_path(curves_file_name=self._curves_file_name)
+        self._save_curves(relative_file_path=query_relative_file_path, curves=self._query_curves)
+        self._save_curves(relative_file_path=dataset_relative_file_path, curves=self._dataset_curves)
+        for curve_index, (query_curve, dataset_curve) in enumerate(zip(self._query_curves, self._dataset_curves)):
+            self._plot_curve(curve_index=curve_index, dataset_curve=dataset_curve, query_curve=query_curve, query_relative_dir_path=query_relative_file_path.parent)
+
+    def _plot_curve(self, curve_index: int, dataset_curve: PlanarCurve, query_curve: PlanarCurve, query_relative_dir_path: Path):
+        fig, ax = matplotlib.pyplot.subplots(nrows=1, ncols=1, figsize=self._fig_size)
+        dataset_curve.plot_scattered_curve(ax=ax, cmap=None, color='red', point_size=self._point_size)
+        query_curve.plot_scattered_curve(ax=ax, cmap=None, color='green', point_size=self._point_size)
+        matplotlib.pyplot.axis('off')
+        ax.axis('equal')
+        plot_file_dir_path = os.path.normpath(os.path.join('plots', query_relative_dir_path))
+        self._save_fig(fig=fig, plot_file_dir_path=plot_file_dir_path, file_format='png', curve_index=curve_index)
+        self._save_fig(fig=fig, plot_file_dir_path=plot_file_dir_path, file_format='svg', curve_index=curve_index)
+        matplotlib.pyplot.close(fig)
+
+    def _save_curves(self, relative_file_path: Path, curves: List[PlanarCurve]):
+        curves_file_path = self._benchmark_base_dir_path / relative_file_path
+        curves_file_path.parent.mkdir(parents=True, exist_ok=True)
+        curves_points = [query_curve.points for query_curve in curves]
+        numpy.save(file=str(curves_file_path), arr=curves_points, allow_pickle=True)
 
     def _save_fig(self, fig: matplotlib.figure.Figure, plot_file_dir_path: str, file_format: str, curve_index: int):
         plot_file_path = os.path.normpath(os.path.join(self._benchmark_base_dir_path, f'{plot_file_dir_path}/{file_format}/{self._curves_file_name}_{curve_index}.{file_format}'))
@@ -555,8 +566,13 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
         return Path(f'{curves_file_name}/{group_name}/{multimodality}/{sampling_ratio_str}')
 
     @staticmethod
-    def get_relative_file_path(curves_file_name: str, group_name: str, multimodality: int, sampling_ratio: float) -> Path:
+    def get_query_relative_file_path(curves_file_name: str, group_name: str, multimodality: int, sampling_ratio: float) -> Path:
         relative_dir_path = ShapeMatchingBenchmarkCurvesGeneratorTask.get_relative_dir_path(curves_file_name=curves_file_name, group_name=group_name, multimodality=multimodality, sampling_ratio=sampling_ratio)
+        return relative_dir_path / 'curves.npy'
+
+    @staticmethod
+    def get_dataset_relative_file_path(curves_file_name: str) -> Path:
+        relative_dir_path = Path(curves_file_name)
         return relative_dir_path / 'curves.npy'
 
 
