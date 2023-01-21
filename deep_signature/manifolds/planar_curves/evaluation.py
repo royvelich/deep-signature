@@ -111,7 +111,7 @@ class PlanarCurvesShapeMatchingEvaluatorTask(ParallelProcessingTask):
 
     def _process(self, *argv):
         query_curves_file_path = self._benchmark_dir_path / ShapeMatchingBenchmarkCurvesGeneratorTask.get_query_relative_file_path(curves_file_name=self._curves_file_name, sampling_ratio=self._sampling_ratio, multimodality=self._multimodality, group_name=self._group_name)
-        database_curves_file_path = self._benchmark_dir_path / ShapeMatchingBenchmarkCurvesGeneratorTask.get_query_relative_file_path(curves_file_name=self._curves_file_name, sampling_ratio=1.0, multimodality=self._multimodality, group_name=self._group_name)
+        database_curves_file_path = self._benchmark_dir_path / ShapeMatchingBenchmarkCurvesGeneratorTask.get_dataset_relative_file_path(curves_file_name=self._curves_file_name)
         query_curves = numpy.load(file=str(query_curves_file_path), allow_pickle=True)
         query_curve = PlanarCurve(points=query_curves[self._query_curve_id])
         database_curves = numpy.load(file=str(database_curves_file_path), allow_pickle=True)
