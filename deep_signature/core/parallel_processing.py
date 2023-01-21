@@ -11,6 +11,7 @@ from enum import Enum, auto
 
 # torch
 import torch.multiprocessing
+from torch.multiprocessing import Manager, Process
 
 # numpy
 import numpy
@@ -26,6 +27,8 @@ class ParallelProcessorBase(ABC, LoggerObject):
     def __init__(self, log_dir_path: Path, num_workers: int, **kw: object):
         self._num_workers = num_workers
         self._workers = []
+        self._manager = Manager()
+        self._namespace = self._manager.Namespace()
         super().__init__(log_dir_path=log_dir_path, **kw)
 
     def __getstate__(self):
@@ -39,13 +42,14 @@ class ParallelProcessorBase(ABC, LoggerObject):
     def __setstate__(self, d):
         self.__dict__.update(d)
 
-    def start(self):
-        num_workers_digits = len(str(self._num_workers))
+    def start(self, num_workers: Optional[int] = None):
+        self._num_workers = num_workers if num_workers is not None else self._num_workers
+        num_workers_digits = len(str(num_workers))
 
         self._logger.info(msg='Running Pre Start')
         self._pre_start()
 
-        self._workers = [torch.multiprocessing.Process(target=self._worker_func, args=tuple(self._get_args(),)) for _ in range(self._num_workers)]
+        self._workers = [Process(target=self._worker_func, args=tuple(self._get_args(),)) for _ in range(self._num_workers)]
 
         for i, worker in enumerate(self._workers):
             worker.start()
@@ -70,7 +74,7 @@ class ParallelProcessorBase(ABC, LoggerObject):
         return []
 
     def _get_states_to_remove(self) -> List[str]:
-        return []
+        return ['_manager']
 
     @abstractmethod
     def _pre_start(self):
@@ -127,9 +131,7 @@ class TaskParallelProcessor(ParallelProcessorBase):
         self._tasks_queue = Queue()
         self._completed_tasks_queue = Queue()
         self._max_tasks = max_tasks
-        self._tasks = self._generate_tasks()
-        if max_tasks is not None:
-            self._tasks = random.sample(self._tasks, max_tasks)
+        self._tasks = []
         self._completed_tasks = []
 
     @property
@@ -137,6 +139,10 @@ class TaskParallelProcessor(ParallelProcessorBase):
         return len(self._tasks)
 
     def _pre_start(self):
+        self._tasks = self._generate_tasks()
+        if self._max_tasks is not None:
+            self._tasks = random.sample(self._tasks, self._max_tasks)
+
         for task in self._tasks:
             self._tasks_queue.put(obj=task)
 
