@@ -88,6 +88,7 @@ def plot_multicolor_scatter(
         color: Optional[str] = '#FF0000',
         zorder: int = 1,
         norm: matplotlib.pyplot.Normalize = matplotlib.pyplot.Normalize(0.0, 1.0),
+        axis_equal: bool = True,
         xlim: Optional[numpy.ndarray] = None,
         ylim: Optional[numpy.ndarray] = None):
     if cmap is not None:
@@ -109,7 +110,8 @@ def plot_multicolor_scatter(
             alpha=alpha,
             zorder=zorder)
 
-    ax.axis('equal')
+    if axis_equal is True:
+        ax.axis('equal')
 
     # if xlim is not None:
     #     ax.set_xlim(left=xlim[0], right=xlim[1])
@@ -117,6 +119,6 @@ def plot_multicolor_scatter(
     # if ylim is not None:
     #     ax.set_ylim(bottom=ylim[0], top=ylim[1])
     #
-    # ax.set_aspect(aspect='equal')
+    ax.set_aspect(aspect='equal')
 
 
