@@ -523,12 +523,21 @@ class ShapeMatchingBenchmarkCurvesGeneratorTask(ParallelProcessingTask):
         curves = numpy.load(file=str(self._curves_file_path), allow_pickle=True)
         for curve in curves:
             planar_curve = PlanarCurve(points=curve)
-            discrete_distribution = discrete_distributions.MultimodalGaussianDiscreteDistribution(bins_count=planar_curve.points_count, multimodality=self._multimodality)
-            sampled_planar_curve = planar_curve.sample_curve(sampling_ratio=self._sampling_ratio, discrete_distribution=discrete_distribution)
             transform = self._group.generate_random_group_action()
-            sampled_planar_curve = sampled_planar_curve.transform_curve(transform=transform)
+            transformed_planar_curve = planar_curve.transform_curve(transform=transform)
+            discrete_distribution = discrete_distributions.UniformDiscreteDistribution(bins_count=planar_curve.points_count)
+            sampled_planar_curve = transformed_planar_curve.sample_curve(sampling_ratio=self._sampling_ratio, discrete_distribution=discrete_distribution)
             self._query_curves.append(sampled_planar_curve)
             self._dataset_curves.append(planar_curve)
+        # curves = numpy.load(file=str(self._curves_file_path), allow_pickle=True)
+        # for curve in curves:
+        #     planar_curve = PlanarCurve(points=curve)
+        #     discrete_distribution = discrete_distributions.MultimodalGaussianDiscreteDistribution(bins_count=planar_curve.points_count, multimodality=self._multimodality)
+        #     sampled_planar_curve = planar_curve.sample_curve(sampling_ratio=self._sampling_ratio, discrete_distribution=discrete_distribution)
+        #     transform = self._group.generate_random_group_action()
+        #     sampled_planar_curve = sampled_planar_curve.transform_curve(transform=transform)
+        #     self._query_curves.append(sampled_planar_curve)
+        #     self._dataset_curves.append(planar_curve)
 
     def _post_process(self):
         query_relative_file_path = ShapeMatchingBenchmarkCurvesGeneratorTask.get_query_relative_file_path(curves_file_name=self._curves_file_name, group_name=self._group.name, multimodality=self._multimodality, sampling_ratio=self._sampling_ratio)

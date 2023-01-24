@@ -86,7 +86,9 @@ if __name__ == '__main__':
         }
     ]
 
-    benchmark_dates = ['2023-01-19-21-49-56', '2023-01-19-21-52-07', '2023-01-19-21-55-02']
+    # non_uniform_benchmark_dates = ['2023-01-19-21-49-56', '2023-01-19-21-52-07', '2023-01-19-21-55-02']
+    uniform_benchmark_dates = ['2023-01-23-20-07-41', '2023-01-23-20-09-40', '2023-01-23-20-12-26']
+
     collections = ['basketball', 'bats', 'birds', 'branches', 'bunnies', 'butterflies', 'cacti', 'cats', 'chickens', 'clouds', 'deers', 'dogs', 'fishes', 'flames', 'flies', 'fruits', 'glasses', 'hearts', 'horses', 'insects', 'jogging', 'leaves', 'monkeys', 'mustaches', 'pieces', 'profiles', 'rats', 'shapes', 'shields', 'signs', 'spiders', 'trees', 'whales', 'wings']
     for model in models:
         model_date = model['model_date']
@@ -106,14 +108,14 @@ if __name__ == '__main__':
 
         comparator = PlanarCurvesSignatureHausdorffComparator()
 
-        for benchmark_date in benchmark_dates:
+        for benchmark_date in uniform_benchmark_dates:
             output_folder = Path(f"{root_folder}/output/MODEL_{model_date}_{model_iteration}_BENCHMARK_{benchmark_date}")
             benchmark_dir_path = Path(f"{root_folder}/curves/benchmark/{benchmark_date}")
             run_benchmark(benchmark_dir_path=benchmark_dir_path, output_folder=output_folder, group_name=group_name, collections=collections, calculator=calculator, comparator=comparator)
 
     calculator = PlanarCurvesAxiomaticEuclideanSignatureCalculator()
     comparator = PlanarCurvesSignatureHausdorffComparator()
-    for benchmark_date in benchmark_dates:
+    for benchmark_date in uniform_benchmark_dates:
         output_folder = Path(f"{root_folder}/output/AXIOMATIC_EUCLIDEAN_BENCHMARK_{benchmark_date}")
         benchmark_dir_path = Path(f"{root_folder}/curves/benchmark/{benchmark_date}")
         run_benchmark(benchmark_dir_path=benchmark_dir_path, output_folder=output_folder, group_name=group_name, collections=collections, calculator=calculator, comparator=comparator)
