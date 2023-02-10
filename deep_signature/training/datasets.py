@@ -119,3 +119,53 @@ class CurveNeighborhoodTupletsDataset(InfiniteOnlineParallelProcessor, TupletsDa
         curve = curve.normalize_curve(force_ccw=False, force_endpoint=False)
         curve = curve.reflect_curve_horizontally()
         return curve.points
+
+
+class CurveNeighborhoodTupletsDatasetUniformSampling(InfiniteOnlineParallelProcessor, TupletsDataset):
+    def __init__(
+            self,
+            planar_curves_manager: PlanarCurvesManager,
+            group: Group,
+            dataset_size: int,
+            supporting_points_count: int,
+            negative_examples_count: int,
+            threshold: float,
+            log_dir_path: Path,
+            num_workers: int,
+            items_queue_maxsize: int,
+            items_buffer_size: int,
+            get_item_policy: GetItemPolicy):
+        super().__init__(
+            planar_curves_manager=planar_curves_manager,
+            group=group,
+            dataset_size=dataset_size,
+            log_dir_path=log_dir_path,
+            num_workers=num_workers,
+            items_queue_maxsize=items_queue_maxsize,
+            items_buffer_size=items_buffer_size,
+            get_item_policy=get_item_policy)
+        self._supporting_points_count = supporting_points_count
+        self._negative_examples_count = negative_examples_count
+        self._threshold = threshold
+
+    def _generate_item(self, item_id: Optional[int]) -> object:
+        tuplet = []
+        curve = self._planar_curves_manager.get_random_planar_curve()
+        center_point_index = curve.get_random_point_index()
+        for i in range(2):
+            points = self._extract_curve_neighborhood_points(curve=curve, center_point_index=center_point_index)
+            tuplet.append(points)
+
+        for i in range(self._negative_examples_count):
+            curve = self._planar_curves_manager.get_random_planar_curve()
+            center_point_index = curve.get_random_point_index()
+            points = self._extract_curve_neighborhood_points(curve=curve, center_point_index=center_point_index)
+            tuplet.append(points)
+
+        return numpy.array(tuplet)
+
+    def _extract_curve_neighborhood_points(self, curve: PlanarCurve, center_point_index: int) -> numpy.ndarray:
+        group_action = self._group.generate_random_group_action()
+        transformed_curve = curve.transform_curve(transform=group_action)
+        curve_neighborhood = transformed_curve.sample_curve_uniformly_around_point(point_index=center_point_index, supporting_points_count=self._supporting_points_count, threshold=self._threshold)
+        return curve_neighborhood.points

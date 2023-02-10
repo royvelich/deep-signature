@@ -261,6 +261,9 @@ class PlanarCurve(SeedableObject):
             k[-1] = numpy.nan
             k[-2] = numpy.nan
 
+        max_k = float(numpy.nanmax(a=k))
+        k = numpy.nan_to_num(x=k, nan=0)
+
         return k
 
     def calculate_equiaffine_s(self):
@@ -275,6 +278,12 @@ class PlanarCurve(SeedableObject):
 
     def calculate_equiaffine_dk_ds(self) -> numpy.ndarray:
         return self._calculate_dk_ds(calculate_k=self.calculate_equiaffine_k, calculate_s=self.calculate_equiaffine_s)
+
+    def approximate_equiaffine_signature(self) -> numpy.ndarray:
+        signature = numpy.zeros(shape=[self.points_count, 2])
+        signature[:, 0] = self.calculate_equiaffine_k()
+        signature[:, 1] = self.calculate_equiaffine_dk_ds()
+        return signature
 
     # -------------------------------------------------
     # general curvature and arclength approximation
@@ -292,6 +301,7 @@ class PlanarCurve(SeedableObject):
     # -------------------------------------------------
     # approximation
     # -------------------------------------------------
+
     def approximate_curve_signature(self, model: torch.nn.Module, supporting_points_count: int, device: torch.device) -> numpy.ndarray:
         local_signature = numpy.zeros([self.points_count, 2])
         curve_neighborhoods = self.extract_curve_neighborhoods(supporting_points_count=supporting_points_count)
@@ -349,6 +359,55 @@ class PlanarCurve(SeedableObject):
         sampled_planar_curve = PlanarCurve(points=self._points[indices], closed=self._closed, reference_curve=self, reference_indices=indices)
         sampled_planar_curve._discrete_distribution = discrete_distribution
         return sampled_planar_curve
+
+    def _sample_curve_uniformly_around_point_by_direction(self, point_index: int, supporting_points_count: Optional[int], threshold: float, direction: int) -> List[int]:
+        indices = [point_index]
+        anchor_index = point_index
+        for current_index in range(0, self.points_count):
+            anchor_point = self._points[anchor_index, :]
+            current_point = self._points[current_index, :]
+            element = current_point - anchor_point
+            distance = numpy.linalg.norm(x=element)
+            if distance > threshold:
+                indices.append(current_index)
+                anchor_index = current_index
+
+            if (supporting_points_count is not None) and (len(indices) == supporting_points_count):
+                break
+
+        return indices
+
+        # indices = [point_index]
+        # accumulated_distance = 0
+        # point_indices1 = list(range(0, self.points_count))
+        # point_indices2 = numpy.roll(a=point_indices1, shift=direction)
+        # for (previous_index, current_index) in zip(point_indices1, point_indices2):
+        #     previous_point = self._points[previous_index, :]
+        #     current_point = self._points[current_index, :]
+        #     element = current_point - previous_point
+        #     distance = numpy.linalg.norm(x=element)
+        #     accumulated_distance = accumulated_distance + distance
+        #
+        #     if accumulated_distance > threshold:
+        #         indices.append(current_index)
+        #         accumulated_distance = 0
+        #
+        #     if (supporting_points_count is not None) and (len(indices) == supporting_points_count):
+        #         break
+        #
+        # return indices
+
+    def sample_curve_uniformly_around_point(self, point_index: int, supporting_points_count: int, threshold: float) -> PlanarCurve:
+        forward_indices = self._sample_curve_uniformly_around_point_by_direction(point_index=point_index, supporting_points_count=supporting_points_count, threshold=threshold, direction=-1)
+        backward_indices = self._sample_curve_uniformly_around_point_by_direction(point_index=point_index, supporting_points_count=supporting_points_count, threshold=threshold, direction=1)
+        indices = numpy.array(backward_indices + [point_index] + forward_indices)
+        points = self._points[indices]
+        return PlanarCurve(points=points, closed=False, reference_curve=self, reference_indices=indices)
+
+    def sample_curve_uniformly(self, threshold: float) -> PlanarCurve:
+        indices = numpy.array(self._sample_curve_uniformly_around_point_by_direction(point_index=0, supporting_points_count=None, threshold=threshold, direction=-1))
+        points = self._points[indices]
+        return PlanarCurve(points=points, closed=False, reference_curve=self, reference_indices=indices)
 
     def extract_curve_neighborhood(self, center_point_index: int, supporting_points_count: int) -> PlanarCurve:
         curve_indices = numpy.append(arr=self._reference_indices, values=[center_point_index])
@@ -564,12 +623,16 @@ class PlanarCurve(SeedableObject):
             zorder: int = 1,
             force_limits: bool = True,
             axiomatic: bool = False,
+            axiomatic_type: str = 'euclidean',
             flip_k_ks: bool = False):
 
         if axiomatic is False:
             signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
         else:
-            signature = self.approximate_euclidean_signature()
+            if axiomatic_type == 'euclidean':
+                signature = self.approximate_euclidean_signature()
+            else:
+                signature = self.approximate_equiaffine_signature()
 
         self._plot_signature(
             signature=signature,
@@ -618,6 +681,7 @@ class PlanarCurve(SeedableObject):
             color2: str = '#0000FF',
             zorder: int = 1,
             axiomatic: bool = False,
+            axiomatic_type: str = 'euclidean',
             compare_only_signature_curve: bool = False,
             flip_k_ks: bool = False):
 
@@ -625,8 +689,13 @@ class PlanarCurve(SeedableObject):
             self_signature = self.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
             curve_signature = comparison_curve.approximate_curve_signature(model=model, supporting_points_count=supporting_points_count, device=device)
         else:
-            self_signature = self.approximate_euclidean_signature()
-            curve_signature = comparison_curve.approximate_euclidean_signature()
+            if axiomatic_type == 'euclidean':
+                self_signature = self.approximate_euclidean_signature()
+                curve_signature = comparison_curve.approximate_euclidean_signature()
+            else:
+                self_signature = self.approximate_equiaffine_signature()
+                curve_signature = comparison_curve.approximate_equiaffine_signature()
+
 
         self._plot_signature(
             signature=self_signature,
@@ -692,6 +761,48 @@ class PlanarCurve(SeedableObject):
             force_limits: bool = True,
             flip_k_ks: bool = False):
         signature = self.approximate_euclidean_signature()
+        self._plot_signature(
+            signature=signature,
+            multicolor=multicolor,
+            ax=ax,
+            line_style=line_style,
+            marker=marker,
+            point_size=point_size,
+            x_axis_title_size=x_axis_title_size,
+            y_axis_title_size=y_axis_title_size,
+            label_size=label_size,
+            line_width=line_width,
+            frame_line_width=frame_line_width,
+            tick_width=tick_width,
+            tick_length=tick_length,
+            alpha=alpha,
+            cmap=cmap,
+            color=color,
+            zorder=zorder,
+            force_limits=force_limits,
+            flip_k_ks=flip_k_ks)
+
+    def plot_equiaffine_signature(
+            self,
+            ax: List[matplotlib.axes.Axes],
+            multicolor: bool = True,
+            line_style: str = '',
+            marker: str = '.',
+            point_size: float = 2,
+            line_width: float = 2,
+            x_axis_title_size: int = 30,
+            y_axis_title_size: int = 30,
+            label_size: int = 20,
+            frame_line_width: int = 4,
+            tick_width: int = 5,
+            tick_length: int = 15,
+            alpha: float = 1,
+            cmap: str = 'hsv',
+            color: str = '#FF0000',
+            zorder: int = 1,
+            force_limits: bool = True,
+            flip_k_ks: bool = False):
+        signature = self.approximate_equiaffine_signature()
         self._plot_signature(
             signature=signature,
             multicolor=multicolor,

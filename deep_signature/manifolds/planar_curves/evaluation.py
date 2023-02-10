@@ -75,6 +75,17 @@ class PlanarCurvesAxiomaticEuclideanSignatureCalculator(PlanarCurvesSignatureCal
 
 
 # =================================================
+# PlanarCurvesAxiomaticEquiaffineSignatureCalculator Class
+# =================================================
+class PlanarCurvesAxiomaticEquiaffineSignatureCalculator(PlanarCurvesSignatureCalculator):
+    def __init__(self):
+        super().__init__()
+
+    def calculate_signature(self, curve: PlanarCurve) -> numpy.ndarray:
+        return curve.approximate_equiaffine_signature()
+
+
+# =================================================
 # PlanarCurvesSignatureComparator Class
 # =================================================
 class PlanarCurvesSignatureComparator(ABC):
