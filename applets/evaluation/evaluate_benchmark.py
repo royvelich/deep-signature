@@ -120,9 +120,9 @@ if __name__ == '__main__':
     #     benchmark_dir_path = Path(f"{root_folder}/curves/benchmark/{benchmark_date}")
     #     run_benchmark(benchmark_dir_path=benchmark_dir_path, output_folder=output_folder, group_name=group_name, collections=collections, calculator=calculator, comparator=comparator)
 
-    calculator = PlanarCurvesAxiomaticEquiaffineSignatureCalculator()
+    calculator = PlanarCurvesAxiomaticEuclideanSignatureCalculator()
     comparator = PlanarCurvesSignatureHausdorffComparator()
     for benchmark_date in uniform_benchmark_dates:
-        output_folder = Path(f"{root_folder}/output/AXIOMATIC_EQUIAFFINE_BENCHMARK_{benchmark_date}")
+        output_folder = Path(f"{root_folder}/output/AXIOMATIC_EUCLIDEAN_BENCHMARK_AFTER_FIX_{benchmark_date}")
         benchmark_dir_path = Path(f"{root_folder}/curves/benchmark/{benchmark_date}")
         run_benchmark(benchmark_dir_path=benchmark_dir_path, output_folder=output_folder, group_name=group_name, collections=collections, calculator=calculator, comparator=comparator)

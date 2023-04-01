@@ -1,6 +1,6 @@
 # python peripherals
 from __future__ import annotations
-from typing import Union, List, Callable, Optional
+from typing import Union, List, Callable, Optional, Protocol
 import os
 import itertools
 from pathlib import Path
@@ -38,6 +38,16 @@ from deep_signature.core import transformations
 
 # numba
 import numba
+
+
+class DsCalculator(Protocol):
+    def __call__(self, padding: int) -> numpy.ndarray:
+        ...
+
+
+class DkDsCalculator(Protocol):
+    def __call__(self, order: int) -> numpy.ndarray:
+        ...
 
 
 # =================================================
@@ -145,6 +155,16 @@ class PlanarCurve(SeedableObject):
         return normals
 
     # -------------------------------------------------
+    # signature approximation
+    # -------------------------------------------------
+
+    def _approximate_signature(self, calculate_dk_ds: DkDsCalculator, order: int = 1) -> numpy.ndarray:
+        signature = numpy.zeros(shape=[self.points_count, order + 1])
+        for current_order in range(order + 1):
+            signature[:, current_order] = calculate_dk_ds(order=current_order)
+        return signature
+
+    # -------------------------------------------------
     # euclidean curvature and arclength approximation
     # -------------------------------------------------
 
@@ -158,21 +178,23 @@ class PlanarCurve(SeedableObject):
         k = (d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt) ** 1.5
         return k
 
-    def calculate_euclidean_s(self) -> numpy.ndarray:
-        secants = numpy.diff(a=self._points, n=1, axis=0)
+    def calculate_euclidean_s(self, padding: int = 0) -> numpy.ndarray:
+        points = numpy.pad(array=self._points, pad_width=(padding, padding), mode='wrap')
+        secants = numpy.diff(a=points, n=1, axis=0)
         secants_norm = numpy.linalg.norm(x=secants, ord=2, axis=1)
         s = numpy.cumsum(a=numpy.concatenate((numpy.array([0]), secants_norm), axis=0))
         return s
 
-    def calculate_euclidean_dk_ds(self) -> numpy.ndarray:
-        return self._calculate_dk_ds(calculate_k=self.calculate_euclidean_k, calculate_s=self.calculate_euclidean_s)
+    def calculate_euclidean_dk_ds(self, order: int = 1) -> numpy.ndarray:
+        return self._calculate_dk_ds(calculate_k=self.calculate_euclidean_k, calculate_s=self.calculate_euclidean_s, order=order)
 
-    def approximate_euclidean_signature(self) -> numpy.ndarray:
-        signature = numpy.zeros(shape=[self.points_count, 2])
-        signature[:, 0] = self.calculate_euclidean_k()
-        signature[:, 1] = self.calculate_euclidean_dk_ds()
-        # signature[:self.points_count] = signature[-1]
-        return signature
+    def approximate_euclidean_signature(self, order: int = 1) -> numpy.ndarray:
+        return self._approximate_signature(calculate_dk_ds=self.calculate_euclidean_dk_ds, order=order)
+        # signature = numpy.zeros(shape=[self.points_count, 2])
+        # signature[:, 0] = self.calculate_euclidean_k()
+        # signature[:, 1] = self.calculate_euclidean_dk_ds()
+        # # signature[:self.points_count] = signature[-1]
+        # return signature
 
     # -------------------------------------------------
     # equiaffine curvature and arclength approximation
@@ -266,9 +288,10 @@ class PlanarCurve(SeedableObject):
 
         return k
 
-    def calculate_equiaffine_s(self):
-        s_euclidean = self.calculate_euclidean_s()
+    def calculate_equiaffine_s(self, padding: int = 0):
+        s_euclidean = self.calculate_euclidean_s(padding=padding)
         k_euclidean = numpy.abs(self.calculate_euclidean_k())
+        k_euclidean = numpy.pad(array=k_euclidean, pad_width=(padding, padding), mode='wrap')
         ds_euclidean = numpy.diff(a=s_euclidean, n=1, axis=0)
         ds_euclidean = numpy.concatenate((numpy.array([0]), ds_euclidean))
         k_euclidean_cbrt = numpy.cbrt(k_euclidean)
@@ -276,27 +299,54 @@ class PlanarCurve(SeedableObject):
         s = numpy.cumsum(a=ds_equiaffine, axis=0)
         return s
 
-    def calculate_equiaffine_dk_ds(self) -> numpy.ndarray:
-        return self._calculate_dk_ds(calculate_k=self.calculate_equiaffine_k, calculate_s=self.calculate_equiaffine_s)
+    def calculate_equiaffine_dk_ds(self, order: int = 1) -> numpy.ndarray:
+        return self._calculate_dk_ds(calculate_k=self.calculate_equiaffine_k, calculate_s=self.calculate_equiaffine_s, order=order)
 
-    def approximate_equiaffine_signature(self) -> numpy.ndarray:
-        signature = numpy.zeros(shape=[self.points_count, 2])
-        signature[:, 0] = self.calculate_equiaffine_k()
-        signature[:, 1] = self.calculate_equiaffine_dk_ds()
-        return signature
+    def approximate_equiaffine_signature(self, order: int = 1) -> numpy.ndarray:
+        return self._approximate_signature(calculate_dk_ds=self.calculate_equiaffine_dk_ds, order=order)
+        # signature = numpy.zeros(shape=[self.points_count, order + 1])
+        # signature[:, 0] = self.calculate_equiaffine_k()
+        #
+        # for i in range(order):
+        #     signature[:, i + 1] = self.calculate_equiaffine_dk_ds()
+        # return signature
 
     # -------------------------------------------------
     # general curvature and arclength approximation
     # -------------------------------------------------
 
-    def _calculate_dk_ds(self, calculate_k: Callable[[], numpy.ndarray], calculate_s: Callable[[], numpy.ndarray]) -> numpy.ndarray:
+    def _calculate_dk_ds(self, calculate_k: Callable[[], numpy.ndarray], calculate_s: DsCalculator, order: int = 1) -> numpy.ndarray:
         k = calculate_k()
-        # s = calculate_s()
-        dk = PlanarCurve._calculate_gradient(array=k, closed=self._closed, normalize=False)
-        ds = PlanarCurve._calculate_gradient(array=self.points, closed=self._closed, normalize=False)
-        ds = numpy.linalg.norm(x=ds, ord=2, axis=1)
-        ks = dk / ds
-        return ks
+        if order == 0:
+            return k
+
+        s = calculate_s(padding=1)
+        ds = PlanarCurve._calculate_gradient(array=s, closed=self._closed, normalize=True)
+        ds = ds[1:ds.shape[0]-1]
+
+        # ds = PlanarCurve._calculate_gradient(array=self._points, closed=self._closed, normalize=False)
+        # ds = numpy.linalg.norm(x=ds, ord=2, axis=1)
+
+        if order == 1:
+            k_padded = PlanarCurve._pad_array(array=k)
+            dk = numpy.convolve(k_padded, [1, 0, -1])
+            dk = PlanarCurve._unpad_array(array=dk, padding=2)
+            return dk / ds
+        elif order == 2:
+            k_padded = PlanarCurve._pad_array(array=k)
+            dk = numpy.convolve(k_padded, [1, -2, 1])
+            dk = PlanarCurve._unpad_array(array=dk, padding=2)
+            return dk / (ds**2)
+
+        # ds = PlanarCurve._calculate_gradient(array=self._points, closed=self._closed, normalize=False)
+        # ds = numpy.linalg.norm(x=ds, ord=2, axis=1)
+
+        # ks = k
+        # for _ in range(order):
+        #     dk = PlanarCurve._calculate_gradient(array=ks, closed=self._closed, normalize=False)
+        #     ks = dk / ds
+        #
+        # return ks
 
     # -------------------------------------------------
     # approximation
@@ -760,7 +810,7 @@ class PlanarCurve(SeedableObject):
             zorder: int = 1,
             force_limits: bool = True,
             flip_k_ks: bool = False):
-        signature = self.approximate_euclidean_signature()
+        signature = self.approximate_euclidean_signature(order=2)
         self._plot_signature(
             signature=signature,
             multicolor=multicolor,
@@ -851,11 +901,11 @@ class PlanarCurve(SeedableObject):
         x = numpy.array(list(range(signature.shape[0])))
 
         if not flip_k_ks:
-            kappa = signature[:, 0]
-            kappa_s = signature[:, 1]
-        else:
             kappa = signature[:, 1]
-            kappa_s = signature[:, 0]
+            kappa_s = signature[:, 2]
+        else:
+            kappa = signature[:, 2]
+            kappa_s = signature[:, 1]
 
         if multicolor is True:
             if not plot_only_signature_curve:
