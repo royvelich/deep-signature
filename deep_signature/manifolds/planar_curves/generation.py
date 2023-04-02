@@ -281,7 +281,6 @@ class ImageLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
     def _preprocess_contour(self, contour: numpy.ndarray) -> numpy.ndarray:
         contour = super()._preprocess_contour(contour=contour)
         curve = PlanarCurve(points=contour)
-        curve = curve.smooth_curve(iterations=self._smoothing_iterations, window_length=self._smoothing_window_length, poly_order=self._smoothing_poly_order)
         return curve.points
 
     def _get_valid_contours(self, contours: List[numpy.ndarray]) -> List[numpy.ndarray]:
@@ -291,6 +290,8 @@ class ImageLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
             planar_curve = PlanarCurve(points=contour)
             if planar_curve.closed is False:
                 continue
+
+            planar_curve = planar_curve.smooth_curve(iterations=self._smoothing_iterations, window_length=self._smoothing_window_length, poly_order=self._smoothing_poly_order)
 
             k_euclidean = planar_curve.calculate_euclidean_k()
             flat_points = numpy.sum(numpy.array([1 if x < self._flat_point_threshold else 0 for x in numpy.abs(k_euclidean)]))
@@ -305,7 +306,7 @@ class ImageLevelCurvesGeneratorTask(LevelCurvesGeneratorTask):
                 continue
 
             valid_contours.append(planar_curve.points)
-            break
+            # break
 
         return valid_contours
 

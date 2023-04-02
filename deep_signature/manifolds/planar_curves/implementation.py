@@ -328,14 +328,24 @@ class PlanarCurve(SeedableObject):
         # ds = numpy.linalg.norm(x=ds, ord=2, axis=1)
 
         if order == 1:
-            k_padded = PlanarCurve._pad_array(array=k)
-            dk = numpy.convolve(k_padded, [1, 0, -1])
-            dk = PlanarCurve._unpad_array(array=dk, padding=2)
+            k_padded = PlanarCurve._pad_array(array=k, padding=2)
+            dk = numpy.convolve(k_padded, [1/12, -2/3, 0, 2/3, -1/12])
+            dk = PlanarCurve._unpad_array(array=dk, padding=4)
             return dk / ds
         elif order == 2:
-            k_padded = PlanarCurve._pad_array(array=k)
-            dk = numpy.convolve(k_padded, [1, -2, 1])
-            dk = PlanarCurve._unpad_array(array=dk, padding=2)
+            # k_padded = PlanarCurve._pad_array(array=k, padding=2)
+            # dk = numpy.convolve(k_padded, [1/12, -2/3, 0, 2/3, -1/12])
+            # dk = PlanarCurve._unpad_array(array=dk, padding=4)
+            # ks = dk / ds
+            #
+            # ks_padded = PlanarCurve._pad_array(array=ks, padding=2)
+            # dk_ds = numpy.convolve(ks_padded, [1/12, -2/3, 0, 2/3, -1/12])
+            # dk_ds = PlanarCurve._unpad_array(array=dk_ds, padding=4)
+            # return dk_ds / ds
+
+            k_padded = PlanarCurve._pad_array(array=k, padding=2)
+            dk = numpy.convolve(k_padded, [-1/12, 4/3, -5/2, 4/3, -1/12])
+            dk = PlanarCurve._unpad_array(array=dk, padding=4)
             return dk / (ds**2)
 
         # ds = PlanarCurve._calculate_gradient(array=self._points, closed=self._closed, normalize=False)
@@ -902,9 +912,9 @@ class PlanarCurve(SeedableObject):
 
         if not flip_k_ks:
             kappa = signature[:, 1]
-            kappa_s = signature[:, 2]
+            kappa_s = signature[:, 0]
         else:
-            kappa = signature[:, 2]
+            kappa = signature[:, 0]
             kappa_s = signature[:, 1]
 
         if multicolor is True:

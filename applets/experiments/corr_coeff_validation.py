@@ -24,22 +24,23 @@ from deep_signature.manifolds.planar_curves.implementation import PlanarCurvesMa
 import pandas
 
 
-# SeedableObject.set_seed(seed=42)
+SeedableObject.set_seed(seed=42)
 
 
 if __name__ == '__main__':
     # planar_curves_manager_smooth = PlanarCurvesManager(curves_file_paths=[Path("C:/deep-signature-data-new/curves/train/2022-12-31-15-12-51/curves.npy")])
-    planar_curves_manager_train_smooth = PlanarCurvesManager(curves_file_paths=[Path("C:/deep-signature-data/curves/train/curves.npy")])
-    planar_curves_manager_val_smooth = PlanarCurvesManager(curves_file_paths=[Path("C:/deep-signature-data/curves/validation/curves.npy")])
-    planar_curves_manager_test_smooth = PlanarCurvesManager(curves_file_paths=[Path("C:/deep-signature-data/curves/test/curves.npy")])
+    # planar_curves_manager_train_smooth = PlanarCurvesManager(curves_file_paths=[Path("C:/deep-signature-data/curves/train/curves.npy")])
+    # planar_curves_manager_val_smooth = PlanarCurvesManager(curves_file_paths=[Path("C:/deep-signature-data/curves/validation/curves.npy")])
+    # planar_curves_manager_test_smooth = PlanarCurvesManager(curves_file_paths=[Path("C:/deep-signature-data/curves/test/curves.npy")])
+    planar_curves_manager_val2_smooth = PlanarCurvesManager(curves_file_paths=[Path("C:/deep-signature-data-new/curves/validation2/2023-04-02-10-42-13/curves.npy")])
 
     point_size = 30
     label_size = 100
     axis_title_size = 120
     line_width = 3
 
-    for i in range(7):
-        planar_curve = planar_curves_manager_train_smooth.get_random_planar_curve()
+    for i in range(20):
+        planar_curve = planar_curves_manager_val2_smooth.get_random_planar_curve()
 
         fig, axes = matplotlib.pyplot.subplots(nrows=4, ncols=1, figsize=(30, 60))
         # fig, ax = matplotlib.pyplot.subplots(nrows=1, ncols=1, figsize=(20, 20))
