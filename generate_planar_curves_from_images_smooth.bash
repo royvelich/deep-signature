@@ -6,8 +6,8 @@ export PYTHONPATH=.
 python ./applets/generation/generate_planar_curves_from_images.py \
 --seed 42 \
 --max_tasks $3 \
---images_base_dir_path /data/images/$1 \
---results_base_dir_path /data/curves/$1 \
+--images_base_dir_path /data/images \
+--results_base_dir_path /data/curves/corr_exp \
 --min_points_count 1500 \
 --max_points_count 6000 \
 --kernel_sizes 3 5 9 17 33 \
