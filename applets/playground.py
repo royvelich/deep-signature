@@ -36,6 +36,10 @@ class MyClass:
 
 
 if __name__ == '__main__':
+    bla = numpy.array([[1, 1, 5], [4, numpy.nan, 3], [10, 7, 9], [12, 18, 23], [numpy.nan, 50, 50]])
+
+    bla2 = bla[~numpy.isnan(bla).any(axis=1)]
+
     bla = numpy.array([[1, 1], [4, 3], [10, 7], [12, 18], [50, 50]])
     bla2 = numpy.diff(a=bla, axis=0)
 
