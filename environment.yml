@@ -1,15 +1,18 @@
 name: deep-signature
 channels:
-  - conda-forge
   - nvidia
   - pytorch
+  - pytorch3d-nightly
+  - fvcore
+  - iopath
+  - conda-forge
   - defaults
 dependencies:
   - python=3.9
-  - pytorch=1.12
+  - pytorch=1.13
   - torchaudio
   - torchvision
-  - cudatoolkit=11.3
+  - cudatoolkit=11.7
 #  - ipython
   - numpy=1.22
   - scipy
@@ -34,6 +37,10 @@ dependencies:
 #  - openpyxl
   - pip
 #  - libwebp
+  - pyvista
+  - fvcore
+  - iopath
+  - pytorch3d
   - pip:
 #      - hausdorff
       - lightly
