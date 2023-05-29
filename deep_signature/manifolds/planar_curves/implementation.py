@@ -347,7 +347,26 @@ class PlanarCurve(SeedableObject):
             dk = numpy.convolve(k_padded, [-1/12, 4/3, -5/2, 4/3, -1/12])
             dk = PlanarCurve._unpad_array(array=dk, padding=4)
             return dk / (ds**2)
-
+        elif order == 3:
+            k_padded = PlanarCurve._pad_array(array=k, padding=3)
+            dk = numpy.convolve(k_padded, [1/8, -1, 13/8, 0, -13/8, 1, -1/8])
+            dk = PlanarCurve._unpad_array(array=dk, padding=6)
+            return dk / (ds**3)
+        elif order == 4:
+            k_padded = PlanarCurve._pad_array(array=k, padding=3)
+            dk = numpy.convolve(k_padded, [-1/6, 2, -13/2, 28/3, -13/2, 2, -1/6])
+            dk = PlanarCurve._unpad_array(array=dk, padding=6)
+            return dk / (ds**4)
+        elif order == 5:
+            k_padded = PlanarCurve._pad_array(array=k, padding=4)
+            dk = numpy.convolve(k_padded, [1/6, -3/2, 13/3, -29/6, 0, 29/6, -13/3, 3/2, -1/6])
+            dk = PlanarCurve._unpad_array(array=dk, padding=8)
+            return dk / (ds**5)
+        elif order == 6:
+            k_padded = PlanarCurve._pad_array(array=k, padding=4)
+            dk = numpy.convolve(k_padded, [-1/4, 3, -13, 29, -75/2, 29, -13, 3, -1/4])
+            dk = PlanarCurve._unpad_array(array=dk, padding=8)
+            return dk / (ds**6)
         # ds = PlanarCurve._calculate_gradient(array=self._points, closed=self._closed, normalize=False)
         # ds = numpy.linalg.norm(x=ds, ord=2, axis=1)
 
@@ -819,8 +838,9 @@ class PlanarCurve(SeedableObject):
             color: str = '#FF0000',
             zorder: int = 1,
             force_limits: bool = True,
-            flip_k_ks: bool = False):
-        signature = self.approximate_euclidean_signature(order=2)
+            flip_k_ks: bool = False,
+            order: int = 1):
+        signature = self.approximate_euclidean_signature(order=order)
         self._plot_signature(
             signature=signature,
             multicolor=multicolor,
@@ -840,7 +860,8 @@ class PlanarCurve(SeedableObject):
             color=color,
             zorder=zorder,
             force_limits=force_limits,
-            flip_k_ks=flip_k_ks)
+            flip_k_ks=flip_k_ks,
+            order=order)
 
     def plot_equiaffine_signature(
             self,
@@ -907,37 +928,66 @@ class PlanarCurve(SeedableObject):
             reference_x: Optional[numpy.ndarray] = None,
             z_range: Optional[int] = None,
             plot_only_signature_curve: bool = False,
-            flip_k_ks: bool = False):
+            flip_k_ks: bool = False,
+            order: int = 1):
         x = numpy.array(list(range(signature.shape[0])))
 
-        if not flip_k_ks:
-            kappa = signature[:, 1]
-            kappa_s = signature[:, 0]
-        else:
-            kappa = signature[:, 0]
-            kappa_s = signature[:, 1]
+        # if not flip_k_ks:
+        #     kappa = signature[:, 0]
+        #     kappa_s = signature[:, 1]
+        # else:
+        #     kappa = signature[:, 1]
+        #     kappa_s = signature[:, 0]
 
+        ax_index = 0
         if multicolor is True:
             if not plot_only_signature_curve:
-                deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa, ax=ax[0], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, closed=False, reference_x=reference_x, z_range=z_range)
-                deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa_s, ax=ax[1], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, closed=False, reference_x=reference_x, z_range=z_range)
-            deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=kappa, y=kappa_s, ax=ax[2], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, equal_axis=True, reference_x=reference_x, z_range=z_range)
+                for i in range(order+1):
+                    deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=signature[:, i], ax=ax[ax_index], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, closed=False, reference_x=reference_x, z_range=z_range)
+                    ax_index += 1
+                    # deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=x, y=kappa_s, ax=ax[1], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, closed=False, reference_x=reference_x, z_range=z_range)
+
+            for i in range(order):
+                for j in range(i+1, order + 1):
+                    deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=signature[:, i], y=signature[:, j], ax=ax[ax_index], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, equal_axis=False, reference_x=reference_x, z_range=z_range)
+                    ax_index += 1
+            # for i in range(order):
+            #     deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=signature[:, i], y=signature[:, i+1], ax=ax[order+1+i], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, equal_axis=True, reference_x=reference_x, z_range=z_range)
+            # deep_signature.manifolds.planar_curves.visualization.plot_multicolor_line(x=signature[:, 0], y=signature[:, order], ax=ax[-1], alpha=alpha, zorder=zorder, cmap=cmap, color=None, line_width=line_width, equal_axis=True, reference_x=reference_x, z_range=z_range)
         else:
             if not plot_only_signature_curve:
-                deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa, ax=ax[0], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, closed=False)
-                deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, closed=False)
-            deep_signature.manifolds.planar_curves.visualization.plot_line(x=kappa, y=kappa_s, ax=ax[2], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, equal_axis=True)
+                for i in range(order+1):
+                    deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=signature[:, i], ax=ax[i], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, closed=False)
+                    # deep_signature.manifolds.planar_curves.visualization.plot_line(x=x, y=kappa_s, ax=ax[1], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, closed=False)
+            for i in range(order):
+                deep_signature.manifolds.planar_curves.visualization.plot_line(x=signature[:, i], y=signature[:, i+1], ax=ax[order+1+i], line_style=line_style, marker=marker, markersize=point_size, line_width=line_width, alpha=alpha, zorder=zorder, color=color, force_limits=force_limits, equal_axis=True)
 
         x_label_str = r'\textit{Point Index}'
-        kappa_label_str = r'$\kappa$'
-        kappa_s_label_str = r'$\kappa_s$'
+        kappa_label_str = [r'$\kappa$', r'$\kappa_s$', r'$\kappa_{ss}$', r'$\kappa_{sss}$', r'$\kappa_{ssss}$', r'$\kappa_{sssss}$', r'$\kappa_{ssssss}$']
+        # kappa_s_label_str = r'$\kappa_s$'
         x_axis_title_size_point_size = int(x_axis_title_size*0.6)
-        ax[0].set_xlabel(x_label_str, fontsize=x_axis_title_size_point_size)
-        ax[0].set_ylabel(kappa_label_str, fontsize=y_axis_title_size)
-        ax[1].set_xlabel(x_label_str, fontsize=x_axis_title_size_point_size)
-        ax[1].set_ylabel(kappa_s_label_str, fontsize=y_axis_title_size)
-        ax[2].set_xlabel(kappa_label_str, fontsize=x_axis_title_size)
-        ax[2].set_ylabel(kappa_s_label_str, fontsize=y_axis_title_size)
+
+        ax_index = 0
+        for i in range(order+1):
+            ax[ax_index].set_xlabel(x_label_str, fontsize=x_axis_title_size_point_size)
+            ax[ax_index].set_ylabel(kappa_label_str[i], fontsize=y_axis_title_size)
+            ax_index += 1
+
+        for i in range(order):
+            for j in range(i+1, order + 1):
+                ax[ax_index].set_xlabel(kappa_label_str[i], fontsize=x_axis_title_size)
+                ax[ax_index].set_ylabel(kappa_label_str[j], fontsize=y_axis_title_size)
+                ax_index += 1
+        # ax[1].set_xlabel(x_label_str, fontsize=x_axis_title_size_point_size)
+        # ax[1].set_ylabel(kappa_s_label_str, fontsize=y_axis_title_size)
+
+
+
+
+
+
+        # ax[2].set_xlabel(kappa_label_str, fontsize=x_axis_title_size)
+        # ax[2].set_ylabel(kappa_s_label_str, fontsize=y_axis_title_size)
         self._configure_axis(ax=ax, label_size=label_size, frame_line_width=frame_line_width, tick_width=tick_width, tick_length=tick_length)
 
     def _configure_axis(
