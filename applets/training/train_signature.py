@@ -19,7 +19,7 @@ from deep_signature.training.networks import DeepSignaturesNet
 from deep_signature.training.activations import Sine
 from deep_signature.training.losses import DifferentialInvariantsLoss
 from deep_signature.training.trainers import ModelTrainer
-from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesApproximatedSignatureComparator
+from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesSignatureHausdorffComparator, PlanarCurvesNeuralSignatureCalculator
 from deep_signature.manifolds.planar_curves.evaluation import PlanarCurvesShapeMatchingEvaluator, PlanarCurvesSignatureQualitativeEvaluator
 from deep_signature.core.parallel_processing import GetItemPolicy
 from deep_signature.training.losses import InvarianceLoss
@@ -181,20 +181,23 @@ def main():
     loss_fn = DifferentialInvariantsLoss(invariance_loss_fn=invariance_loss_fns[config.invariance_loss_fn])
     optimizer = torch.optim.LBFGS(model.parameters(), lr=config.learning_rate, line_search_fn='strong_wolfe', history_size=config.history_size)
 
-    comparator = PlanarCurvesApproximatedSignatureComparator(
+    comparator = PlanarCurvesSignatureHausdorffComparator()
+    calculator = PlanarCurvesNeuralSignatureCalculator(
         model=model,
-        supporting_points_count=config.supporting_points_count,
+        supporting_points_count=parser.supporting_points_count,
         device=torch.device('cpu'))
 
     shape_matching_evaluator = PlanarCurvesShapeMatchingEvaluator(
         log_dir_path=results_dir_path,
-        num_workers=parser.evaluation_num_workers,
+        num_workers_calculation=parser.evaluation_num_workers,
+        num_workers_comparison=parser.evaluation_num_workers,
         curves_count_per_collection=config.evaluation_curves_count_per_collection,
         curve_collections_file_names=config.evaluation_curve_collections_file_names,
         benchmark_dir_path=parser.evaluation_benchmark_dir_path,
         sampling_ratios=config.evaluation_sampling_ratios,
         multimodalities=[config.evaluation_multimodality],
         group_names=[config.group_name],
+        planar_curves_signature_calculator=calculator,
         planar_curves_signature_comparator=comparator)
 
     qualitative_evaluator_curves = PlanarCurvesSignatureQualitativeEvaluator(
